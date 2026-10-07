@@ -1,0 +1,89 @@
+--- backend/QrLink.Application/Commands/Documents/Handlers/UpdateDocumentCommandHandler.cs.bak-20260930-qr-final	2026-09-30 05:04:27.380344734 +0000
++++ backend/QrLink.Application/Commands/Documents/Handlers/UpdateDocumentCommandHandler.cs	2026-09-30 05:06:13.735623780 +0000
+@@ -35,14 +35,20 @@
+         if (document is null)
+             throw new KeyNotFoundException($"Hujjat topilmadi: {request.SourceDocumentId}");
+ 
++        // Only the authenticated source system can refresh its final transport PDFs.
++        var transportFinal = (string.Equals(sourceSystem, "E-TRANPORT", StringComparison.OrdinalIgnoreCase) || string.Equals(sourceSystem, "E-TRANSPORT", StringComparison.OrdinalIgnoreCase))
++            && (document.DocumentType == "Yuk xati" || document.DocumentType == "Kirish xizmat xati" || document.DocumentType == "Dalolatnoma")
++            && request.DocumentType == document.DocumentType
++            && request.Status == DocumentStatus.Approved;
++        if (transportFinal && (document.Status == DocumentStatus.Revoked || document.Status == DocumentStatus.Archived))
++            throw new InvalidOperationException("Revoked or archived documents cannot be refreshed.");
+         if (document.Status == DocumentStatus.Approved)
+         {
+-            // Allow update if the document currently has no file, to support the 2-step register-then-upload workflow
+-            bool hasFile = document.Files != null && document.Files.Any();
+-            if (hasFile)
+-            {
++            if (transportFinal && request.FileStream is null)
++                return new RegisterDocumentResponse(document.GlobalId, document.VerificationUrl,
++                    _qr.GenerateQrCodeBase64(document.VerificationUrl), document.CreatedAt);
++            if (document.Files != null && document.Files.Any() && !transportFinal)
+                 throw new InvalidOperationException($"Tasdiqlangan hujjatni o'zgartirib bo'lmaydi: {request.SourceDocumentId}");
+-            }
+         }
+ 
+         document.DocumentType = request.DocumentType;
+@@ -56,27 +62,12 @@
+ 
+         if (request.FileStream is not null && !string.IsNullOrEmpty(request.FileName))
+         {
+-            // Eski fayllarni xotiradan o'chirish va ro'yxatni yangilash
+-            if (document.Files != null && document.Files.Any())
+-            {
+-                var existingFile = document.Files.First();
+-                try { await _storage.DeleteFileAsync(existingFile.FilePath, ct); } catch { /* ignore */ }
+-            }
+-
+-            if (document.Versions != null && document.Versions.Any())
+-            {
+-                var existingVersion = document.Versions.First();
+-                if (existingVersion.FilePath != null)
+-                {
+-                    try { await _storage.DeleteFileAsync(existingVersion.FilePath, ct); } catch { /* ignore */ }
+-                }
+-            }
+-
++            // Keep previous file objects and versions for rollback.
+             // Faylni to'g'ridan-to'g'ri xotiraga yuklash (byte[] ga o'qimasdan) xuddi Register kabi
+             await ValidateFileSignatureAsync(request.FileStream, request.ContentType ?? "application/pdf", ct);
+ 
+             var filePath = await _storage.UploadFileAsync(
+-                request.FileStream, $"{folderPath}/{request.FileName}",
++                request.FileStream, $"{folderPath}/{Guid.NewGuid():N}/{request.FileName}",
+                 request.ContentType ?? "application/pdf", ct);
+ 
+             var hash = request.FileStream.CanSeek
+@@ -109,25 +100,12 @@
+ 
+             if (document.Versions == null) document.Versions = new List<DocumentVersion>();
+             
+-            if (document.Versions.Any())
++            document.Versions.Add(new DocumentVersion
+             {
+-                var v = document.Versions.First();
+-                v.FilePath = filePath;
+-                v.Hash = hash;
+-                v.CreatedAt = DateTime.UtcNow;
+-                // Leave VersionNo as is, or increment it? We leave it as 1 or existing.
+-            }
+-            else
+-            {
+-                document.Versions.Add(new DocumentVersion
+-                {
+-                    DocumentId = document.Id,
+-                    VersionNo = 1,
+-                    FilePath = filePath,
+-                    Hash = hash,
+-                    CreatedAt = DateTime.UtcNow
+-                });
+-            }
++                DocumentId = document.Id,
++                VersionNo = document.Versions.Count == 0 ? 1 : document.Versions.Max(v => v.VersionNo) + 1,
++                FilePath = filePath, Hash = hash, CreatedAt = DateTime.UtcNow
++            });
+         }
+ 
+         if (request.Workflow is not null)

@@ -1,0 +1,46 @@
+# Environment
+.env
+.env.local
+.env.bak.*
+
+# TLS sertifikat/kalitlar
+nginx/ssl/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Build
+**/bin/
+**/obj/
+**/dist/
+**/node_modules/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+data/
+
+# Backups and archives
+backups/
+*.dump
+*.sql.gz
+*.tar.gz
+*.rdb
+.gemini/
+__pycache__/
+*.pyc
+
+backups/
+*.dump
+*.sql.gz
+*.tar.gz
+*.rdb
+.gemini/
+__pycache__/
+*.pyc

@@ -1,0 +1,905 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Container,
+  Download,
+  FileText,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
+import { api } from '../../../shared/services/api';
+import type { CatalogContainer } from '../../../shared/types';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { DatePicker } from '../../../shared/components/DatePicker';
+import { OrderSheetMenu } from '../../../shared/components/OrderSheetMenu';
+import { exportContainersToExcel, parseContainerExcel } from '../../../shared/utils/containerExcel';
+import { normalizeStationName } from '../../../shared/utils/cyrillicToLatin';
+
+type SortKey =
+  | 'containerNumber'
+  | 'builtAt'
+  | 'nextInspectionAt'
+  | 'sentAt'
+  | 'daysInTransit'
+  | 'daysUntilNextInspection';
+
+type SortDir = 'asc' | 'desc';
+
+function fmtDate(iso?: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${dd}.${mm}.${d.getUTCFullYear()}`;
+}
+
+function toDateInput(iso?: string | null) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
+function timeOrNull(iso?: string | null): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+function compareContainer(a: CatalogContainer, b: CatalogContainer, key: SortKey, dir: SortDir): number {
+  const mul = dir === 'asc' ? 1 : -1;
+  let cmp = 0;
+  if (key === 'containerNumber') {
+    cmp = a.containerNumber.localeCompare(b.containerNumber, undefined, { numeric: true });
+  } else if (key === 'daysInTransit' || key === 'daysUntilNextInspection') {
+    const av = a[key];
+    const bv = b[key];
+    if (av == null && bv == null) cmp = 0;
+    else if (av == null) cmp = 1;
+    else if (bv == null) cmp = -1;
+    else cmp = av - bv;
+  } else {
+    const av = timeOrNull(a[key]);
+    const bv = timeOrNull(b[key]);
+    if (av == null && bv == null) cmp = 0;
+    else if (av == null) cmp = 1;
+    else if (bv == null) cmp = -1;
+    else cmp = av - bv;
+  }
+  if (cmp !== 0) return cmp * mul;
+  return a.containerNumber.localeCompare(b.containerNumber, undefined, { numeric: true });
+}
+
+function SortTh({
+  label,
+  column,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  label: string;
+  column: SortKey;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (key: SortKey) => void;
+}) {
+  const active = sortKey === column;
+  return (
+    <th>
+      <button type="button" className="reestr-sort" onClick={() => onSort(column)}>
+        <span>{label}</span>
+        {active ? (
+          sortDir === 'asc' ? (
+            <ArrowUp className="w-3.5 h-3.5" strokeWidth={2} />
+          ) : (
+            <ArrowDown className="w-3.5 h-3.5" strokeWidth={2} />
+          )
+        ) : (
+          <ArrowUpDown className="w-3.5 h-3.5 opacity-40" strokeWidth={2} />
+        )}
+      </button>
+    </th>
+  );
+}
+
+type Props = {
+  /** Fleet panel ichida */
+  embedded?: boolean;
+  /** Faqat diqqat (tekshiruv ≤ 30 kun) */
+  attentionOnly?: boolean;
+  /** Faqat SHGKM (zavod / majmua hududida) */
+  onsiteOnly?: boolean;
+  /** Faqat raqam / tur / egalik ustunlari */
+  slim?: boolean;
+  /** Tashqi qidiruv (parent toolbar) — o‘z qidiruvi yashiriladi */
+  filterQuery?: string;
+};
+
+function containerNeedsAttention(item: CatalogContainer): boolean {
+  if (item.serviceability === 'yaroqsiz' || item.serviceability === 'eslatma') return true;
+  return typeof item.daysUntilNextInspection === 'number' && item.daysUntilNextInspection <= 30;
+}
+
+function containerIsOnsite(item: CatalogContainer): boolean {
+  return (item.destinationStation || '').toLowerCase().includes('shgkm');
+}
+
+type Serviceability = 'yaroqli' | 'eslatma' | 'yaroqsiz';
+
+const SERVICEABILITY_OPTIONS: { value: Serviceability; label: string }[] = [
+  { value: 'yaroqli', label: 'Yaroqli' },
+  { value: 'eslatma', label: 'Eslatma' },
+  { value: 'yaroqsiz', label: 'Yaroqsiz' },
+];
+
+function resolveServiceability(
+  serviceability: string | null | undefined,
+  days?: number | null,
+): Serviceability {
+  const key = (serviceability || '').trim().toLowerCase();
+  if (key === 'yaroqli' || key === 'eslatma' || key === 'yaroqsiz') return key;
+  if (typeof days === 'number' && days < 0) return 'yaroqsiz';
+  if (typeof days === 'number' && days <= 30) return 'eslatma';
+  return 'yaroqli';
+}
+
+function containerConditionLabel(item: CatalogContainer): { text: string; tone: 'ok' | 'warn' | 'bad' } {
+  const s = resolveServiceability(item.serviceability, item.daysUntilNextInspection);
+  if (s === 'yaroqsiz') return { text: 'Yaroqsiz', tone: 'bad' };
+  if (s === 'eslatma') return { text: 'Eslatma', tone: 'warn' };
+  return { text: 'Yaroqli', tone: 'ok' };
+}
+
+function containerHolatCell(item: CatalogContainer): { text: string; tone: 'ok' | 'warn' | 'bad' } {
+  const days = item.daysUntilNextInspection;
+  const s = resolveServiceability(item.serviceability, days);
+  if (typeof days === 'number' && days < 0) {
+    return { text: `${Math.abs(days)} kun o‘tgan`, tone: 'bad' };
+  }
+  if (typeof days === 'number' && days <= 30) {
+    return { text: `${days} kun`, tone: 'warn' };
+  }
+  if (s === 'yaroqsiz') return { text: '—', tone: 'bad' };
+  if (s === 'eslatma') return { text: 'Eslatma', tone: 'warn' };
+  return { text: 'Yaroqli', tone: 'ok' };
+}
+
+function containerAttentionRowClass(item: CatalogContainer): string | undefined {
+  const tone = containerConditionLabel(item).tone;
+  if (tone === 'bad') return 'reestr-row--overdue';
+  if (tone === 'warn') return 'reestr-row--soon';
+  return undefined;
+}
+
+function printContainersPdf(title: string, items: CatalogContainer[]) {
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText =
+    'position:fixed;left:0;top:0;width:210mm;height:297mm;border:0;opacity:0;pointer-events:none;z-index:-1';
+  document.body.appendChild(iframe);
+
+  const idoc = iframe.contentDocument;
+  const iwin = iframe.contentWindow;
+  if (!idoc || !iwin) {
+    iframe.remove();
+    return;
+  }
+
+  const rowsHtml = items
+    .map((item, idx) => {
+      const holatText = containerHolatCell(item).text;
+      return `
+      <tr>
+        <td style="text-align:center;font-weight:600;">${idx + 1}</td>
+        <td style="font-weight:600;font-family:monospace;">${item.containerNumber}</td>
+        <td>Konteyner-sisterna</td>
+        <td>Majmuaga tegishli</td>
+        <td>${holatText}</td>
+      </tr>
+    `;
+    })
+    .join('');
+
+  idoc.open();
+  idoc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>${title}</title>
+      <style>
+        @page { size: A4 portrait; margin: 12mm; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 0; padding: 12px; }
+        .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 8px; margin-bottom: 14px; }
+        .pdf-title { font-size: 16px; font-weight: 700; color: #0369a1; margin: 0; }
+        .pdf-date { font-size: 11px; color: #64748b; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { background: #f1f5f9; color: #334155; font-weight: 600; text-align: left; padding: 8px 10px; border: 1px solid #cbd5e1; }
+        td { padding: 7px 10px; border: 1px solid #e2e8f0; }
+        tr:nth-child(even) { background: #f8fafc; }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="pdf-header">
+        <h1 class="pdf-title">${title}</h1>
+        <div class="pdf-date">Sana: ${new Date().toLocaleDateString('uz-UZ')}</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 35px; text-align:center;">№</th>
+            <th>Vagon / Konteyner raqami</th>
+            <th>Tur</th>
+            <th>Tegishlilik</th>
+            <th>Holat</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `);
+  idoc.close();
+
+  const runPrint = () => {
+    try {
+      iwin.focus();
+      iwin.print();
+    } finally {
+      setTimeout(() => iframe.remove(), 1000);
+    }
+  };
+  setTimeout(runPrint, 250);
+}
+
+export function ContainersReferencePanel({
+  embedded = false,
+  attentionOnly = false,
+  onsiteOnly = false,
+  slim = false,
+  filterQuery,
+}: Props) {
+  const [items, setItems] = useState<CatalogContainer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKey>('containerNumber');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [dialog, setDialog] = useState<'create' | 'edit' | null>(null);
+  const [selected, setSelected] = useState<CatalogContainer | null>(null);
+  const [containerNumber, setContainerNumber] = useState('');
+  const [builtAt, setBuiltAt] = useState('');
+  const [nextInspectionAt, setNextInspectionAt] = useState('');
+  const [daysUntilNextInspection, setDaysUntilNextInspection] = useState('');
+  const [destinationStation, setDestinationStation] = useState('');
+  const [sentAt, setSentAt] = useState('');
+  const [daysInTransit, setDaysInTransit] = useState('');
+  const [notes, setNotes] = useState('');
+  const [serviceability, setServiceability] = useState<Serviceability>('yaroqli');
+  const [isActive, setIsActive] = useState(true);
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const load = () => {
+    setLoading(true);
+    api
+      .getContainers(true)
+      .then(res => setItems(res.data ?? []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const onSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const visible = useMemo(() => {
+    const q = (filterQuery ?? search).trim().toLowerCase();
+    let base = items;
+    if (attentionOnly) base = base.filter(containerNeedsAttention);
+    if (onsiteOnly) base = base.filter(containerIsOnsite);
+    const filtered = !q
+      ? base
+      : base.filter(item => {
+          const dest = normalizeStationName(item.destinationStation) || item.destinationStation || '';
+          return (
+            item.containerNumber.toLowerCase().includes(q)
+            || dest.toLowerCase().includes(q)
+            || (item.notes || '').toLowerCase().includes(q)
+          );
+        });
+    return [...filtered].sort((a, b) => compareContainer(a, b, sortKey, sortDir));
+  }, [attentionOnly, filterQuery, items, onsiteOnly, search, sortKey, sortDir]);
+
+  const resetForm = () => {
+    setSelected(null);
+    setContainerNumber('');
+    setBuiltAt('');
+    setNextInspectionAt('');
+    setDaysUntilNextInspection('');
+    setDestinationStation('');
+    setSentAt('');
+    setDaysInTransit('');
+    setNotes('');
+    setServiceability('yaroqli');
+    setIsActive(true);
+    setError('');
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setDialog('create');
+  };
+
+  const openEdit = (item: CatalogContainer) => {
+    setSelected(item);
+    setContainerNumber(item.containerNumber);
+    setBuiltAt(toDateInput(item.builtAt));
+    setNextInspectionAt(toDateInput(item.nextInspectionAt));
+    setDaysUntilNextInspection(
+      item.daysUntilNextInspection != null ? String(item.daysUntilNextInspection) : '',
+    );
+    setDestinationStation(normalizeStationName(item.destinationStation) || item.destinationStation || '');
+    setSentAt(toDateInput(item.sentAt));
+    setDaysInTransit(item.daysInTransit != null ? String(item.daysInTransit) : '');
+    setNotes(item.notes ?? '');
+    setServiceability(resolveServiceability(item.serviceability, item.daysUntilNextInspection));
+    setIsActive(item.isActive);
+    setError('');
+    setDialog('edit');
+  };
+
+  const payload = () => ({
+    containerNumber: containerNumber.trim(),
+    builtAt: builtAt || undefined,
+    nextInspectionAt: nextInspectionAt || undefined,
+    daysUntilNextInspection:
+      daysUntilNextInspection.trim() === '' ? undefined : Number(daysUntilNextInspection),
+    destinationStation: normalizeStationName(destinationStation.trim()) || destinationStation.trim() || undefined,
+    sentAt: sentAt || undefined,
+    daysInTransit: daysInTransit.trim() === '' ? undefined : Number(daysInTransit),
+    notes: notes.trim() || undefined,
+    serviceability,
+  });
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      if (dialog === 'create') {
+        const res = await api.createContainer(payload());
+        if (!res.success) throw new Error(res.message || 'Saqlashda xatolik');
+      } else if (dialog === 'edit' && selected && slim) {
+        const res = await api.updateContainer(selected.id, {
+          containerNumber: selected.containerNumber,
+          builtAt: selected.builtAt ? selected.builtAt.slice(0, 10) : undefined,
+          nextInspectionAt: selected.nextInspectionAt ? selected.nextInspectionAt.slice(0, 10) : undefined,
+          daysUntilNextInspection: selected.daysUntilNextInspection ?? undefined,
+          destinationStation: selected.destinationStation ?? undefined,
+          sentAt: selected.sentAt ? selected.sentAt.slice(0, 10) : undefined,
+          daysInTransit: selected.daysInTransit ?? undefined,
+          notes: selected.notes ?? undefined,
+          serviceability,
+          isActive: selected.isActive,
+        });
+        if (!res.success) throw new Error(res.message || 'Saqlashda xatolik');
+      } else if (dialog === 'edit' && selected) {
+        const res = await api.updateContainer(selected.id, { ...payload(), isActive });
+        if (!res.success) throw new Error(res.message || 'Saqlashda xatolik');
+      }
+      setDialog(null);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Xatolik');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!deleteId) return;
+    setSaving(true);
+    try {
+      await api.deleteContainer(deleteId);
+      setDeleteId(null);
+      load();
+    } catch {
+      setError('O‘chirishda xatolik');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onExport = () => exportContainersToExcel(visible, 'konteynerlar.xlsx');
+
+  const onImportFile = async (file: File | undefined) => {
+    if (!file) return;
+    setImporting(true);
+    setError('');
+    setInfo('');
+    try {
+      const rows = await parseContainerExcel(file);
+      if (rows.length === 0) {
+        setError(
+          'Excelda konteyner raqami topilmadi. Faylda «№ Контейнер / UNGU …» ustuni borligini tekshiring, yoki «Shablon»ni yuklab solishtiring.',
+        );
+        return;
+      }
+      const res = await api.importContainers(rows);
+      if (!res.success || !res.data) {
+        setError(res.message || 'Import xatosi');
+        return;
+      }
+      const { created, updated, skipped, errors } = res.data;
+      setInfo(
+        `Import: ${created} yangi, ${updated} yangilandi` +
+          (skipped ? `, ${skipped} o‘tkazib yuborildi` : ''),
+      );
+      if (errors?.length) setError(errors.slice(0, 5).join('; '));
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Excel o‘qishda xatolik');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Asosiy konteyner reestri Fleet panel ichida `embedded` ochiladi. Embedded
+  // holatning o‘zi amallarni yashirmasligi kerak; faqat yordamchi slim/filtrlangan
+  // ko‘rinishlarda toolbar ortiqcha bo‘ladi.
+  const hideChrome = slim || onsiteOnly || attentionOnly;
+
+  return (
+    <div className={embedded ? 'space-y-3' : 'space-y-4'}>
+      {hideChrome ? null : (
+        <div className={embedded ? 'flex items-center justify-between gap-2' : 'flex flex-wrap items-center justify-end gap-2'}>
+          {embedded ? (
+            <label className="thub-search">
+              <Search className="thub-search__ico" strokeWidth={1.75} aria-hidden />
+              <input
+                type="search"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Konteyner, manzil, izoh…"
+                autoComplete="off"
+              />
+              {search ? (
+                <button type="button" className="thub-search__x" onClick={() => setSearch('')} aria-label="Tozalash">
+                  <X className="w-3.5 h-3.5" strokeWidth={2} />
+                </button>
+              ) : null}
+            </label>
+          ) : null}
+          <div className={embedded ? 'reestr-actions flex items-center gap-2' : 'flex flex-wrap items-center gap-2'}>
+            <button type="button" className="btn-primary" onClick={openCreate}>
+              <Plus className="w-4 h-4" strokeWidth={1.75} />
+              {embedded ? 'Qo‘shish' : 'Konteyner qo‘shish'}
+            </button>
+            <OrderSheetMenu
+              items={[
+                {
+                  key: 'pdf',
+                  label: 'PDF saqlash',
+                  icon: FileText,
+                  disabled: !visible.length,
+                  onClick: () => printContainersPdf('Konteyner-sisterna ro‘yxati', visible),
+                },
+                {
+                  key: 'export',
+                  label: 'Export (Excel)',
+                  icon: Download,
+                  disabled: !visible.length,
+                  onClick: onExport,
+                },
+                {
+                  key: 'import',
+                  label: importing ? 'Import...' : 'Import (Excel)',
+                  icon: Upload,
+                  disabled: importing,
+                  onClick: () => fileInputRef.current?.click(),
+                },
+              ]}
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={e => void onImportFile(e.target.files?.[0])}
+            />
+          </div>
+        </div>
+      )}
+
+      {info ? <p className="text-sm text-emerald-700 dark:text-emerald-400">{info}</p> : null}
+      {error && !dialog ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+      <div className={embedded ? 'thub__board' : undefined}>
+        <div className="thub-table-wrap reestr-table-wrap">
+            <table className={`thub-table reestr-table${slim ? ' reestr-table--compact' : ''}`}>
+              <thead>
+                <tr>
+                  <th>№</th>
+                  <SortTh label={slim ? 'Vagon raqami' : 'Konteyner'} column="containerNumber" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+                  <th>Tur</th>
+                  <th>Tegishlilik</th>
+                  {slim ? (
+                    <>
+                      <th>Joylashuv</th>
+                      <th>Holat</th>
+                    </>
+                  ) : (
+                    <>
+                      <SortTh label="Ishlab chiq." column="builtAt" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+                      <SortTh label="Keyingi tekshiruv" column="nextInspectionAt" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+                      <SortTh label="Qolgan kun" column="daysUntilNextInspection" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+                      <th>Manzil</th>
+                      <th>Joylashuv</th>
+                      <SortTh label="Yuborilgan" column="sentAt" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+                      <SortTh label="Yo‘lda" column="daysInTransit" sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
+                      <th>Izoh</th>
+                      <th>Holat</th>
+                    </>
+                  )}
+                  <th className="!text-center">Amallar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={slim ? 7 : 12} className="text-center text-slate-500 py-8">Yuklanmoqda...</td>
+                  </tr>
+                ) : visible.length === 0 ? (
+                  <tr>
+                    <td colSpan={slim ? 7 : 12} className="text-center text-slate-500 py-8">
+                      {attentionOnly
+                        ? items.some(containerNeedsAttention)
+                          ? 'Filtr bo‘yicha topilmadi.'
+                          : 'Diqqat talab qiladigan konteyner yo‘q.'
+                        : onsiteOnly
+                          ? items.some(containerIsOnsite)
+                            ? 'Filtr bo‘yicha topilmadi.'
+                            : 'Majmua hududida (SHGKM) konteyner yo‘q.'
+                        : items.length === 0
+                          ? 'Konteyner yo‘q. Excel import qiling yoki qo‘lda qo‘shing.'
+                          : 'Filtr bo‘yicha topilmadi.'}
+                    </td>
+                  </tr>
+                ) : (
+                  visible.map((item, idx) => {
+                    const remainOverdue =
+                      item.daysUntilNextInspection != null && item.daysUntilNextInspection < 0;
+                    const soon =
+                      item.daysUntilNextInspection != null
+                      && item.daysUntilNextInspection >= 0
+                      && item.daysUntilNextInspection <= 30;
+                    const attn = containerNeedsAttention(item);
+                    const transitHot = item.daysInTransit != null && item.daysInTransit >= 60;
+                    const dest =
+                      normalizeStationName(item.destinationStation) || item.destinationStation;
+                    const condition = containerConditionLabel(item);
+                    const holat = containerHolatCell(item);
+                    const rowClass = containerAttentionRowClass(item);
+
+                    return (
+                      <tr
+                        key={item.id}
+                        className={[
+                          !item.isActive ? 'opacity-55' : '',
+                          rowClass || '',
+                        ].filter(Boolean).join(' ') || undefined}
+                      >
+                        <td className="thub-mono reestr-num">{idx + 1}</td>
+                        <td>
+                          <span className="reestr-code-cell">
+                            {attn && !slim ? (
+                              <span
+                                className={`reestr-attn${condition.tone === 'bad' ? ' reestr-attn--overdue' : ''}`}
+                                title={
+                                  condition.tone === 'bad'
+                                    ? 'Tekshiruv muddati o‘tgan'
+                                    : 'Tekshiruv muddati yaqinlashmoqda'
+                                }
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2} />
+                              </span>
+                            ) : null}
+                            <span className="thub-table__code">{item.containerNumber}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span className="thub-chip thub-chip--container">Konteyner-sisterna</span>
+                        </td>
+                        <td>
+                          <span className="thub-chip thub-chip--ownership thub-chip--ownership-majmua">
+                            Majmuaga tegishli
+                          </span>
+                        </td>
+                        {slim ? (
+                          <>
+                            <td>
+                              {containerIsOnsite(item) ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Zavod hududida
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-600 whitespace-nowrap">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                  Zavoddan tashqarida
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <span className={`reestr-status reestr-status--${holat.tone}`}>
+                                {holat.text}
+                              </span>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="thub-mono whitespace-nowrap">{fmtDate(item.builtAt)}</td>
+                            <td className="thub-mono whitespace-nowrap">{fmtDate(item.nextInspectionAt)}</td>
+                            <td className={remainOverdue ? 'thub-warn-num' : soon ? 'reestr-warn' : 'thub-mono'}>
+                              {item.daysUntilNextInspection ?? '—'}
+                            </td>
+                            <td>
+                              {dest ? (
+                                <span className={(dest || '').toUpperCase() === 'SHGKM' ? 'thub-home' : undefined}>
+                                  {dest}
+                                </span>
+                              ) : (
+                                '—'
+                              )}
+                            </td>
+                            <td className="thub-mono whitespace-nowrap">{fmtDate(item.sentAt)}</td>
+                            <td className={transitHot ? 'thub-warn-num' : 'thub-mono'}>
+                              {item.daysInTransit ?? '—'}
+                            </td>
+                            <td className="reestr-notes" title={item.notes ?? ''}>
+                              {item.notes || '—'}
+                            </td>
+                            <td>
+                              <span className={`reestr-status reestr-status--${holat.tone}`}>
+                                {holat.text}
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="!text-center">
+                          <div className="inline-flex items-center gap-0.5">
+                            <button type="button" className="reestr-icon-btn" onClick={() => openEdit(item)} title="Tahrirlash">
+                              <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                            </button>
+                            <button type="button" className="reestr-icon-btn reestr-icon-btn--danger" onClick={() => setDeleteId(item.id)} title="O‘chirish">
+                              <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+        </div>
+      </div>
+
+      {dialog ? (
+        <div className="reestr-sheet-root" role="presentation">
+          <button
+            type="button"
+            className="reestr-sheet-backdrop"
+            aria-label="Yopish"
+            onClick={() => !saving && setDialog(null)}
+          />
+          <div
+            className={`reestr-sheet${slim && dialog === 'edit' ? ' reestr-sheet--sm' : ''}`}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="reestr-sheet__head">
+              <div className="reestr-sheet__icon">
+                <Container className="w-5 h-5" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="reestr-sheet__title">
+                  {dialog === 'create'
+                    ? 'Konteyner qo‘shish'
+                    : slim
+                      ? 'Holatni tahrirlash'
+                      : 'Konteynerni tahrirlash'}
+                </h3>
+                <p className="reestr-sheet__sub">
+                  {dialog === 'edit' && selected ? (
+                    <>
+                      № <strong>{selected.containerNumber}</strong>
+                      {slim ? ' · faqat holat' : ' · reestr yozuvi'}
+                    </>
+                  ) : (
+                    'Yangi konteyner yozuvi'
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="reestr-sheet__close"
+                aria-label="Yopish"
+                onClick={() => !saving && setDialog(null)}
+              >
+                <X className="w-4 h-4" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+              <div className="reestr-sheet__body">
+                {error ? <p className="reestr-sheet__error">{error}</p> : null}
+
+                {slim && dialog === 'edit' ? (
+                  <div className="space-y-3">
+                    <span className="reestr-field__label">Holat</span>
+                    <div className="reestr-seg reestr-seg--3">
+                      {SERVICEABILITY_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setServiceability(opt.value)}
+                          className={`reestr-seg__btn${
+                            serviceability === opt.value
+                              ? opt.value === 'yaroqsiz'
+                                ? ' is-on is-on--bad'
+                                : opt.value === 'eslatma'
+                                  ? ' is-on is-on--warn'
+                                  : ' is-on is-on--ok'
+                              : ''
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="reestr-fields">
+                    <label className="reestr-field reestr-field--full">
+                      <span className="reestr-field__label">№ Konteyner</span>
+                      <input
+                        className="reestr-field__input reestr-field__input--code"
+                        value={containerNumber}
+                        onChange={e => setContainerNumber(e.target.value)}
+                        required
+                        placeholder="UNGU 010006/1"
+                      />
+                    </label>
+                    <label className="reestr-field">
+                      <span className="reestr-field__label">Ishlab chiqarilgan</span>
+                      <DatePicker
+                        value={builtAt}
+                        onChange={setBuiltAt}
+                        placeholder="dd.mm.yyyy"
+                      />
+                    </label>
+                    <label className="reestr-field">
+                      <span className="reestr-field__label">Keyingi tekshiruv</span>
+                      <DatePicker
+                        value={nextInspectionAt}
+                        onChange={setNextInspectionAt}
+                        placeholder="dd.mm.yyyy"
+                      />
+                    </label>
+                    <label className="reestr-field">
+                      <span className="reestr-field__label">Qolgan kun</span>
+                      <input
+                        type="number"
+                        className="reestr-field__input"
+                        value={daysUntilNextInspection}
+                        onChange={e => setDaysUntilNextInspection(e.target.value)}
+                      />
+                    </label>
+                    <label className="reestr-field">
+                      <span className="reestr-field__label">Manzil</span>
+                      <input
+                        className="reestr-field__input"
+                        value={destinationStation}
+                        onChange={e => setDestinationStation(e.target.value)}
+                        placeholder="ShGKM"
+                      />
+                    </label>
+                    <label className="reestr-field">
+                      <span className="reestr-field__label">Yuborilgan</span>
+                      <DatePicker
+                        value={sentAt}
+                        onChange={setSentAt}
+                        placeholder="dd.mm.yyyy"
+                      />
+                    </label>
+                    <label className="reestr-field">
+                      <span className="reestr-field__label">Yo‘lda (kun)</span>
+                      <input
+                        type="number"
+                        className="reestr-field__input"
+                        value={daysInTransit}
+                        onChange={e => setDaysInTransit(e.target.value)}
+                      />
+                    </label>
+                    <label className="reestr-field reestr-field--full">
+                      <span className="reestr-field__label">Izoh</span>
+                      <input
+                        className="reestr-field__input"
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                        placeholder="Ixtiyoriy"
+                      />
+                    </label>
+                    {dialog === 'edit' ? (
+                      <div className="reestr-field reestr-field--full">
+                        <button
+                          type="button"
+                          className="reestr-toggle w-full text-left"
+                          onClick={() => setIsActive(v => !v)}
+                        >
+                          <span>
+                            <span className="reestr-toggle__text">Faol</span>
+                            <span className="reestr-toggle__hint">O‘chirilsa, reestrda nofaol bo‘ladi</span>
+                          </span>
+                          <span className={`reestr-toggle__switch${isActive ? ' is-on' : ''}`} aria-hidden>
+                            <span className="reestr-toggle__knob" />
+                          </span>
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+
+              <div className="reestr-sheet__foot">
+                <button type="button" className="btn-secondary" disabled={saving} onClick={() => setDialog(null)}>
+                  Bekor
+                </button>
+                <button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Konteynerni o‘chirish"
+        message="Bu yozuv o‘chiriladi. Davom etasizmi?"
+        confirmLabel="O‘chirish"
+        variant="danger"
+        loading={saving}
+        onConfirm={() => void remove()}
+        onCancel={() => setDeleteId(null)}
+      />
+    </div>
+  );
+}

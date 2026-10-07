@@ -1,0 +1,30 @@
+---
+description: Davr/filtr tugmalari — bitta balandlik (40px) va Dan/Gacha andozasi.
+globs: frontend/**/*.{tsx,ts,css}
+alwaysApply: true
+---
+
+# Davr va filtr andozasi
+
+## CSS tokenlar (`html`)
+
+- `--filter-ctrl-h: 2.5rem` (40px)
+- `--filter-ctrl-radius: 0.75rem`
+- `--filter-ctrl-fs: 0.875rem`
+
+Mahsulot select, Dan/Gacha, qidiruv, pill — **bir xil balandlik**. Past/baland farq bo‘lmasin.
+
+## UI
+
+```
+Mahsulot turi
+[ Barcha mahsulotlar ▾ ]   DAN [ dd.mm.yyyy | 📅 ]   GACHA [ dd.mm.yyyy | 📅 ]
+```
+
+- Wrapper: `thub-date` / `rhub-date`
+- `DatePicker` `variant="compact"` + `placeholder="dd.mm.yyyy"`
+- Oraliq: `OrderPeriodPicker` (bo‘sh = barcha)
+
+## Manba
+
+`OrderPeriodPicker.tsx`, `DatePicker.tsx`, `.thub-date` / `.filter-select` / `.marketing-product-filter`

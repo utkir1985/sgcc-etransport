@@ -1,0 +1,418 @@
+[
+  {
+    "alias": "WB-0926-001_060630",
+    "aliasGlobalId": "E-TR-20260907-558213CE58",
+    "number": "WB-0926-001",
+    "globalId": "E-TR-20260923-662EB9DF46",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "1ca83b18c85fb094e1599fc10005fce2bb19c6e7663176e9252ba28e7337cde8"
+  },
+  {
+    "alias": "ENP-0926-001_060631",
+    "aliasGlobalId": "E-TR-20260907-E4E7A308B5",
+    "number": "ENP-0926-001",
+    "globalId": "E-TR-20260923-018B99BAB6",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "4227a6936c2ffcb7d478e0620e3fd0a0cd0fd2902fb55ec5e96c646dba2d79f2"
+  },
+  {
+    "alias": "WB-0926-006_095927",
+    "aliasGlobalId": "E-TR-20260910-AF357616F5",
+    "number": "WB-0926-006",
+    "globalId": "E-TR-20260909-8046CC2A8A",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "cf3b422c028318b42cf425ebc1608383f4963b5c4ae10f79cf8bf1ba6f6fcb6c"
+  },
+  {
+    "alias": "WB-0926-007_091500",
+    "aliasGlobalId": "E-TR-20260911-AB2BEC88BB",
+    "number": "WB-0926-007",
+    "globalId": "E-TR-20260909-0B994FD16E",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "aa20dd626fe52594f4a8d664809508390e734995061a70675210b55a04cbcc59"
+  },
+  {
+    "alias": "WB-0926-008_091937",
+    "aliasGlobalId": "E-TR-20260914-E53473941B",
+    "number": "WB-0926-008",
+    "globalId": "E-TR-20260909-47C6B7B608",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "f6119aad2460e77a2e451a8ecd7f8fb8e6e7972c0174af63c75a2cfce6427a90"
+  },
+  {
+    "alias": "WB-0926-009_145227",
+    "aliasGlobalId": "E-TR-20260915-3C7394E0B5",
+    "number": "WB-0926-009",
+    "globalId": "E-TR-20260909-63610598BF",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "db16ace9365c500ca9942fcd034d9bc5d16557343cb94d07229b268b0656aaf1"
+  },
+  {
+    "alias": "WB-0926-010_153916",
+    "aliasGlobalId": "E-TR-20260915-E961449E26",
+    "number": "WB-0926-010",
+    "globalId": "E-TR-20260909-C7EC81460D",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "712e56c1822805296d086779db037287ef4a0bb086472811efa60d7bda7251e2"
+  },
+  {
+    "alias": "WB-0926-008_053837",
+    "aliasGlobalId": "E-TR-20260916-6F0B612FC2",
+    "number": "WB-0926-008",
+    "globalId": "E-TR-20260909-47C6B7B608",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "f6119aad2460e77a2e451a8ecd7f8fb8e6e7972c0174af63c75a2cfce6427a90"
+  },
+  {
+    "alias": "WB-0926-009_033228",
+    "aliasGlobalId": "E-TR-20260917-E93E80C27A",
+    "number": "WB-0926-009",
+    "globalId": "E-TR-20260909-63610598BF",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "db16ace9365c500ca9942fcd034d9bc5d16557343cb94d07229b268b0656aaf1"
+  },
+  {
+    "alias": "DFA-0926-001_172835",
+    "aliasGlobalId": "E-TR-20260923-2E7D7E1212",
+    "number": "DFA-0926-001",
+    "globalId": "E-TR-20260908-7E7E6FC880",
+    "type": "Dalolatnoma",
+    "valid": true,
+    "sha256": "180818e5836c5579c727aea92882b39e47a937a89ec0d5fd0faf8bd8ebea7252"
+  },
+  {
+    "alias": "WB-0926-012_172837",
+    "aliasGlobalId": "E-TR-20260923-2EB4644B8C",
+    "number": "WB-0926-012",
+    "globalId": "E-TR-20260917-F729AC06D2",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "e4045bf70963bd6c82ce2e4c9243b6df6abadff1c13c5c9586efbf5634ed4dd3"
+  },
+  {
+    "alias": "WB-0926-011_172838",
+    "aliasGlobalId": "E-TR-20260923-10370B2F26",
+    "number": "WB-0926-011",
+    "globalId": "E-TR-20260917-8930D50E96",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "5357ed46ef8397cff21250d709d70f2f943a4f611204915873da5ccd1be1d714"
+  },
+  {
+    "alias": "WB-0926-010_172839",
+    "aliasGlobalId": "E-TR-20260923-0113CCAB32",
+    "number": "WB-0926-010",
+    "globalId": "E-TR-20260909-C7EC81460D",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "712e56c1822805296d086779db037287ef4a0bb086472811efa60d7bda7251e2"
+  },
+  {
+    "alias": "WB-0926-009_172840",
+    "aliasGlobalId": "E-TR-20260923-A958B0C524",
+    "number": "WB-0926-009",
+    "globalId": "E-TR-20260909-63610598BF",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "db16ace9365c500ca9942fcd034d9bc5d16557343cb94d07229b268b0656aaf1"
+  },
+  {
+    "alias": "WB-0926-008_172842",
+    "aliasGlobalId": "E-TR-20260923-A246871534",
+    "number": "WB-0926-008",
+    "globalId": "E-TR-20260909-47C6B7B608",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "f6119aad2460e77a2e451a8ecd7f8fb8e6e7972c0174af63c75a2cfce6427a90"
+  },
+  {
+    "alias": "WB-0926-007_172843",
+    "aliasGlobalId": "E-TR-20260923-3F8882A04A",
+    "number": "WB-0926-007",
+    "globalId": "E-TR-20260909-0B994FD16E",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "aa20dd626fe52594f4a8d664809508390e734995061a70675210b55a04cbcc59"
+  },
+  {
+    "alias": "WB-0926-005_172846",
+    "aliasGlobalId": "E-TR-20260923-9FB0CE5B15",
+    "number": "WB-0926-005",
+    "globalId": "E-TR-20260909-E9FF8EDE08",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "64b9cdd8aef8c0dda284dc04f2eb192efff6c4bed2c9172d1f636b5e181f287e"
+  },
+  {
+    "alias": "ENP-0926-017_172849",
+    "aliasGlobalId": "E-TR-20260923-B1BD9D424B",
+    "number": "ENP-0926-017",
+    "globalId": "E-TR-20260917-FF0A59276E",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "b4a4c2239a4efe35a9c72208561d3a233596789ccfa3623215f716500b9ed76c"
+  },
+  {
+    "alias": "ENP-0926-014_172852",
+    "aliasGlobalId": "E-TR-20260923-F2032977FD",
+    "number": "ENP-0926-014",
+    "globalId": "E-TR-20260915-4AEF43E5A5",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "38c64e5f53c2fb2e6ca18f7fb1d3699426e527ca725b883729565799c2ffc202"
+  },
+  {
+    "alias": "ENP-0926-011_172855",
+    "aliasGlobalId": "E-TR-20260923-BD73143A65",
+    "number": "ENP-0926-011",
+    "globalId": "E-TR-20260913-8F93BA11E2",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "7aa39cbaf421e25e8706c593aa43082cde880bcf82645f4d2331829b25dfe0dc"
+  },
+  {
+    "alias": "WB-0926-006_172844",
+    "aliasGlobalId": "E-TR-20260923-5440178C53",
+    "number": "WB-0926-006",
+    "globalId": "E-TR-20260909-8046CC2A8A",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "cf3b422c028318b42cf425ebc1608383f4963b5c4ae10f79cf8bf1ba6f6fcb6c"
+  },
+  {
+    "alias": "WB-0926-003_172847",
+    "aliasGlobalId": "E-TR-20260923-41A046413E",
+    "number": "WB-0926-003",
+    "globalId": "E-TR-20260909-2A665DAA98",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "8ef86247882a59a8cce37a61af143e0b2c2633ed5fb3f2c1332f9e5979093a5d"
+  },
+  {
+    "alias": "ENP-0926-016_172850",
+    "aliasGlobalId": "E-TR-20260923-3D410F332B",
+    "number": "ENP-0926-016",
+    "globalId": "E-TR-20260916-8835410FDF",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "48dbf1f10601350c7a5dd00993ee2d4df1d12512e52d89f847c42b0da17e500c"
+  },
+  {
+    "alias": "ENP-0926-013_172853",
+    "aliasGlobalId": "E-TR-20260923-2ABDAFE789",
+    "number": "ENP-0926-013",
+    "globalId": "E-TR-20260914-F902507793",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "dd422cc5bdc906b6091a098b9cf73a40f14ce3d6f4f7cd92160d081a4a0f2ab7"
+  },
+  {
+    "alias": "ENP-0926-008_172857",
+    "aliasGlobalId": "E-TR-20260923-B4A36F53C3",
+    "number": "ENP-0926-008",
+    "globalId": "E-TR-20260910-28BA0F8B16",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "653c3c129e1631a27210167a063c87b085a2328141aed1bc5b1e8f69bb651d3a"
+  },
+  {
+    "alias": "ENP-0926-003_172859",
+    "aliasGlobalId": "E-TR-20260923-77E618048A",
+    "number": "ENP-0926-003",
+    "globalId": "E-TR-20260908-82B036A979",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "61b4df1be7dbcfd5be153b535abbb414cf6ca680e5f5f4551aa87506c698099d"
+  },
+  {
+    "alias": "WB-0926-004_172845",
+    "aliasGlobalId": "E-TR-20260923-CC601205E6",
+    "number": "WB-0926-004",
+    "globalId": "E-TR-20260909-1B12FB0324",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "cac7eddaa9feb18144fbcf8699e3c2a27131906cfb5b227603948bf138383933"
+  },
+  {
+    "alias": "ENP-0926-015_172851",
+    "aliasGlobalId": "E-TR-20260923-D04AB9F1CC",
+    "number": "ENP-0926-015",
+    "globalId": "E-TR-20260916-44BE212156",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "7dcecf75bf30a3b2b21d68e38725cb5c20523026c93e705142d4d957b7febf05"
+  },
+  {
+    "alias": "ENP-0926-012_172854",
+    "aliasGlobalId": "E-TR-20260923-41C0843511",
+    "number": "ENP-0926-012",
+    "globalId": "E-TR-20260913-1998631562",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "8fc40c2e056fa015f7fd68981c43324aa54b61514463ec0aea1dc66a2ae30a96"
+  },
+  {
+    "alias": "ENP-0926-010_172856",
+    "aliasGlobalId": "E-TR-20260923-3BC6B345AE",
+    "number": "ENP-0926-010",
+    "globalId": "E-TR-20260915-E91366FC0A",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "04365c1f997ff5ecb539129e88668b1bedc8ddd7fc7db708b7480e2466c40968"
+  },
+  {
+    "alias": "ENP-0926-002_172900",
+    "aliasGlobalId": "E-TR-20260923-467DE3A463",
+    "number": "ENP-0926-002",
+    "globalId": "E-TR-20260907-191481421D",
+    "type": "Kirish xizmat xati",
+    "valid": true,
+    "sha256": "53f174383a4556c73251fe706716308d7e872eb457510a8f5caba7601b57d73b"
+  },
+  {
+    "alias": "WB-0926-030_101345",
+    "aliasGlobalId": "E-TR-20260929-FB33D12ADF",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101348",
+    "aliasGlobalId": "E-TR-20260929-3C79316773",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101351",
+    "aliasGlobalId": "E-TR-20260929-4E39DD4DB6",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101353",
+    "aliasGlobalId": "E-TR-20260929-C2AEFAF24F",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101355",
+    "aliasGlobalId": "E-TR-20260929-2EE180B5DD",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101357",
+    "aliasGlobalId": "E-TR-20260929-E83D52F34F",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101358",
+    "aliasGlobalId": "E-TR-20260929-07B8578B93",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101400",
+    "aliasGlobalId": "E-TR-20260929-61FECA24BC",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101402",
+    "aliasGlobalId": "E-TR-20260929-9BA77989CB",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101403",
+    "aliasGlobalId": "E-TR-20260929-32487E996C",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101724",
+    "aliasGlobalId": "E-TR-20260929-2AD8E6941D",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_101815",
+    "aliasGlobalId": "E-TR-20260929-B7301648F0",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-030_112206",
+    "aliasGlobalId": "E-TR-20260929-59B5A9FE3B",
+    "number": "WB-0926-030",
+    "globalId": "E-TR-20260929-55A158ACEB",
+    "type": "Yuk xati",
+    "valid": true,
+    "sha256": "d6536665425fbf50ef671a43c52bccc34cfcdbdb9080d0e6be19207860f6c3fc"
+  },
+  {
+    "alias": "WB-0926-001-CA5E",
+    "aliasGlobalId": "E-TR-20260908-A06640873A",
+    "number": "WB-0926-002",
+    "globalId": "E-TR-20260923-4DD9BB98EA",
+    "type": "Yuk xati",
+    "evidence": "Same unique loading task IB-0926-002; all 16 old wagons included in final 20-wagon registry",
+    "valid": true,
+    "sha256": "895775768ccce080c9f95be33661784452f72c18e2388adda26e322604184975"
+  },
+  {
+    "alias": "WB-202609170623",
+    "aliasGlobalId": "E-TR-20260917-00254D52A1",
+    "number": "WB-0926-010",
+    "globalId": "E-TR-20260909-C7EC81460D",
+    "type": "Yuk xati",
+    "evidence": "Same unique loading task IB-0926-016 and identical set of four wagons",
+    "valid": true,
+    "sha256": "712e56c1822805296d086779db037287ef4a0bb086472811efa60d7bda7251e2"
+  }
+]

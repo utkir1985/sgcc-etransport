@@ -1,0 +1,860 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Container,
+  Plus,
+  Save,
+  TrainFront,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import type { CatalogProduct, EmptyWagonArrival, EmptyWagonUnit } from '../types';
+import {
+  WAGON_OWNERSHIP,
+  normalizeWagonOwnership,
+  type WagonOwnership,
+} from '../constants/wagonOwnership';
+import { notifyOrdersChanged } from '../utils/realtimeSync';
+import { LOGISTICS_TYPES } from '../constants/logisticsTypes';
+import {
+  WAGON_INTAKE_LOAD_STATE,
+  WAGON_INTAKE_LOAD_STATE_OPTIONS,
+  intakeLoadStateLabel,
+  normalizeIntakeLoadState,
+  type WagonIntakeLoadState,
+} from '../constants/wagonIntakeLoadState';
+import { isWagonKind, WAGON_KIND_LABEL, type WagonKind } from '../utils/wagonKinds';
+import {
+  isValidWagonNumber,
+  joinContainers,
+  normalizeWagonNumber,
+  parseContainers,
+  parseWagonAndCisterns,
+  resolveIntakeOwnership,
+} from '../utils/intakeOwnership';
+import { WagonKindArt } from './WagonKindArt';
+
+type OwnershipSource = 'lookup' | 'default' | 'unset';
+
+type DraftRow = {
+  key: string;
+  unitId: string | null;
+  wagonNumber: string;
+  wagonKind: WagonKind;
+  containers: string[];
+  ownership: WagonOwnership | null;
+  ownershipSource: OwnershipSource;
+  intakeLoadState: WagonIntakeLoadState;
+  productType: string;
+};
+
+type Props = {
+  open: boolean;
+  arrival: EmptyWagonArrival | null;
+  arrivals: EmptyWagonArrival[];
+  onClose: () => void;
+  onSaved: () => void;
+  /** Qo‘riqlashdan qaytganda — faqat mavjud vagonlarni yangilash */
+  restrictToExisting?: boolean;
+};
+
+const WAGON_KINDS: { key: WagonKind; title: string; subtitle: string }[] = [
+  { key: 'sisterna', title: 'Vagon-sisterna', subtitle: 'Sisterna vagon' },
+  { key: 'closed', title: 'Yopiq turdagi vagon', subtitle: 'Yopiq vagon' },
+  { key: 'platform', title: 'Fiting platforma', subtitle: 'Platforma + konteynerlar' },
+];
+
+const OCCUPIED_ON_SITE_STAGES = new Set([
+  'RailwayInspected',
+  'KengsoyInspection',
+  'SecurityInspection',
+  'ReadyForEstakada',
+  'TareWeighing',
+  'EstakadaPlaced',
+  'Loading',
+  'Loaded',
+  'ToRailwayScale',
+  'GrossWeighed',
+  'SealInstallation',
+  'Sealed',
+  'RegistryPrepared',
+  'DocumentsIssued',
+]);
+
+function normalizeCode(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function toDraft(unit: EmptyWagonUnit): DraftRow {
+  const kind = isWagonKind(unit.wagonType) ? unit.wagonType : 'sisterna';
+  const parsed = parseContainers(unit.cisternNumber);
+  return {
+    key: unit.id,
+    unitId: unit.id,
+    wagonNumber: normalizeWagonNumber(unit.wagonNumber || ''),
+    wagonKind: kind,
+    containers: kind === 'platform' ? (parsed.length ? parsed : ['']) : [''],
+    ownership: normalizeWagonOwnership(unit.ownership),
+    ownershipSource: 'lookup',
+    intakeLoadState: normalizeIntakeLoadState(unit.intakeLoadState),
+    productType: unit.productType?.trim() || '',
+  };
+}
+
+function newDraftKey(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `new-${crypto.randomUUID()}`;
+    }
+  } catch {
+    /* HTTP yoki eski brauzer */
+  }
+  return `new-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function newDraft(kind: WagonKind = 'sisterna', productType = ''): DraftRow {
+  return {
+    key: newDraftKey(),
+    unitId: null,
+    wagonNumber: '',
+    wagonKind: kind,
+    containers: [''],
+    ownership: null,
+    ownershipSource: 'unset',
+    intakeLoadState: WAGON_INTAKE_LOAD_STATE.Bosh,
+    productType,
+  };
+}
+
+export function EditPartyWagonsDialog({
+  open,
+  arrival,
+  arrivals,
+  onClose,
+  onSaved,
+  restrictToExisting = false,
+}: Props) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'Admin';
+  const stage = arrival?.stage || '';
+  const isInitialIntake = stage === 'RailwayInspected' || stage === 'KengsoyInspection';
+  const canEditStage = isAdmin || isInitialIntake;
+
+  const [rows, setRows] = useState<DraftRow[]>([]);
+  const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const [activeKey, setActiveKey] = useState<string>('');
+  const [submitting, setSubmitting] = useState(false);
+  const [lookupPending, setLookupPending] = useState(false);
+  const [error, setError] = useState('');
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const numberInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open || !arrival) return;
+    const units = [...(arrival.wagons ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+    const next = units.length > 0
+      ? units.map(u => toDraft(u))
+      : [newDraft('sisterna', '')];
+    setRows(next);
+    setActiveKey(next[0].key);
+    setRemovedIds([]);
+    setError('');
+    setSubmitting(false);
+    setLookupPending(false);
+    // arrival.id — obyekt yangilansa ham tahrir yo‘qolmasin
+  }, [open, arrival?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setProductsLoading(true);
+    api.getProducts(LOGISTICS_TYPES.Railway)
+      .then(res => {
+        if (!cancelled) setProducts((res.data ?? []).filter(p => p.isActive !== false));
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const activeIndex = Math.max(0, rows.findIndex(r => r.key === activeKey));
+  const active = rows[activeIndex] ?? rows[0];
+
+  const occupiedNumbers = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of arrivals) {
+      if (!OCCUPIED_ON_SITE_STAGES.has(a.stage || '')) continue;
+      for (const u of a.wagons ?? []) {
+        // Shu partiyadagi joriy unitlar — draft ichida alohida tekshiriladi
+        if (arrival && a.id === arrival.id) continue;
+        if (u.wagonNumber?.trim()) set.add(normalizeCode(u.wagonNumber));
+      }
+    }
+    return set;
+  }, [arrivals, arrival]);
+
+  useEffect(() => {
+    if (!open || !active) return;
+    if (!isValidWagonNumber(active.wagonNumber)) {
+      setLookupPending(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLookupPending(true);
+    const timer = window.setTimeout(() => {
+      const codes = active.wagonKind === 'platform' ? active.containers : [];
+      void resolveIntakeOwnership(active.wagonNumber, codes)
+        .then(result => {
+          if (cancelled) return;
+          setRows(prev =>
+            prev.map(r =>
+              r.key === active.key
+                ? { ...r, ownership: result.ownership, ownershipSource: result.source }
+                : r,
+            ),
+          );
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setRows(prev =>
+            prev.map(r =>
+              r.key === active.key
+                ? { ...r, ownership: WAGON_OWNERSHIP.Tashqi, ownershipSource: 'default' }
+                : r,
+            ),
+          );
+        })
+        .finally(() => {
+          if (!cancelled) setLookupPending(false);
+        });
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, active?.key, active?.wagonNumber, active?.wagonKind, active?.containers.join('|')]);
+
+  useEffect(() => {
+    if (!open || !activeKey) return;
+    const el = stripRef.current;
+    if (!el) return;
+    const chip = el.querySelector<HTMLElement>(`[data-wagon-chip="${activeKey}"]`);
+    chip?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }, [open, activeKey, rows.length]);
+
+  if (!open || !arrival || !active) return null;
+
+  const patchActive = (patch: Partial<DraftRow>) => {
+    setRows(prev => prev.map((r, i) => (i === activeIndex ? { ...r, ...patch } : r)));
+    if (error) setError('');
+  };
+
+  const wagonNumberOk = isValidWagonNumber(active.wagonNumber);
+  const duplicateInParty = rows.some(
+    (r, i) =>
+      i !== activeIndex
+      && isValidWagonNumber(r.wagonNumber)
+      && normalizeCode(r.wagonNumber) === normalizeCode(active.wagonNumber),
+  );
+  const wagonNumberConflict =
+    wagonNumberOk
+    && (occupiedNumbers.has(normalizeCode(active.wagonNumber)) || duplicateInParty);
+  const showContainers = active.wagonKind === 'platform';
+
+  const selectIndex = (index: number) => {
+    const row = rows[index];
+    if (row) setActiveKey(row.key);
+  };
+
+  const addWagon = () => {
+    if (!canEditStage || restrictToExisting || submitting) return;
+    const draft = newDraft(active?.wagonKind ?? 'sisterna', '');
+    setRows(prev => [...prev, draft]);
+    setActiveKey(draft.key);
+    setError('');
+    window.setTimeout(() => numberInputRef.current?.focus(), 0);
+  };
+
+  const removeActive = () => {
+    if (!canEditStage || restrictToExisting || submitting) return;
+    const row = active;
+    if (row.unitId) setRemovedIds(prev => [...prev, row.unitId!]);
+    setRows(prev => {
+      const next = prev.filter((_, i) => i !== activeIndex);
+      if (next.length === 0) {
+        const draft = newDraft();
+        setActiveKey(draft.key);
+        return [draft];
+      }
+      const nextIndex = Math.min(activeIndex, next.length - 1);
+      setActiveKey(next[nextIndex].key);
+      return next;
+    });
+    setError('');
+  };
+
+  const validateAll = (): string | null => {
+    if (rows.length === 0) return 'Kamida bitta vagon bo‘lishi kerak';
+    const seen = new Set<string>();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!isValidWagonNumber(row.wagonNumber)) {
+        setActiveKey(row.key);
+        return `${i + 1}-vagon: raqam 8 xonali bo‘lishi kerak`;
+      }
+      const num = normalizeCode(row.wagonNumber);
+      if (seen.has(num)) {
+        setActiveKey(row.key);
+        return `Takroriy vagon raqami: ${row.wagonNumber.trim()}`;
+      }
+      seen.add(num);
+      if (occupiedNumbers.has(num)) {
+        setActiveKey(row.key);
+        return `Bu vagon raqami zavod hududida: ${row.wagonNumber.trim()}`;
+      }
+      if (!row.ownership) {
+        setActiveKey(row.key);
+        return `${i + 1}-vagon: tegishlilik aniqlanmadi — raqamni tekshiring`;
+      }
+    }
+    return null;
+  };
+
+  const submit = async () => {
+    if (!canEditStage) {
+      setError('Faqat qabul yoki qo‘riqlashdan qaytarilgan partiyani tahrirlash mumkin');
+      return;
+    }
+    const msg = validateAll();
+    if (msg) {
+      setError(msg);
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      if (!restrictToExisting) {
+        for (const unitId of removedIds) {
+          const res = await api.deleteEmptyWagonUnit(arrival.id, unitId);
+          if (!res.success) throw new Error(res.message || 'Vagon o‘chirishda xatolik');
+          if (res.data?.deletedArrival) break;
+        }
+      }
+
+      const existing = rows.filter(r => r.unitId);
+      const created = restrictToExisting ? [] : rows.filter(r => !r.unitId);
+
+      for (const row of existing) {
+        const res = await api.updateEmptyWagonUnit(arrival.id, row.unitId!, {
+          wagonNumber: row.wagonNumber.trim(),
+          cisternNumber: row.wagonKind === 'platform' ? joinContainers(row.containers) : '',
+          wagonType: row.wagonKind,
+          ownership: row.ownership ?? WAGON_OWNERSHIP.Tashqi,
+          intakeLoadState: row.intakeLoadState,
+          productType: row.productType.trim(),
+        });
+        if (!res.success) throw new Error(res.message || 'Saqlashda xatolik');
+      }
+
+      for (const row of created) {
+        const res = await api.createEmptyWagonUnit(arrival.id, {
+          wagonNumber: row.wagonNumber.trim(),
+          cisternNumber: row.wagonKind === 'platform' ? joinContainers(row.containers) : '',
+          wagonType: row.wagonKind,
+          ownership: row.ownership ?? WAGON_OWNERSHIP.Tashqi,
+          intakeLoadState: row.intakeLoadState,
+          productType: row.productType.trim(),
+        });
+        if (!res.success) throw new Error(res.message || 'Yangi vagon qo‘shishda xatolik');
+      }
+
+      notifyOrdersChanged();
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Xatolik yuz berdi');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const close = () => {
+    if (submitting) return;
+    onClose();
+  };
+
+  const ownershipHint = lookupPending
+    ? 'Parkdan qidirilmoqda…'
+    : active.ownershipSource === 'lookup' && active.ownership
+      ? 'Parkdan aniqlandi'
+      : active.ownershipSource === 'default' && active.ownership
+        ? 'Parkda yo‘q — avtomatik'
+        : wagonNumberOk
+          ? 'Aniqlanmoqda…'
+          : 'Avval raqam kiriting';
+
+  return (
+    <div className="confirm-dialog-root" role="presentation">
+      <button type="button" className="confirm-dialog-backdrop" aria-label="Yopish" onClick={close} />
+      <div
+        className="confirm-dialog !max-w-[46rem] !w-[min(46rem,calc(100vw-1.5rem))] !max-h-[min(92vh,880px)] !overflow-y-auto !p-5 sm:!p-6"
+        role="dialog"
+        aria-modal="true"
+      >
+        <button type="button" className="confirm-dialog__close" aria-label="Yopish" onClick={close}>
+          <X className="w-4 h-4" strokeWidth={1.75} />
+        </button>
+
+        <div className="confirm-dialog__header !mb-4">
+          <div className="confirm-dialog__icon !bg-sky-50 !text-sky-600 dark:!bg-sky-950/50 dark:!text-sky-300">
+            <TrainFront className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="confirm-dialog__title">
+                {restrictToExisting ? 'Qaytarilgan vagonlarni tahrirlash' : 'Vagonlarni tahrirlash'}
+              </h2>
+              {isAdmin && !isInitialIntake ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300 border border-amber-500/30">
+                  Admin huquqi
+                </span>
+              ) : null}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5 truncate">
+              {arrival.arrivalNumber} · {activeIndex + 1}/{rows.length} vagon
+              {restrictToExisting ? ' · qo‘riqlash izohini tuzating' : ''}
+            </p>
+          </div>
+        </div>
+
+        {!canEditStage ? (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+            <span className="font-semibold shrink-0">Eslatma:</span>
+            <span>
+              Faqat qabul yoki qo‘riqlashdan qaytarilgan partiyani tahrirlash mumkin. Ushbu bosqichda faqat administrator o‘zgartirish kiritish huquqiga ega.
+            </span>
+          </div>
+        ) : null}
+
+        <form
+          className="space-y-4"
+          onSubmit={e => {
+            e.preventDefault();
+            void submit();
+          }}
+        >
+          <div>
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
+              Vagon turi <span className="text-rose-500">*</span>
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {WAGON_KINDS.map(kind => {
+                const selected = active.wagonKind === kind.key;
+                return (
+                  <button
+                    key={kind.key}
+                    type="button"
+                    disabled={submitting || !canEditStage}
+                    onClick={() =>
+                      patchActive({
+                        wagonKind: kind.key,
+                        containers: kind.key === 'platform' ? (active.containers.length ? active.containers : ['']) : [''],
+                      })
+                    }
+                    className={`relative rounded-2xl border-2 px-2.5 py-2.5 text-left transition ${
+                      selected
+                        ? 'border-sky-500 bg-sky-50/80 shadow-sm shadow-sky-500/10 dark:border-sky-400 dark:bg-sky-950/30'
+                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900/40'
+                    }`}
+                  >
+                    {selected ? (
+                      <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-white">
+                        <Check className="w-3 h-3" strokeWidth={3} />
+                      </span>
+                    ) : null}
+                    <div className="w-[4.5rem] mb-1">
+                      <WagonKindArt kind={kind.key} className="h-8 w-full" />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-50 leading-snug pr-4">
+                      {kind.title}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-stretch">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-700/60 dark:bg-slate-800/30">
+              <label className="block">
+              <span className="flex items-center justify-between gap-2 text-sm font-medium text-slate-800 dark:text-slate-100 mb-2">
+                <span>
+                  Vagon raqami <span className="text-rose-500">*</span>
+                </span>
+                <span
+                  className={`text-xs tabular-nums font-medium ${
+                    wagonNumberConflict
+                      ? 'text-rose-600'
+                      : wagonNumberOk
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-sky-600 dark:text-sky-400'
+                  }`}
+                >
+                  {wagonNumberConflict
+                    ? duplicateInParty
+                      ? 'Partiyada takroriy'
+                      : 'Zavod hududida'
+                    : wagonNumberOk
+                      ? '8 xona — tayyor'
+                      : `${active.wagonNumber.length} / 8`}
+                </span>
+              </span>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  <TrainFront className="w-4 h-4" strokeWidth={1.75} />
+                </span>
+                <input
+                  ref={numberInputRef}
+                  required
+                  inputMode="numeric"
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={submitting || !canEditStage}
+                  value={active.wagonNumber}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val.includes('/') || (val.length > 8 && /[\s,]/.test(val))) {
+                      const parsed = parseWagonAndCisterns(val);
+                      if (parsed.wagonNumber) {
+                        patchActive({
+                          wagonNumber: parsed.wagonNumber,
+                          wagonKind: parsed.cisternNumbers.length > 0 ? 'platform' : active.wagonKind,
+                          containers: parsed.cisternNumbers.length > 0 ? parsed.cisternNumbers : active.containers,
+                          ownership: null,
+                          ownershipSource: 'unset',
+                        });
+                        return;
+                      }
+                    }
+                    patchActive({
+                      wagonNumber: normalizeWagonNumber(val),
+                      ownership: null,
+                      ownershipSource: 'unset',
+                    });
+                  }}
+                  onPaste={e => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (pasted && (pasted.includes('/') || (pasted.length > 8 && /[\s,]/.test(pasted)))) {
+                      e.preventDefault();
+                      const parsed = parseWagonAndCisterns(pasted);
+                      if (parsed.wagonNumber) {
+                        patchActive({
+                          wagonNumber: parsed.wagonNumber,
+                          wagonKind: parsed.cisternNumbers.length > 0 ? 'platform' : active.wagonKind,
+                          containers: parsed.cisternNumbers.length > 0 ? parsed.cisternNumbers : active.containers,
+                          ownership: null,
+                          ownershipSource: 'unset',
+                        });
+                      }
+                    }
+                  }}
+                  placeholder="________"
+                  className={`w-full !h-11 !pl-[3.25rem] !pr-11 !text-[1.05rem] !font-semibold !tabular-nums !tracking-[0.2em] !rounded-xl placeholder:!tracking-[0.3em] placeholder:!text-slate-300 dark:placeholder:!text-slate-600 ${
+                    wagonNumberConflict
+                      ? '!border-rose-400 !ring-2 !ring-rose-200/80 dark:!ring-rose-500/30'
+                      : wagonNumberOk
+                        ? '!border-emerald-400 !bg-emerald-50/40 !ring-2 !ring-emerald-100 dark:!bg-emerald-950/20 dark:!ring-emerald-500/20'
+                        : active.wagonNumber.length > 0
+                          ? '!border-sky-300 !ring-2 !ring-sky-100 dark:!ring-sky-500/20'
+                          : ''
+                  }`}
+                  aria-invalid={wagonNumberConflict}
+                />
+                {wagonNumberOk && !wagonNumberConflict ? (
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                  </span>
+                ) : wagonNumberConflict ? (
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-white text-xs font-bold">
+                    !
+                  </span>
+                ) : null}
+              </div>
+              </label>
+            </div>
+
+            <div className="flex flex-col justify-between gap-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-700/60 dark:bg-slate-800/30">
+              <label className="block space-y-1.5">
+                <span className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Mahsulot <span className="ml-1 text-[11px] font-normal lowercase tracking-normal text-slate-400">(ixtiyoriy)</span>
+                </span>
+                <select
+                  value={active.productType}
+                  disabled={submitting || productsLoading || !canEditStage}
+                  onChange={e => patchActive({ productType: e.target.value })}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none transition-all focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <option value="">{productsLoading ? 'Yuklanmoqda…' : 'Tanlanmagan'}</option>
+                  {active.productType
+                    && !products.some(p => p.name === active.productType) ? (
+                    <option value={active.productType}>{active.productType}</option>
+                  ) : null}
+                  {products.map(product => (
+                    <option key={product.id} value={product.name}>{product.name}</option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="space-y-1.5">
+                <span className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Kelish holati <span className="text-rose-500">*</span>
+                </span>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="Kelish holati">
+                  {WAGON_INTAKE_LOAD_STATE_OPTIONS.map(option => {
+                    const selected = active.intakeLoadState === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        disabled={submitting || !canEditStage}
+                        onClick={() => patchActive({ intakeLoadState: option.key })}
+                        className={`rounded-xl border px-3 py-2 text-center transition-all ${
+                          selected
+                            ? option.key === WAGON_INTAKE_LOAD_STATE.Bosh
+                              ? 'border-sky-500 bg-sky-500 font-bold text-white'
+                              : 'border-amber-500 bg-amber-500 font-bold text-white'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+                        }`}
+                      >
+                        <span className="block text-xs font-bold leading-tight">{option.title}</span>
+                        <span className={`mt-0.5 block text-[10px] leading-none ${selected ? 'text-white/80' : 'text-slate-400'}`}>
+                          {option.subtitle}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5" aria-live="polite">
+            <span className="text-sm font-medium text-slate-800 dark:text-slate-100 shrink-0">Tegishlilik</span>
+            {([
+              { key: WAGON_OWNERSHIP.Majmua, title: 'Majmua' },
+              { key: WAGON_OWNERSHIP.Tashqi, title: 'Tashqi' },
+            ] as const).map(opt => {
+              const selected = active.ownership === opt.key;
+              return (
+                <span
+                  key={opt.key}
+                  aria-current={selected ? 'true' : undefined}
+                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-sm font-semibold ${
+                    selected
+                      ? opt.key === WAGON_OWNERSHIP.Majmua
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-200'
+                        : 'border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-400 dark:bg-slate-800 dark:text-slate-100'
+                      : 'border-slate-200/80 bg-slate-50 text-slate-400 opacity-50 dark:border-slate-800 dark:bg-slate-900/30'
+                  }`}
+                >
+                  {selected ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : null}
+                  {opt.title}
+                </span>
+              );
+            })}
+            <span className="text-xs text-slate-500 dark:text-slate-400 ml-auto">{ownershipHint}</span>
+          </div>
+
+          {showContainers ? (
+            <div className="space-y-2.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-3.5 dark:border-slate-700/60 dark:bg-slate-800/30">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">Konteynerlar</p>
+                  <span className="text-[11px] font-mono text-slate-400">({active.containers.length} ta)</span>
+                </div>
+                <button
+                  type="button"
+                  disabled={submitting || !canEditStage}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200/80 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
+                  onClick={() => patchActive({ containers: [...active.containers, ''] })}
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  Konteyner qo‘shish
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {active.containers.map((value, index) => {
+                  const code = normalizeCode(value);
+                  const ok = code.length >= 3;
+                  return (
+                    <div key={index} className={`relative flex items-center rounded-xl border bg-white transition-all dark:bg-slate-900 ${ok ? 'border-emerald-400' : 'border-slate-300 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/20 dark:border-slate-600'}`}>
+                      <Container className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-600" strokeWidth={1.75} />
+                      <input
+                        disabled={submitting || !canEditStage}
+                        value={value}
+                        onChange={e => {
+                          const next = [...active.containers];
+                          next[index] = e.target.value;
+                          patchActive({ containers: next });
+                        }}
+                        placeholder="010100/5"
+                        className="w-full bg-transparent py-2 pl-9 pr-8 text-sm font-mono font-semibold uppercase tracking-wide text-slate-800 outline-none dark:text-slate-100"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/40"
+                        disabled={submitting || !canEditStage}
+                        onClick={() => patchActive({
+                          containers: active.containers.length <= 1
+                            ? ['']
+                            : active.containers.filter((_, i) => i !== index),
+                        })}
+                        aria-label="O‘chirish"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {error ? <p className="confirm-dialog__error !mt-0">{error}</p> : null}
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-xs font-medium text-slate-500 mb-2">
+              Partiya vagonlari · {activeIndex + 1} / {rows.length}
+            </p>
+            <div className="relative flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Oldingi vagon"
+                disabled={submitting || activeIndex <= 0}
+                onClick={() => selectIndex(activeIndex - 1)}
+                className={`shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl border-2 transition ${
+                  activeIndex > 0
+                    ? 'border-sky-300 bg-white text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:bg-slate-900 dark:text-sky-300'
+                    : 'border-slate-200 bg-slate-50 text-slate-300 dark:border-slate-800 dark:text-slate-600'
+                }`}
+              >
+                <ChevronLeft className="w-5 h-5" strokeWidth={2.25} />
+              </button>
+
+              <div
+                ref={stripRef}
+                className="min-w-0 flex-1 flex items-center gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {rows.map((row, index) => {
+                  const selected = row.key === active.key;
+                  const ok = isValidWagonNumber(row.wagonNumber);
+                  const label = ok ? row.wagonNumber : `Vagon ${index + 1}`;
+                  return (
+                    <button
+                      key={row.key}
+                      type="button"
+                      data-wagon-chip={row.key}
+                      onClick={() => selectIndex(index)}
+                      className={`shrink-0 inline-flex items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left transition ${
+                        selected
+                          ? 'border-sky-500 bg-sky-50 shadow-sm shadow-sky-500/10 dark:border-sky-400 dark:bg-sky-950/40'
+                          : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900/40'
+                      }`}
+                    >
+                      <span
+                        className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${
+                          selected
+                            ? 'bg-sky-500 text-white'
+                            : ok
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                              : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold tabular-nums tracking-wide text-slate-900 dark:text-slate-50">
+                          {label}
+                        </span>
+                        <span className="block text-[10px] text-slate-500 leading-tight">
+                          {WAGON_KIND_LABEL[row.wagonKind]}
+                          {' · '}{intakeLoadStateLabel(row.intakeLoadState)}
+                          {row.productType ? ` · ${row.productType}` : ''}
+                          {!row.unitId ? ' · yangi' : ''}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                aria-label="Keyingi vagon"
+                disabled={submitting || activeIndex >= rows.length - 1}
+                onClick={() => selectIndex(activeIndex + 1)}
+                className={`shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl border-2 transition ${
+                  activeIndex < rows.length - 1
+                    ? 'border-sky-300 bg-white text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:bg-slate-900 dark:text-sky-300'
+                    : 'border-slate-200 bg-slate-50 text-slate-300 dark:border-slate-800 dark:text-slate-600'
+                }`}
+              >
+                <ChevronRight className="w-5 h-5" strokeWidth={2.25} />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" className="btn-secondary" onClick={close} disabled={submitting}>
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className="btn-secondary !text-rose-600 !border-rose-200 hover:!bg-rose-50 dark:!border-rose-900 dark:!text-rose-400 dark:hover:!bg-rose-950/40"
+                disabled={submitting || restrictToExisting || !canEditStage}
+                onClick={removeActive}
+              >
+                <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                O‘chirish
+              </button>
+              <button
+                type="button"
+                className="btn-secondary !text-sky-700 !border-sky-200 hover:!bg-sky-50 dark:!border-sky-800 dark:!text-sky-300 dark:hover:!bg-sky-950/40"
+                disabled={submitting || restrictToExisting || !canEditStage}
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addWagon();
+                }}
+              >
+                <Plus className="w-4 h-4" strokeWidth={1.75} />
+                Qo‘shish
+              </button>
+            </div>
+            <button
+              type="submit"
+              className="btn-primary inline-flex items-center gap-2"
+              disabled={submitting || lookupPending || wagonNumberConflict || !canEditStage}
+            >
+              <Save className="w-4 h-4" strokeWidth={1.75} />
+              {submitting ? 'Saqlanmoqda...' : 'Barchasini saqlash'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
