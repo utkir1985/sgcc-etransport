@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
+  ClipboardList,
   ArrowDownToLine,
   ArrowUpFromLine,
   Check,
@@ -37,11 +38,11 @@ import {
 } from '../../../shared/utils/docsHubFilter';
 import { parseIsoDate } from '../../../shared/utils/dates';
 
-type Tab = 'timeline' | 'entries' | 'loads' | 'exits' | 'defects';
+type Tab = 'timeline' | 'entries' | 'orders' | 'loads' | 'exits' | 'defects';
 type PeriodPreset = DocsPeriodPreset;
 
 function parseHistoryTab(value: string | null): Tab {
-  return value === 'entries' || value === 'loads' || value === 'exits' || value === 'defects'
+  return value === 'entries' || value === 'orders' || value === 'loads' || value === 'exits' || value === 'defects'
     ? value
     : 'timeline';
 }
@@ -145,8 +146,10 @@ function WagonsGrid({ wagons, partyTitle }: { wagons: string[]; partyTitle?: str
 }
 
 /** Tarix qatorining jarayon nomi — jadval va Excel uchun bir xil. */
-function processLabel(item: { kind: string; detail: string; documentNumber?: string }): string {
+function processLabel(item: { kind: string; detail: string; documentNumber?: string; stageName?: string }): string {
+  if (item.stageName) return item.stageName;
   if (item.kind === 'entry') return 'Kirish';
+  if (item.kind === 'order') return 'Buyurtma';
   if (item.kind === 'load') return 'Yuklash';
   if (item.kind === 'exit') return 'Chiqish';
   if (/qaytar/i.test(item.detail)) return 'Qaytarish';
@@ -246,6 +249,10 @@ export default function HistoryPage() {
           item.reason,
           item.documentNumber,
           item.actor,
+          item.stageName,
+          item.department,
+          item.statusBadge,
+          item.extraInfo,
           ...(item.subEvents?.flatMap(e => [e.stage, e.summary, e.actor, e.documentNumber || '', e.documentFileName || '']) || []),
           ...item.wagonNumbers,
         ]
@@ -370,27 +377,35 @@ export default function HistoryPage() {
       tone: 'amber',
     },
     {
+      id: 'orders',
+      label: 'Buyurtma shakllantirish',
+      hint: 'Tarkib yig‘ish, yuk xati, 1C',
+      count: filteredTimeline.filter(item => item.kind === 'order').length,
+      icon: ClipboardList,
+      tone: 'sisterna',
+    },
+    {
       id: 'loads',
-      label: 'Yuklash',
-      hint: 'Yuklash yakunlari',
+      label: 'Yuklash va Muhrlash',
+      hint: 'TM va XA quyish, brutto, plomba',
       count: filteredTimeline.filter(item => item.kind === 'load').length,
       icon: PackageCheck,
       tone: 'live',
     },
     {
       id: 'exits',
-      label: 'Chiqish',
-      hint: 'Zavoddan chiqarilgan',
+      label: 'Vagon chiqarish',
+      hint: 'Zavoddan chiqarilgan vagonlar',
       count: filteredTimeline.filter(item => item.kind === 'exit').length,
       icon: ArrowUpFromLine,
       tone: 'emerald',
     },
     {
       id: 'defects',
-      label: 'Nosozliklar',
+      label: 'Nosozliklar (GU-23)',
       hint: totalDefectRecords > filteredDefects.length
         ? `${filteredDefects.length} ta vagon · ${totalDefectRecords} ta qayd`
-        : 'Kamchilik va qaytarishlar',
+        : 'Kamchilik va dalolatnomalar',
       count: filteredDefects.length,
       icon: AlertTriangle,
       tone: 'rose',
@@ -401,11 +416,13 @@ export default function HistoryPage() {
     ? filteredTimeline
     : tab === 'entries'
       ? filteredTimeline.filter(item => item.kind === 'entry')
-      : tab === 'loads'
-        ? filteredTimeline.filter(item => item.kind === 'load')
-        : tab === 'exits'
-          ? filteredTimeline.filter(item => item.kind === 'exit')
-          : filteredDefects;
+      : tab === 'orders'
+        ? filteredTimeline.filter(item => item.kind === 'order')
+        : tab === 'loads'
+          ? filteredTimeline.filter(item => item.kind === 'load')
+          : tab === 'exits'
+            ? filteredTimeline.filter(item => item.kind === 'exit')
+            : filteredDefects;
 
   const activeTotal = activeTimeline.length;
   const totalPages = Math.max(1, Math.ceil(activeTotal / pageSize));
@@ -433,6 +450,10 @@ export default function HistoryPage() {
     entries: {
       title: 'Kirish tarixi yo‘q',
       text: 'Zavodga kirgan vagonlar shu yerda ko‘rinadi.',
+    },
+    orders: {
+      title: 'Buyurtmalar tarixi yo‘q',
+      text: 'Shakllantirilgan yuk xatlari va buyurtmalar shu yerda ko‘rinadi.',
     },
     loads: {
       title: 'Yuklash tarixi yo‘q',
@@ -506,11 +527,14 @@ export default function HistoryPage() {
 
     const currentTableColumns = [
       'Vaqt',
-      'Jarayon',
-      'Hujjat raqami / Obyekt',
+      'Yo‘nalish',
+      'Aniq bosqich',
+      'Hujjat / Partiya',
       'Vagon № / Soni',
-      'Mahsulot / Dalolatnoma',
-      'Mas’ul',
+      'Mahsulot / Parametr',
+      'Mas’ul xodim (F.I.Sh.)',
+      'Sex / Bo‘lim',
+      'Holat',
       '',
     ];
 
@@ -532,27 +556,31 @@ export default function HistoryPage() {
               const isAct = item.kind === 'defect' && (Boolean(item.documentNumber) || /dalolatnoma/i.test(item.detail));
               const jarayon = item.kind === 'entry'
                 ? 'Kirish'
-                : item.kind === 'load'
-                  ? 'Yuklash'
-                  : item.kind === 'exit'
-                    ? 'Chiqish'
-                    : isReturn
-                      ? 'Qaytarish'
-                      : isAct
-                        ? 'Dalolatnoma'
-                        : 'Nomuvofiqlik';
+                : item.kind === 'order'
+                  ? 'Buyurtma'
+                  : item.kind === 'load'
+                    ? 'Yuklash'
+                    : item.kind === 'exit'
+                      ? 'Chiqish'
+                      : isReturn
+                        ? 'Qaytarish'
+                        : isAct
+                          ? 'Dalolatnoma'
+                          : 'Nomuvofiqlik';
 
               const jarayonTone = item.kind === 'entry'
                 ? 'entry'
-                : item.kind === 'load'
-                  ? 'load'
-                  : item.kind === 'exit'
-                    ? 'exit'
-                    : isReturn
-                      ? 'return'
-                      : isAct
-                        ? 'act'
-                        : 'defect';
+                : item.kind === 'order'
+                  ? 'order'
+                  : item.kind === 'load'
+                    ? 'load'
+                    : item.kind === 'exit'
+                      ? 'exit'
+                      : isReturn
+                        ? 'return'
+                        : isAct
+                          ? 'act'
+                          : 'defect';
 
               const uniqueWagons = [...new Set(item.wagonNumbers.filter(Boolean))];
               const wagonLabel = uniqueWagons.length === 1
@@ -572,30 +600,67 @@ export default function HistoryPage() {
               return (
                 <Fragment key={item.id}>
                   <tr className={`hist-table__row${expanded ? ' is-expanded' : ''}`}>
-                    <td className="hist-table__time tabular-nums whitespace-nowrap text-[14px] font-semibold text-center">{fmtShort(item.at)}</td>
-                    <td className="hist-table__status-cell text-center">
-                      <span className={`thub-chip hist-status-chip hist-status-chip--${jarayonTone} text-[13.5px] font-semibold`}>{jarayon}</span>
+                    {/* 1. Vaqt */}
+                    <td className="hist-table__time tabular-nums whitespace-nowrap text-[13.5px] font-semibold text-center">
+                      {fmtShort(item.at)}
                     </td>
-                    <td className="thub-table__code text-[14px] font-semibold font-mono text-center">{item.title}</td>
-                    <td className="hist-table__wagons text-[14px] font-semibold text-center" title={uniqueWagons.join(', ') || wagonLabel}>{wagonLabel}</td>
-                    <td className="hist-table__summary text-slate-800 dark:text-slate-100 text-[14px] font-semibold text-center">
-                      {item.kind === 'defect' || tab === 'defects' ? (
-                        item.documentNumber ? (
-                          <span className="font-mono font-semibold text-slate-900 dark:text-slate-100 text-[14px]">
-                            {item.documentNumber}
-                          </span>
-                        ) : (
-                          <span className="font-mono text-slate-400 dark:text-slate-500 text-xs">
-                            —
-                          </span>
-                        )
-                      ) : (
-                        <span className="font-semibold text-slate-800 dark:text-slate-100 truncate text-[14px]" title={item.productLabel || item.mainTitle || item.summary}>
+
+                    {/* 2. Yo‘nalish */}
+                    <td className="hist-table__status-cell text-center">
+                      <span className={`thub-chip hist-status-chip hist-status-chip--${jarayonTone} text-[13px] font-semibold`}>
+                        {jarayon}
+                      </span>
+                    </td>
+
+                    {/* 3. Aniq bosqich */}
+                    <td className="text-center whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                        {item.stageName || jarayon}
+                      </span>
+                    </td>
+
+                    {/* 4. Hujjat / Partiya */}
+                    <td className="thub-table__code text-[13.5px] font-semibold font-mono text-center">
+                      {item.title}
+                    </td>
+
+                    {/* 5. Vagon № / Soni */}
+                    <td className="hist-table__wagons text-[13.5px] font-semibold text-center font-mono" title={uniqueWagons.join(', ') || wagonLabel}>
+                      {wagonLabel}
+                    </td>
+
+                    {/* 6. Mahsulot / Parametr */}
+                    <td className="hist-table__summary text-slate-800 dark:text-slate-100 text-[13.5px] font-semibold text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="truncate max-w-[200px]" title={item.productLabel || item.mainTitle || item.summary}>
                           {item.productLabel || item.mainTitle || item.summary}
                         </span>
-                      )}
+                        {item.extraInfo && (
+                          <span className="text-[11.5px] text-slate-500 dark:text-slate-400 font-normal">
+                            {item.extraInfo}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="hist-table__actor text-[14px] font-semibold text-slate-800 dark:text-slate-100 text-center">{item.actor || '—'}</td>
+
+                    {/* 7. Mas’ul xodim (F.I.Sh.) */}
+                    <td className="hist-table__actor text-[13.5px] font-semibold text-slate-800 dark:text-slate-100 text-center">
+                      {item.actor || '—'}
+                    </td>
+
+                    {/* 8. Sex / Bo‘lim */}
+                    <td className="text-center text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      {item.department || '—'}
+                    </td>
+
+                    {/* 9. Holat */}
+                    <td className="text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11.5px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
+                        {item.statusBadge || 'Bajarildi'}
+                      </span>
+                    </td>
+
+                    {/* 10. Amallar */}
                     <td className="hist-table__action-cell text-center">
                       {hasDetails ? (
                         <button

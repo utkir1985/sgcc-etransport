@@ -539,7 +539,7 @@ function loadingTiles(
           : weighingHref('gross'),
         RefreshCw,
         oneCPendingCount,
-        ['Scale', 'Security', 'Economist', 'Dispatching', 'Admin'],
+        ['Scale', 'Security', 'Economist', 'Dispatching', 'Admin', 'Warehouse', 'Railway', 'Permit', 'Marketing', 'Accounting', 'DeputyDirector', 'DispatchSupervisor', '*'],
         scope.kind === 'registry'
           ? (scope.registry.preparedAt || at.w7 || at.w8 || new Date().toISOString())
           : (oneCReady ? (at.w7 || at.w8 || at.w6 || new Date().toISOString()) : null)),

@@ -215,7 +215,7 @@ export function DemurrageControlPage() {
       </div>
 
             {/* Official Norm Banner */}
-      <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-emerald-500/10 border border-blue-200/80 dark:border-blue-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+      <div className="mb-6 p-4 rounded-2xl bg-sky-50/70 dark:bg-sky-950/25 border border-sky-200 dark:border-sky-900/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2.5">
           <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold tracking-wide uppercase text-[10px]">
             Rasmiy me'yor: 2-tahrir

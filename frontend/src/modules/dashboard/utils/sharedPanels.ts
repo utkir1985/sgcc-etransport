@@ -422,7 +422,7 @@ export function listOnSiteWagons(arrivals: EmptyWagonArrival[]): OnSiteWagonRow[
   return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export type HistoryTimelineKind = 'entry' | 'load' | 'exit' | 'defect';
+export type HistoryTimelineKind = 'entry' | 'order' | 'load' | 'exit' | 'defect';
 
 export type HistoryTimelineSubEvent = {
   id: string;
@@ -450,6 +450,10 @@ export type HistoryTimelineItem = {
   wagonNumbers: string[];
   wagonCount: number;
   summary: string;
+  stageName?: string;
+  department?: string;
+  statusBadge?: string;
+  extraInfo?: string;
   mainTitle?: string;
   subNote?: string;
   issueArea?: string;
@@ -472,14 +476,19 @@ export function buildHistoryTimeline(
     const partyWagons = arrivalUnits(a).map(unit => unit.wagonNumber).filter(Boolean);
     const productLabel = productTitle(a.productType);
     const enteredAt = a.arrivalDate || a.createdAt;
+
+    // 1. KIRISH: Partiya qabuli (Temir yo'l sexi)
     if (enteredAt) {
       const count = wagonCountOf(a);
       items.push({
         id: `entry-${a.id}`,
         at: enteredAt,
         title: a.arrivalNumber,
-        detail: `Kirish · ${productLabel} · ${count} vagon`,
-        actor: a.createdByName || '—',
+        detail: `Kirish partiyasi qabul qilindi · ${productLabel} · ${count} vagon`,
+        actor: a.createdByName || 'Temir yo‘l dispetcheri',
+        department: 'Temir yo‘l sexi',
+        stageName: 'Partiya qabuli',
+        statusBadge: 'Qabul qilindi',
         kind: 'entry',
         productLabel,
         wagonNumbers: partyWagons,
@@ -487,9 +496,126 @@ export function buildHistoryTimeline(
         summary: productLabel,
         mainTitle: `Kirish · ${productLabel}`,
         subNote: `${count} vagon qabul qilindi`,
+        extraInfo: a.trackNumber ? `${a.trackNumber}` : undefined,
       });
     }
-    if (a.loadingCompletedAt) {
+
+    // 2. KIRISH: ICHDX smena boshlig'i kelishuvi
+    if (a.entryPermitShiftApprovedAt) {
+      items.push({
+        id: `permit-shift-${a.id}`,
+        at: a.entryPermitShiftApprovedAt,
+        title: a.entryPermitNumber || a.arrivalNumber,
+        detail: `ICHDX ko‘rigi kelishildi · ${partyWagons.length} vagon`,
+        actor: a.entryPermitShiftApprovedByName || 'Smena boshlig‘i',
+        department: 'ICHDX',
+        stageName: 'ICHDX ko‘rigi (Kirish)',
+        statusBadge: 'Kelishildi',
+        kind: 'entry',
+        productLabel,
+        wagonNumbers: partyWagons,
+        wagonCount: partyWagons.length,
+        summary: 'ICHDX smena boshlig‘i kelishuvi',
+        mainTitle: 'ICHDX ko‘rigi',
+        subNote: a.entryPermitNumber ? `Ruxsatnoma № ${a.entryPermitNumber}` : '',
+        documentNumber: a.entryPermitNumber,
+      });
+    }
+
+    // 3. KIRISH: Ruxsatnoma byurosi kelishuvi
+    if (a.entryPermitPermitApprovedAt) {
+      items.push({
+        id: `permit-prm-${a.id}`,
+        at: a.entryPermitPermitApprovedAt,
+        title: a.entryPermitNumber || a.arrivalNumber,
+        detail: `Ruxsatnoma byurosi tasdiqladi · ${partyWagons.length} vagon`,
+        actor: a.entryPermitPermitApprovedByName || 'Ruxsatnoma byurosi',
+        department: 'Ruxsatnoma byurosi',
+        stageName: 'Ruxsatnoma byurosi',
+        statusBadge: 'Ruxsat berildi',
+        kind: 'entry',
+        productLabel,
+        wagonNumbers: partyWagons,
+        wagonCount: partyWagons.length,
+        summary: 'Ruxsatnoma byurosi tasdig‘i',
+        mainTitle: 'Ruxsatnoma tasdig‘i',
+        documentNumber: a.entryPermitNumber,
+      });
+    }
+
+    // 4. KIRISH: Qo'riqlash xizmati (XA sexi) ruxsati
+    if (a.entryPermitSecurityApprovedAt) {
+      items.push({
+        id: `permit-sec-${a.id}`,
+        at: a.entryPermitSecurityApprovedAt,
+        title: a.entryPermitNumber || a.arrivalNumber,
+        detail: `Qo‘riqlash (XA) ko‘rigidan o‘tkazildi va kirishga ruxsat berildi`,
+        actor: a.entryPermitSecurityApprovedByName || 'Qo‘riqlash xizmati',
+        department: 'Qo‘riqlash xizmati (XA)',
+        stageName: 'Qo‘riqlash (XA) ruxsati',
+        statusBadge: 'XA tasdiqladi',
+        kind: 'entry',
+        productLabel,
+        wagonNumbers: partyWagons,
+        wagonCount: partyWagons.length,
+        summary: 'Qo‘riqlash xizmati (XA) ko‘rigi va ruxsati',
+        mainTitle: 'Qo‘riqlash ruxsati',
+        documentNumber: a.entryPermitNumber,
+      });
+    }
+
+    // 5. KIRISH: Tara tekshiruvi (Har bir vagon bo'yicha)
+    for (const u of a.wagons ?? []) {
+      const tareStamp = u.tareCheckedAt || u.tareWeighedAt;
+      if (tareStamp) {
+        items.push({
+          id: `tare-${a.id}-${u.wagonNumber}`,
+          at: tareStamp,
+          title: a.arrivalNumber,
+          detail: `Tara tekshiruvi bajarildi · vagon ${u.wagonNumber}${u.tareWeight ? ' · Tara: ' + u.tareWeight + ' t' : ''}`,
+          actor: u.sealConfirmedByScaleName || a.createdByName || 'Tarozibon',
+          department: 'Temir yo‘l sexi (Tarozi)',
+          stageName: 'Tara tekshiruvi',
+          statusBadge: 'Tara o‘tdi',
+          kind: 'entry',
+          productLabel: productTitle(u.productType || a.productType),
+          wagonNumbers: [u.wagonNumber],
+          wagonCount: 1,
+          summary: `Tara tekshiruvi: ${u.tareWeight || '—'} t`,
+          mainTitle: `Tara tekshiruvi · vagon ${u.wagonNumber}`,
+          subNote: u.tareWeight ? `Tara: ${u.tareWeight} t` : undefined,
+          extraInfo: u.tareWeight ? `Tara: ${u.tareWeight} t` : undefined,
+        });
+      }
+    }
+
+    // 6. YUKLASH: Mahsulot quyish (TM va XA sexi)
+    for (const u of a.wagons ?? []) {
+      const loadStamp = u.loadingCompletedAt || u.loadingStartedAt;
+      if (loadStamp) {
+        items.push({
+          id: `load-unit-${a.id}-${u.wagonNumber}`,
+          at: loadStamp,
+          title: a.arrivalNumber,
+          detail: `Mahsulot quyildi · vagon ${u.wagonNumber} · ${u.productType || a.productType}`,
+          actor: u.loadingCompletedByName || a.loadingCompletedByName || 'TM va XA smena muhandisi',
+          department: 'TM va XA sexi',
+          stageName: 'Mahsulot quyish',
+          statusBadge: 'Quyildi',
+          kind: 'load',
+          productLabel: productTitle(u.productType || a.productType),
+          wagonNumbers: [u.wagonNumber],
+          wagonCount: 1,
+          summary: `${u.productType || a.productType} quyildi`,
+          mainTitle: `Mahsulot quyish · vagon ${u.wagonNumber}`,
+          subNote: u.nettoWeight ? `Netto: ${u.nettoWeight} t` : undefined,
+          extraInfo: u.nettoWeight ? `Netto: ${u.nettoWeight} t` : undefined,
+        });
+      }
+    }
+
+    // Partiya darajasida yuklash yakunlangani
+    if (a.loadingCompletedAt && (!a.wagons || a.wagons.length === 0)) {
       const loaded = loadedWagonCountOf(a);
       const explicitlyLoaded = loadedUnitsOf(a).map(unit => unit.wagonNumber).filter(Boolean);
       const loadedWagons = explicitlyLoaded.length > 0
@@ -500,7 +626,10 @@ export function buildHistoryTimeline(
         at: a.loadingCompletedAt,
         title: a.arrivalNumber,
         detail: `Yuklash yakunlandi · ${productLabel} · ${loaded} vagon`,
-        actor: a.loadingCompletedByName || '—',
+        actor: a.loadingCompletedByName || 'TM va XA smena muhandisi',
+        department: 'TM va XA sexi',
+        stageName: 'Yuklash yakunlandi',
+        statusBadge: 'Yuklandi',
         kind: 'load',
         productLabel,
         wagonNumbers: loadedWagons,
@@ -511,6 +640,56 @@ export function buildHistoryTimeline(
       });
     }
 
+    // 7. YUKLASH: Brutto tortish / Netto hisobi
+    for (const u of a.wagons ?? []) {
+      if (u.grossWeighedAt) {
+        items.push({
+          id: `gross-${a.id}-${u.wagonNumber}`,
+          at: u.grossWeighedAt,
+          title: a.arrivalNumber,
+          detail: `Brutto tortildi · vagon ${u.wagonNumber} · Brutto: ${u.grossWeight || '—'} t`,
+          actor: u.sealConfirmedByScaleName || 'Tarozibon',
+          department: 'Temir yo‘l sexi (Tarozi)',
+          stageName: 'Brutto tortish',
+          statusBadge: 'Tortildi',
+          kind: 'load',
+          productLabel: productTitle(u.productType || a.productType),
+          wagonNumbers: [u.wagonNumber],
+          wagonCount: 1,
+          summary: `Brutto: ${u.grossWeight || '—'} t, Netto: ${u.nettoWeight || '—'} t`,
+          mainTitle: `Brutto tortish · vagon ${u.wagonNumber}`,
+          subNote: `Brutto: ${u.grossWeight || '—'} t`,
+          extraInfo: `Brutto: ${u.grossWeight || '—'} t · Netto: ${u.nettoWeight || '—'} t`,
+        });
+      }
+    }
+
+    // 8. YUKLASH: Plombalash va Muhrlash (SHGKM)
+    for (const u of a.wagons ?? []) {
+      const sealStamp = u.sealedAt || u.sealEnteredToUngAt || (u.sealNumber ? u.grossWeighedAt : null);
+      if (sealStamp && u.sealNumber) {
+        items.push({
+          id: `seal-${a.id}-${u.wagonNumber}`,
+          at: sealStamp,
+          title: a.arrivalNumber,
+          detail: `Muhrlandi (Plomba) · vagon ${u.wagonNumber} · ${u.sealNumber}`,
+          actor: u.sealConfirmedBySecurityName || 'Qo‘riqlash (XA) xodimi',
+          department: 'Qo‘riqlash xizmati (XA)',
+          stageName: 'Plombalash va Muhrlash',
+          statusBadge: 'Muhrlangan',
+          kind: 'load',
+          productLabel: productTitle(u.productType || a.productType),
+          wagonNumbers: [u.wagonNumber],
+          wagonCount: 1,
+          summary: `Plomba №: ${u.sealNumber}`,
+          mainTitle: `Muhrlash · vagon ${u.wagonNumber}`,
+          subNote: `Plomba: ${u.sealNumber}`,
+          extraInfo: `Plomba №: ${u.sealNumber}`,
+        });
+      }
+    }
+
+    // 9. NOSOZLIKLAR VA DALOLATNOMALAR (GU-23)
     const wagonDefectMap = new Map<string, {
       wagonNumber: string;
       events: HistoryTimelineSubEvent[];
@@ -614,6 +793,9 @@ export function buildHistoryTimeline(
         title: a.arrivalNumber,
         detail: latest.detail || `${productLabel} · vagon ${wagonNumber}`,
         actor: latest.actor,
+        department: 'Nazorat',
+        stageName: latest.stage || 'Nomuvofiqlik',
+        statusBadge: 'Nosozlik',
         kind: 'defect',
         productLabel,
         wagonNumbers: [wagonNumber],
@@ -636,6 +818,9 @@ export function buildHistoryTimeline(
         title: a.arrivalNumber,
         detail: pEvt.detail || pEvt.summary,
         actor: pEvt.actor,
+        department: 'Nazorat',
+        stageName: pEvt.stage || 'Nomuvofiqlik',
+        statusBadge: 'Nosozlik',
         kind: 'defect',
         productLabel,
         wagonNumbers: [],
@@ -652,26 +837,142 @@ export function buildHistoryTimeline(
     }
   }
 
+  // 10. BUYURTMA VA CHIQISH REYESTRLARI (LoadingRegistries)
   for (const r of registries) {
-    if (!r.exitedToKengsoyAt) continue;
     if ((r.registryNumber || '').includes('-1C-')) continue;
     const arrival = arrivalById.get(r.emptyWagonArrivalId);
     if (arrival && (isOneCArrival(arrival) || arrival.arrivalNumber?.startsWith('1C-'))) continue;
+
     const routeProduct = (r.wagonRoutes ?? []).find(w => w.productType)?.productType;
     const productLabel = productTitle(r.productType || routeProduct || arrival?.productType || '');
+    const regWagons = (r.wagonRoutes ?? []).map(route => route.wagonNumber).filter(Boolean);
     const count = registryWagonCountOf(r);
-    items.push({
-      id: `exit-${r.id}`,
-      at: r.exitedToKengsoyAt,
-      title: r.registryNumber || r.arrivalNumber,
-      detail: `Chiqish · ${productLabel} · ${count} vagon`,
-      actor: 'Temir yo‘l sexi',
-      kind: 'exit',
-      productLabel,
-      wagonNumbers: (r.wagonRoutes ?? []).map(route => route.wagonNumber).filter(Boolean),
-      wagonCount: count,
-      summary: `${productLabel} · Zavoddan chiqarildi`,
-    });
+
+    // 10.A BUYURTMA: Yuk xatini shakllantirish (Tarkib yig'ish)
+    const prepTime = r.preparedAt;
+    if (prepTime) {
+      items.push({
+        id: `reg-prep-${r.id}`,
+        at: prepTime,
+        title: r.registryNumber || 'Yuk xati',
+        detail: `Yuk xati shakllantirildi · ${r.contractorName ? r.contractorName + ' · ' : ''}${count} vagon`,
+        actor: r.preparedByName || 'Tovar kassiri',
+        department: 'Tovar kassasi (Logistika)',
+        stageName: 'Yuk xati shakllantirish',
+        statusBadge: 'Tarkib yig‘ildi',
+        kind: 'order',
+        productLabel,
+        wagonNumbers: regWagons,
+        wagonCount: count,
+        summary: `${r.orderNumber ? 'Buyurtma ' + r.orderNumber + ' · ' : ''}${r.contractorName || 'Mijoz'}`,
+        mainTitle: `Yuk xati · ${r.registryNumber}`,
+        subNote: `${r.contractorName || '—'} · ${r.destinationStation || '—'}`,
+        documentNumber: r.registryNumber,
+        extraInfo: `Buyurtma: ${r.orderNumber || '—'} · Shartnoma: ${r.contractNumber || '—'}`,
+      });
+    }
+
+    // 10.B BUYURTMA: Iqtisodchi tekshiruvi
+    if (r.economistApprovedAt) {
+      items.push({
+        id: `reg-econ-${r.id}`,
+        at: r.economistApprovedAt,
+        title: r.registryNumber,
+        detail: `Iqtisodchi tekshiruvi tasdiqlandi · ${r.contractorName || ''}`,
+        actor: r.economistApprovedByName || 'Iqtisodchi',
+        department: 'ICHDX / Iqtisodchi',
+        stageName: 'Iqtisodchi tekshiruvi',
+        statusBadge: 'Tasdiqlandi',
+        kind: 'order',
+        productLabel,
+        wagonNumbers: regWagons,
+        wagonCount: count,
+        summary: 'Iqtisodchi tasdig‘i',
+        mainTitle: 'Iqtisodchi tasdig‘i',
+      });
+    }
+
+    // 10.C BUYURTMA: 1C va E-Nakladnoyga yuborildi
+    const sentTime = r.sentToOneCAt || r.sentToENaklAt;
+    if (sentTime) {
+      items.push({
+        id: `reg-sent-${r.id}`,
+        at: sentTime,
+        title: r.registryNumber,
+        detail: `1C / E-Nakladnoyga yuborildi · ${r.registryNumber}`,
+        actor: r.preparedByName || 'Tizim / Integratsiya',
+        department: 'Buxgalteriya / 1C',
+        stageName: '1C / E-Nakladnoy',
+        statusBadge: 'Yuborildi',
+        kind: 'order',
+        productLabel,
+        wagonNumbers: regWagons,
+        wagonCount: count,
+        summary: '1C / E-Nakl jo‘natildi',
+        mainTitle: '1C integratsiyasi',
+      });
+    }
+
+    // 10.D CHIQISH: Qo'riqlash (XA) chiqish ko'rigi
+    if (r.securityApprovedAt) {
+      items.push({
+        id: `reg-sec-${r.id}`,
+        at: r.securityApprovedAt,
+        title: r.registryNumber,
+        detail: `Chiqish ko‘rigi (XA soqchilik) tasdiqlandi`,
+        actor: r.securityApprovedByName || 'Qo‘riqlash xizmati',
+        department: 'Qo‘riqlash xizmati (XA)',
+        stageName: 'Chiqish ko‘rigi (XA)',
+        statusBadge: 'XA ruxsat berdi',
+        kind: 'exit',
+        productLabel,
+        wagonNumbers: regWagons,
+        wagonCount: count,
+        summary: 'Qo‘riqlash chiqish ruxsati',
+        mainTitle: 'XA chiqish ko‘rigi',
+      });
+    }
+
+    // 10.E CHIQISH: Ruxsatnoma byurosi chiqish ruxsati
+    if (r.permitApprovedAt) {
+      items.push({
+        id: `reg-prm-${r.id}`,
+        at: r.permitApprovedAt,
+        title: r.registryNumber,
+        detail: `Chiqish ruxsatnomasi tasdiqlandi`,
+        actor: r.permitApprovedByName || 'Ruxsatnoma byurosi',
+        department: 'Ruxsatnoma byurosi',
+        stageName: 'Chiqish ruxsatnomasi',
+        statusBadge: 'Ruxsatnoma berildi',
+        kind: 'exit',
+        productLabel,
+        wagonNumbers: regWagons,
+        wagonCount: count,
+        summary: 'Ruxsatnoma byurosi chiqish ruxsati',
+        mainTitle: 'Chiqish ruxsatnomasi',
+      });
+    }
+
+    // 10.F CHIQISH: Zavoddan chiqarildi (Kengsoyga jo'natildi)
+    if (r.exitedToKengsoyAt) {
+      items.push({
+        id: `exit-${r.id}`,
+        at: r.exitedToKengsoyAt,
+        title: r.registryNumber || r.arrivalNumber,
+        detail: `Chiqish · ${productLabel} · ${count} vagon`,
+        actor: r.shiftSupervisorApprovedByName || 'Temir yo‘l dispetcheri',
+        department: 'Temir yo‘l sexi',
+        stageName: 'Zavoddan chiqarildi',
+        statusBadge: 'Jo‘natildi',
+        kind: 'exit',
+        productLabel,
+        wagonNumbers: regWagons,
+        wagonCount: count,
+        summary: `${productLabel} · Zavoddan chiqarildi`,
+        mainTitle: `Zavoddan chiqarildi · ${productLabel}`,
+        subNote: `${count} vagon Kengsoyga jo‘natildi`,
+      });
+    }
   }
 
   return items.sort((a, b) => b.at.localeCompare(a.at));

@@ -214,7 +214,7 @@ export function LogisticsTariffsPage() {
       )}
 
       {/* Quick Preset Selector Bar */}
-      <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50/70 dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900 border border-blue-200/60 dark:border-blue-900/40 shadow-xs">
+      <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-sky-50/60 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/40 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -642,7 +642,7 @@ export function LogisticsTariffsPage() {
           {/* Live Simulator Card */}
           <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-0">
             {/* Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-950/40 dark:to-indigo-950/20 flex items-center gap-3">
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-850 flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-xs shrink-0">
                 <Calculator className="w-5 h-5" />
               </div>

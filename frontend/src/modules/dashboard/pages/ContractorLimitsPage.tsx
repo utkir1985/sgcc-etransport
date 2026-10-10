@@ -214,7 +214,7 @@ export function ContractorLimitsPage() {
         </div>
 
         {/* Card 4: STOP (Limit to'lgan) */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-rose-950/30 dark:to-red-900/20 border border-rose-200 dark:border-rose-800/60 shadow-sm flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 mb-2">
             <span className="text-xs font-bold flex items-center gap-1">
               <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
@@ -235,7 +235,7 @@ export function ContractorLimitsPage() {
         </div>
 
         {/* Card 5: Limit tugamoqda */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100/50 dark:from-amber-950/30 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800/60 shadow-sm flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 mb-2">
             <span className="text-xs font-bold flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />

@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Copy,
-  Smartphone,
   RefreshCw,
   TrainFront,
   ArrowDownToLine,
@@ -124,7 +123,6 @@ export function TelegramAlertsModal({
   const handleSendTestMessage = async () => {
     setSending(true);
     setStatusMessage(null);
-
     try {
       const res = await sendTelegramMessage(templates[selectedTemplate], {
         botToken,
@@ -150,22 +148,22 @@ export function TelegramAlertsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header - Enterprise Clean Style */}
+        <div className="px-6 py-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md">
-              <Smartphone className="w-5 h-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-100 dark:border-sky-900/50">
+              <Send className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-lg font-bold">Telegram Dispetcherlik va Rahbariyat Xabarlari</h3>
-              <p className="text-xs text-sky-100">Avtomatik operativ ogohlantirishlar va smena xulosalari</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Telegram Dispetcherlik va Rahbariyat Xabarlari</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Avtomatik operativ ogohlantirishlar va smena xulosalari</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -180,20 +178,20 @@ export function TelegramAlertsModal({
               {statusMessage.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertTriangle className="w-4 h-4 text-red-600" />}
               {statusMessage.text}
             </span>
-            <button type="button" onClick={() => setStatusMessage(null)} className="text-xs underline">Yopish</button>
+            <button type="button" onClick={() => setStatusMessage(null)} className="text-xs underline cursor-pointer">Yopish</button>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="px-6 pt-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div className="px-6 pt-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex gap-4">
             <button
               type="button"
               onClick={() => setActiveTab('preview')}
-              className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition ${
+              className={`pb-2.5 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
                 activeTab === 'preview'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
               <Bell className="w-3.5 h-3.5" />
@@ -202,17 +200,17 @@ export function TelegramAlertsModal({
             <button
               type="button"
               onClick={() => setActiveTab('settings')}
-              className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition ${
+              className={`pb-2.5 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Bot sozlamalari
             </button>
           </div>
-          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 mb-2">
+          <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1.5 mb-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             Bot faol
           </span>
@@ -223,21 +221,21 @@ export function TelegramAlertsModal({
           {activeTab === 'preview' ? (
             <div className="space-y-4">
               {/* Template Selectors */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate('demurrage')}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     selectedTemplate === 'demurrage'
-                      ? 'border-red-500 bg-red-50/60 dark:bg-red-950/30 text-red-900 dark:text-red-200 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      ? 'border-red-400 bg-red-50/70 dark:bg-red-950/30 text-red-950 dark:text-red-200 shadow-xs ring-1 ring-red-400/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
                     <Flame className="w-3.5 h-3.5 text-red-500 shrink-0" />
                     <span>Prostoy xavfi</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                     {redCount} ta vagon &gt;20 soat
                   </div>
                 </button>
@@ -245,17 +243,17 @@ export function TelegramAlertsModal({
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate('wagon_added')}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     selectedTemplate === 'wagon_added'
-                      ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/30 text-sky-950 dark:text-sky-200 shadow-xs ring-1 ring-sky-500/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs">
-                    <ArrowDownToLine className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
+                    <ArrowDownToLine className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
                     <span>Yangi vagon kirdi</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                     Vagon qo'shilganda
                   </div>
                 </button>
@@ -263,17 +261,17 @@ export function TelegramAlertsModal({
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate('wagon_loaded')}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     selectedTemplate === 'wagon_loaded'
-                      ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200 shadow-xs ring-1 ring-amber-500/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs">
-                    <TrainFront className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
+                    <TrainFront className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>Vagon yuklandi</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                     Estakadada yuklash
                   </div>
                 </button>
@@ -281,17 +279,17 @@ export function TelegramAlertsModal({
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate('wagon_exit')}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     selectedTemplate === 'wagon_exit'
-                      ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 shadow-xs ring-1 ring-emerald-500/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs">
-                    <ArrowUpFromLine className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
+                    <ArrowUpFromLine className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>Vagon chiqarildi</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                     Kengsoyga jo'natish
                   </div>
                 </button>
@@ -299,17 +297,17 @@ export function TelegramAlertsModal({
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate('party')}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     selectedTemplate === 'party'
-                      ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-200 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-200 shadow-xs ring-1 ring-indigo-500/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs">
-                    <Bell className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
+                    <Bell className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                     <span>Yangi partiya</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                     Poyezd / partiya kelishi
                   </div>
                 </button>
@@ -317,48 +315,59 @@ export function TelegramAlertsModal({
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate('summary')}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                     selectedTemplate === 'summary'
-                      ? 'border-purple-500 bg-purple-50/60 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
+                      ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-950/30 text-purple-950 dark:text-purple-200 shadow-xs ring-1 ring-purple-500/30'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 font-bold text-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                  <div className="flex items-center gap-1.5 font-semibold text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
                     <span>Kunlik xulosa</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                     20:00 da smena hisoboti
                   </div>
                 </button>
               </div>
 
-              {/* Telegram Card Preview Box */}
-              <div className="p-4 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs border border-slate-700/80 shadow-inner relative group">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                    Telegram xabari ko'rinishi
-                  </span>
+              {/* Realistic Telegram Message Preview Box (Harmonized with Light & Dark UI) */}
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-950/70 p-3.5 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-200/80 dark:border-slate-800 text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2AABEE] text-white shadow-xs">
+                      <Send className="w-2.5 h-2.5 -translate-x-[0.5px] translate-y-[0.5px]" />
+                    </div>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">Telegram xabari ko‘rinishi</span>
+                  </div>
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="flex items-center gap-1 text-slate-300 hover:text-white transition"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
                     title="Nusxalash"
                   >
-                    {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
                     <span>{copied ? "Nusxalandi!" : "Nusxalash"}</span>
                   </button>
                 </div>
-                <pre className="whitespace-pre-wrap leading-relaxed text-slate-200 selection:bg-blue-600 max-h-56 overflow-y-auto">
-                  {templates[selectedTemplate]}
-                </pre>
+
+                {/* Chat Bubble */}
+                <div className="rounded-2xl rounded-tl-sm bg-white dark:bg-slate-900 p-3.5 shadow-xs border border-slate-200/80 dark:border-slate-800/80">
+                  <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-slate-800 dark:text-slate-200 max-h-56 overflow-y-auto pr-1">
+                    {templates[selectedTemplate]}
+                  </pre>
+                  <div className="mt-2.5 flex items-center justify-end gap-1 text-[10px] text-slate-400 dark:text-slate-500">
+                    <span>{todayStr.split(' ')[1] || '20:00'}</span>
+                    <span className="text-[#2AABEE] font-bold">✓✓</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 text-xs text-sky-800 dark:text-sky-300 flex items-start gap-2.5">
+              {/* Information Note */}
+              <div className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/40 text-xs text-sky-900 dark:text-sky-300 flex items-start gap-2.5">
                 <Bell className="w-4 h-4 shrink-0 text-sky-600 dark:text-sky-400 mt-0.5" />
-                <div>
-                  <span className="font-bold">Avtomatik yetkazish qoidasi:</span> Tanlangan hodisalar yuz berganda (vagon qo'shilishi, yuklanishi, Kengsoyga chiqishi, prostoy xavfi) tizim avtomat tarzda belgilangan Telegram guruh va mas'ullarga operativ xabar yo'llaydi.
+                <div className="leading-relaxed">
+                  <span className="font-semibold text-sky-950 dark:text-sky-200">Avtomatik yetkazish qoidasi:</span> Tanlangan hodisalar yuz berganda (vagon qo‘shilishi, yuklanishi, Kengsoyga chiqishi, prostoy xavfi) tizim avtomat tarzda belgilangan Telegram guruh va mas’ullarga operativ xabar yo‘llaydi.
                 </div>
               </div>
             </div>
@@ -373,7 +382,7 @@ export function TelegramAlertsModal({
                   value={botToken}
                   onChange={e => setBotToken(e.target.value)}
                   placeholder="123456789:ABCDefGhIjKlMnOpQrStUvWxYz..."
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-mono"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">@BotFather orqali olingan bot tokeni</p>
               </div>
@@ -387,7 +396,7 @@ export function TelegramAlertsModal({
                   value={chatId}
                   onChange={e => setChatId(e.target.value)}
                   placeholder="-1001234567890 yoki 948197737"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-mono"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">Xabarlar yuboriladigan Telegram guruh yoki kanal identifikatori</p>
               </div>
@@ -398,10 +407,10 @@ export function TelegramAlertsModal({
                 </span>
 
                 {/* 1. Yangi vagon paydo bo'lsa yoki qo'shilsa */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
                   <div className="text-xs">
-                    <span className="font-semibold block text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <ArrowDownToLine className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <ArrowDownToLine className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                       Birorta vagon paydo bo'lsa yoki qo'shilsa
                     </span>
                     <span className="text-slate-400">Tizimga yangi vagon kiritilganda darhol ogohlantirish</span>
@@ -410,15 +419,15 @@ export function TelegramAlertsModal({
                     type="checkbox"
                     checked={autoWagonAdded}
                     onChange={e => setAutoWagonAdded(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                   />
                 </label>
 
                 {/* 2. Vagonlarni yuklash */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
                   <div className="text-xs">
-                    <span className="font-semibold block text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <TrainFront className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <TrainFront className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                       Vagonlarni yuklash (Yuklanganda)
                     </span>
                     <span className="text-slate-400">Vagon estakadada yuklanishi yakunlanganda xabar berish</span>
@@ -427,15 +436,15 @@ export function TelegramAlertsModal({
                     type="checkbox"
                     checked={autoWagonLoading}
                     onChange={e => setAutoWagonLoading(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                   />
                 </label>
 
                 {/* 3. Vagonlarni chiqarish */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
                   <div className="text-xs">
-                    <span className="font-semibold block text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <ArrowUpFromLine className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <ArrowUpFromLine className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       Vagonlarni chiqarish (Kengsoyga)
                     </span>
                     <span className="text-slate-400">Vagonlar zavoddan Kengsoyga jo'natilganda / chiqarilganda</span>
@@ -444,15 +453,15 @@ export function TelegramAlertsModal({
                     type="checkbox"
                     checked={autoWagonExit}
                     onChange={e => setAutoWagonExit(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                   />
                 </label>
 
                 {/* 4. Prostoy xavfi */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
                   <div className="text-xs">
-                    <span className="font-semibold block text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Flame className="w-3.5 h-3.5 text-red-600" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Flame className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                       Prostoy xavfi (&gt;20 soat)
                     </span>
                     <span className="text-slate-400">Vagon normativ vaqtga yaqinlashganda ogohlantirish</span>
@@ -461,15 +470,15 @@ export function TelegramAlertsModal({
                     type="checkbox"
                     checked={autoDemurrage}
                     onChange={e => setAutoDemurrage(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                   />
                 </label>
 
                 {/* 5. Yangi partiya */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
                   <div className="text-xs">
-                    <span className="font-semibold block text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Bell className="w-3.5 h-3.5 text-indigo-600" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                       Yangi partiya kirganda
                     </span>
                     <span className="text-slate-400">Temir yo'ldan yangi partiya kelishi bilan signal berish</span>
@@ -478,15 +487,15 @@ export function TelegramAlertsModal({
                     type="checkbox"
                     checked={autoParty}
                     onChange={e => setAutoParty(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                   />
                 </label>
 
                 {/* 6. Kunlik smena */}
-                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
                   <div className="text-xs">
-                    <span className="font-semibold block text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                       Kunlik smena yakuni (20:00 da)
                     </span>
                     <span className="text-slate-400">Har kuni soat 20:00 da umumiy sutkalik ko'rsatkichlar xulosasi</span>
@@ -495,7 +504,7 @@ export function TelegramAlertsModal({
                     type="checkbox"
                     checked={autoDailySummary}
                     onChange={e => setAutoDailySummary(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                   />
                 </label>
               </div>
@@ -504,7 +513,7 @@ export function TelegramAlertsModal({
                 <button
                   type="button"
                   onClick={handleSaveSettings}
-                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-xs shadow transition"
+                  className="w-full py-2.5 px-4 rounded-lg bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
                 >
                   Sozlamalarni saqlash
                 </button>
@@ -514,17 +523,17 @@ export function TelegramAlertsModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-slate-500">
-            <a href="https://t.me/sgccetransport_bot" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 underline flex items-center gap-1 font-mono">
+        <div className="px-6 py-3.5 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+            <a href="https://t.me/sgccetransport_bot" target="_blank" rel="noopener noreferrer" className="hover:text-sky-600 dark:hover:text-sky-400 inline-flex items-center gap-1 font-mono transition-colors">
               Bot: @sgccetransport_bot
             </a>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+              className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 transition-colors shadow-xs cursor-pointer"
             >
               Yopish
             </button>
@@ -532,7 +541,7 @@ export function TelegramAlertsModal({
               type="button"
               onClick={handleSendTestMessage}
               disabled={sending}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-sm hover:shadow flex items-center gap-1.5 transition disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white shadow-xs flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {sending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               <span>{sending ? "Yuborilmoqda..." : "Telegramga sinov xabari yuborish"}</span>

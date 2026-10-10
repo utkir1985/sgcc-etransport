@@ -175,7 +175,7 @@ export function DefectsGu23Page() {
         </div>
 
         {/* Card 2: Qaytarilgan vagonlar */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-50 to-red-100/50 dark:from-rose-950/30 dark:to-red-900/20 border border-rose-200 dark:border-rose-800/60 shadow-sm flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 mb-2">
             <span className="text-xs font-bold">Rad etilgan / Qaytarilgan</span>
             <AlertTriangle className="w-4 h-4 text-rose-600" />
