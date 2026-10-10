@@ -96,6 +96,8 @@ function validateOrderDraft(
   if (!header.contractNumber.trim()) return 'Shartnoma raqamini kiriting';
   if (!header.productType.trim()) return 'Mahsulot turini tanlang';
 
+  const isBlankOrder = /zaxira|bo['‘ʼ`]?sh|favqulodda/i.test(header.contractNumber);
+
   const targetLines = lineFilter ? lines.filter(lineFilter) : lines;
   if (targetLines.length === 0) return 'Kamida bitta qator qo\'shing';
 
@@ -103,9 +105,17 @@ function validateOrderDraft(
     const line = targetLines[i];
     const rowNumber = lines.indexOf(line) + 1;
     if (!line.contractor?.trim()) return `${rowNumber}-qator: korxonani tanlang`;
-    if (!line.wagonCount || line.wagonCount < 1) {
-      return `${rowNumber}-qator: ${tableConfig.unitLabel.toLowerCase()}ni kiriting`;
+
+    // Tonna majburiy (oddiy buyurtmada > 0 shart, bo'sh/zaxirada 0 bo'lishi mumkin)
+    if (!isBlankOrder && (!line.tonCount || line.tonCount <= 0)) {
+      return `${rowNumber}-qator: mahsulot og‘irligi (tonna) kiritilishi shart (0 dan katta bo‘lishi kerak)`;
     }
+
+    // Vagon soni ixtiyoriy (faqat manfiy bo'lmasligi kerak)
+    if (line.wagonCount !== undefined && line.wagonCount !== null && line.wagonCount < 0) {
+      return `${rowNumber}-qator: vagon soni manfiy bo‘lmasligi kerak`;
+    }
+
     if (!line.destinationStation?.trim()) {
       return `${rowNumber}-qator: ${tableConfig.destinationLabel.toLowerCase()}ni kiriting`;
     }
@@ -383,6 +393,37 @@ function MarketingOrdersPanel({
   useEffect(() => {
     if (editMode) loadContractors();
   }, [editMode]);
+
+  const startBlankEmergencyOrder = () => {
+    setSaveError('');
+    setViewOrderId(null);
+    setIsNew(true);
+    setEditMode(true);
+    setEditingOrderId(null);
+    setPendingFiles([]);
+    setExistingAttachments([]);
+    setAttachmentsModalOpen(false);
+    setEditComment('');
+    const period = defaultYearMonthFromRange(periodFrom, periodTo);
+    const orderStamp = `${period.year}-${String(period.month).padStart(2, '0')}`;
+    setHeader({
+      contractNumber: `ZAXIRA-${orderStamp}`,
+      productType: filterProductType || productEntries[0]?.productType || '',
+      year: period.year,
+      month: period.month,
+      deadline: defaultOrderDeadline(period.year, period.month),
+    });
+    setLines([{
+      sortOrder: 1,
+      contractor: 'Hududgazta\'minot AJ (Zaxira)',
+      wagonCount: 0,
+      tonCount: 0,
+      wagonNumbers: '',
+      destinationStation: 'Kengsoy',
+      lastLoadingDate: null,
+      quantityUnit: 'ton',
+    }]);
+  };
 
   const startNew = () => {
     setSaveError('');
@@ -1086,7 +1127,6 @@ function MarketingOrdersPanel({
                   <td className="order-sheet-center order-sheet-qty-col">
                     {editable ? (
                       <OrderQtyNumberInput
-                        required
                         value={line.wagonCount}
                         onChange={wagonCount => updateLine(idx, { wagonCount })}
                         ariaLabel={tableConfig.unitLabel}
@@ -1098,6 +1138,7 @@ function MarketingOrdersPanel({
                   <td className="order-sheet-center order-sheet-qty-col">
                     {editable ? (
                       <OrderQtyNumberInput
+                        required
                         value={line.tonCount ?? 0}
                         allowDecimal={true}
                         onChange={tonCount => updateLine(idx, { tonCount })}
@@ -1305,7 +1346,22 @@ function MarketingOrdersPanel({
           resultCount={matchingOrders.length}
           canCreate={canCreateOrder}
           onCreate={startNew}
-          toolbarActions={excelAction}
+          toolbarActions={
+            <div className="flex items-center gap-2">
+              {canCreateOrder && (
+                <button
+                  type="button"
+                  onClick={startBlankEmergencyOrder}
+                  className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1.5 border-dashed border-amber-400/80 hover:bg-amber-500/10"
+                  title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
+                >
+                  <Plus className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Bo‘sh buyurtma</span>
+                </button>
+              )}
+              {excelAction}
+            </div>
+          }
         >
           {matchingOrders.length === 0 ? (
             <div className="thub-empty">
@@ -1344,7 +1400,22 @@ function MarketingOrdersPanel({
           periodControl={renderPeriodPicker()}
           canCreate={canCreateOrder}
           onCreate={startNew}
-          toolbarActions={excelAction}
+          toolbarActions={
+            <div className="flex items-center gap-2">
+              {canCreateOrder && (
+                <button
+                  type="button"
+                  onClick={startBlankEmergencyOrder}
+                  className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1.5 border-dashed border-amber-400/80 hover:bg-amber-500/10"
+                  title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
+                >
+                  <Plus className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Bo‘sh buyurtma</span>
+                </button>
+              )}
+              {excelAction}
+            </div>
+          }
         >
           {matchingOrders.length === 0 ? (
             <OrderFilterPlaceholder

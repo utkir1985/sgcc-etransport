@@ -123,7 +123,9 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         if (arrival is null) return null;
 
         var ready = arrival.Units
-            .Where(u => u.Status == EmptyWagonUnitStatuses.Estakada)
+            .Where(u => u.Status is EmptyWagonUnitStatuses.Estakada
+                     or EmptyWagonUnitStatuses.AwaitingTare
+                     or EmptyWagonUnitStatuses.Tared)
             .ToList();
         if (ready.Count == 0)
             throw new InvalidOperationException("Estakadada yuklashga tayyor vagon yo‘q.");
@@ -171,7 +173,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         var unit = EmptyWagonUnitSync.FindUnit(arrival, wagonNumber)
             ?? throw new InvalidOperationException("Vagon topilmadi.");
 
-        if (unit.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.Loading))
+        if (unit.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.Loading or EmptyWagonUnitStatuses.AwaitingTare or EmptyWagonUnitStatuses.Tared))
             throw new InvalidOperationException("Faqat estakadadagi vagon yuklashga olinadi.");
 
         unit.Status = EmptyWagonUnitStatuses.Loading;
@@ -209,13 +211,19 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         var arrival = await LoadArrivalAsync(id);
         if (arrival is null) return null;
 
-        var loading = arrival.Units.Where(u => u.Status == EmptyWagonUnitStatuses.Loading).ToList();
+        var loading = arrival.Units.Where(u => u.Status is EmptyWagonUnitStatuses.Loading
+            or EmptyWagonUnitStatuses.Estakada
+            or EmptyWagonUnitStatuses.AwaitingTare
+            or EmptyWagonUnitStatuses.Tared).ToList();
         if (loading.Count == 0)
             throw new InvalidOperationException("Yuklanayotgan vagon yo‘q.");
 
         var user = await db.Users.FindAsync(userId);
         foreach (var u in loading)
+        {
+            u.LoadingStartedAt ??= DateTime.UtcNow;
             CompleteUnit(u, request.Comment, user?.FullName);
+        }
 
         MarkEconomist(arrival, user?.FullName);
         arrival.DailyPlanLineId = null;
@@ -251,13 +259,13 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         var unit = EmptyWagonUnitSync.FindUnit(arrival, wagonNumber)
             ?? throw new InvalidOperationException("Vagon topilmadi.");
 
-        if (unit.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.Loading))
+        if (unit.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.Loading or EmptyWagonUnitStatuses.AwaitingTare or EmptyWagonUnitStatuses.Tared))
             throw new InvalidOperationException("Bu vagon yuklashga tayyor emas yoki allaqachon yuklangan.");
 
         // Tara erta majburiy emas — UNG chiqishda beradi
 
         var user = await db.Users.FindAsync(userId);
-        if (unit.Status == EmptyWagonUnitStatuses.Estakada)
+        if (unit.Status != EmptyWagonUnitStatuses.Loading)
         {
             unit.Status = EmptyWagonUnitStatuses.Loading;
             unit.LoadingStartedAt ??= DateTime.UtcNow;
@@ -301,7 +309,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         var unit = EmptyWagonUnitSync.FindUnit(arrival, wagonNumber)
             ?? throw new InvalidOperationException("Vagon topilmadi.");
 
-        if (unit.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.Loading or EmptyWagonUnitStatuses.Loaded))
+        if (unit.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.Loading or EmptyWagonUnitStatuses.Loaded or EmptyWagonUnitStatuses.AwaitingTare or EmptyWagonUnitStatuses.Tared))
             throw new InvalidOperationException("Faqat estakada, yuklanayotgan yoki yuklangan vagonga nuqson qo‘yiladi.");
 
         var user = await db.Users.FindAsync(userId);
@@ -428,6 +436,8 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
 
         var editableStatuses = new[]
         {
+            EmptyWagonUnitStatuses.AwaitingTare,
+            EmptyWagonUnitStatuses.Tared,
             EmptyWagonUnitStatuses.Estakada,
             EmptyWagonUnitStatuses.Loading,
             EmptyWagonUnitStatuses.Loaded,
@@ -747,7 +757,7 @@ public class WarehouseController(
         var units = await db.EmptyWagonUnits.Where(u => ids.Contains(u.Id)).ToListAsync();
         if (units.Count != ids.Count)
             return BadRequest(new ApiResponse<string>(false, null, "Tanlangan vagonlardan biri topilmadi"));
-        if (units.Any(u => u.Status != EmptyWagonUnitStatuses.Estakada))
+        if (units.Any(u => u.Status is not (EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.AwaitingTare or EmptyWagonUnitStatuses.Tared)))
             return BadRequest(new ApiResponse<string>(false, null, "Faqat estakadadagi tayyor vagonlarni guruhga olish mumkin"));
 
         var batch = await numberingService.GenerateOutboundBatchNumberAsync();
@@ -795,8 +805,8 @@ public class WarehouseController(
         if (ids.Count == 0)
             return BadRequest(new ApiResponse<string>(false, null, "Kamida bitta vagonni tanlang"));
         var units = await db.EmptyWagonUnits.Where(u => ids.Contains(u.Id)).ToListAsync();
-        if (units.Count != ids.Count || units.Any(u => u.Status != EmptyWagonUnitStatuses.Loading))
-            return BadRequest(new ApiResponse<string>(false, null, "Faqat yuklanayotgan vagonlarni tanlang"));
+        if (units.Count != ids.Count || units.Any(u => u.Status is not (EmptyWagonUnitStatuses.Loading or EmptyWagonUnitStatuses.Estakada or EmptyWagonUnitStatuses.AwaitingTare or EmptyWagonUnitStatuses.Tared)))
+            return BadRequest(new ApiResponse<string>(false, null, "Faqat yuklanayotgan yoki estakadadagi vagonlarni tanlang"));
 
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var userName = (await db.Users.FindAsync(userId))?.FullName?.Trim() ?? string.Empty;
@@ -804,6 +814,7 @@ public class WarehouseController(
         string? fallbackBatch = null;
         foreach (var unit in units)
         {
+            unit.LoadingStartedAt ??= completedAt;
             unit.Status = EmptyWagonUnitStatuses.Loaded;
             unit.LoadingCompletedAt = completedAt;
             unit.LoadingCompletedByName = userName;

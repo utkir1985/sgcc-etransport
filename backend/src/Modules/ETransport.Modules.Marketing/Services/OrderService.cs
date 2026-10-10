@@ -70,7 +70,7 @@ public class OrderService(
 
     public async Task<MonthlyOrderDto> CreateAsync(CreateMonthlyOrderRequest request, Guid userId)
     {
-        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.Lines);
+        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.ContractNumber, request.Lines);
 
         var creator = await db.Users.FindAsync(userId);
         var order = new MonthlyOrder
@@ -123,7 +123,7 @@ public class OrderService(
         if (string.IsNullOrWhiteSpace(request.EditComment))
             throw new ArgumentException("Tahrirlash izohini kiriting");
 
-        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.Lines);
+        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.ContractNumber, request.Lines);
 
         var changes = new List<string>();
         if (!string.Equals(order.ProductType, request.ProductType, StringComparison.Ordinal))
@@ -742,7 +742,11 @@ public class OrderService(
         order.Status = OrderStatus.PendingAccounting;
     }
 
-    private async Task ValidateRequestAsync(string logisticsType, string productType, List<MonthlyOrderLineInput> lines)
+    private async Task ValidateRequestAsync(
+        string logisticsType,
+        string productType,
+        string contractNumber,
+        List<MonthlyOrderLineInput> lines)
     {
         if (!LogisticsTypes.IsValid(logisticsType))
             throw new ArgumentException("Noto'g'ri logistika turi");
@@ -758,8 +762,21 @@ public class OrderService(
             throw new ArgumentException("Kamida bitta qator kiritilishi kerak");
         if (lines.Any(l => string.IsNullOrWhiteSpace(l.Contractor)))
             throw new ArgumentException("Korxona nomi bo'sh bo'lmasligi kerak");
-        if (lines.Any(l => l.WagonCount <= 0))
-            throw new ArgumentException("Transport birligi soni 0 dan katta bo'lishi kerak");
+
+        var isBlankOrEmergencyOrder = !string.IsNullOrWhiteSpace(contractNumber)
+            && (contractNumber.Contains("ZAXIRA", StringComparison.OrdinalIgnoreCase)
+                || contractNumber.Contains("BO'SH", StringComparison.OrdinalIgnoreCase)
+                || contractNumber.Contains("BOSH", StringComparison.OrdinalIgnoreCase)
+                || contractNumber.Contains("FAVQULODDA", StringComparison.OrdinalIgnoreCase));
+
+        // Tonna majburiy (oddiy buyurtmada > 0 bo'lishi shart, zaxira/bo'sh buyurtmada 0 bo'lishi mumkin)
+        if (!isBlankOrEmergencyOrder && lines.Any(l => l.TonCount <= 0))
+            throw new ArgumentException("Mahsulot og'irligi (tonna) kiritilishi shart (0 dan katta bo'lishi kerak)");
+
+        // Vagon soni ixtiyoriy (0 yoki undan katta bo'lishi mumkin)
+        if (lines.Any(l => l.WagonCount < 0))
+            throw new ArgumentException("Vagon soni manfiy bo'lishi mumkin emas");
+
         if (lines.Any(l => !OrderQuantityUnits.IsValid(l.QuantityUnit)))
             throw new ArgumentException("Noto'g'ri o'lchov birligi");
         if (lines.Any(l => string.IsNullOrWhiteSpace(l.DestinationStation)))

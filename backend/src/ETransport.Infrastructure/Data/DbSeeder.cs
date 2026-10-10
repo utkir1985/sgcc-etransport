@@ -1383,6 +1383,9 @@ public static class DbSeeder
             .Select(r => new { r.ExitedToKengsoyAt, r.WagonRoutesJson, r.EmptyWagonArrivalId })
             .ToListAsync();
 
+        // MUHIM: Vagon qayta-qayta kelishi mumkin (masalan bir oyda 2-3 marta).
+        // Shuning uchun chiqish faqat o'sha partiya (EmptyWagonArrivalId) bilan birgalikda tekshiriladi!
+        // Eski partiyadagi chiqish sanasi yangi partiyadagi vagon ustiga aslo yozilmasligi shart.
         var exitedWagonMap = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         foreach (var r in exitedRegistries)
         {
@@ -1400,7 +1403,12 @@ public static class DbSeeder
                             var num = pNum.GetString()?.Trim();
                             if (!string.IsNullOrEmpty(num))
                             {
-                                exitedWagonMap[num] = r.ExitedToKengsoyAt.Value;
+                                var srcArrival = elem.TryGetProperty("SourceArrivalId", out var pSrc)
+                                    ? pSrc.GetString()
+                                    : (elem.TryGetProperty("sourceArrivalId", out var pSrc2) ? pSrc2.GetString() : null);
+                                var arrivalId = !string.IsNullOrEmpty(srcArrival) ? srcArrival : r.EmptyWagonArrivalId.ToString();
+                                var key = $"{arrivalId}:{num}";
+                                exitedWagonMap[key] = r.ExitedToKengsoyAt.Value;
                             }
                         }
                     }
@@ -1410,14 +1418,22 @@ public static class DbSeeder
         }
 
         var units = await db.EmptyWagonUnits
+            .Include(u => u.Arrival)
             .Where(u => u.ScaleExitedAt == null && u.Status != EmptyWagonUnitStatuses.Returned)
             .ToListAsync();
 
         foreach (var u in units)
         {
-            if (!string.IsNullOrEmpty(u.WagonNumber) && exitedWagonMap.TryGetValue(u.WagonNumber.Trim(), out var exitDate))
+            if (!string.IsNullOrEmpty(u.WagonNumber))
             {
-                u.ScaleExitedAt = exitDate;
+                var key = $"{u.EmptyWagonArrivalId}:{u.WagonNumber.Trim()}";
+                if (exitedWagonMap.TryGetValue(key, out var exitDate))
+                {
+                    if (u.Arrival == null || exitDate >= u.Arrival.CreatedAt)
+                    {
+                        u.ScaleExitedAt = exitDate;
+                    }
+                }
             }
         }
 
@@ -1477,6 +1493,12 @@ public static class DbSeeder
             line.FulfilledNetWeight = 0;
         }
 
+        var allUnits = await db.EmptyWagonUnits.ToListAsync();
+        var unitsByArrivalAndNumber = allUnits
+            .ToLookup(u => (u.EmptyWagonArrivalId, (u.WagonNumber ?? "").Trim().ToUpperInvariant()));
+        var unitsByNumber = allUnits
+            .ToLookup(u => (u.WagonNumber ?? "").Trim().ToUpperInvariant());
+
         var registries = await db.LoadingRegistries
             .Include(r => r.EmptyWagonArrival)!.ThenInclude(a => a.Units)
             .ToListAsync();
@@ -1493,9 +1515,6 @@ public static class DbSeeder
                 routes = [];
             }
 
-            var units = registry.EmptyWagonArrival?.Units
-                .ToDictionary(x => x.WagonNumber, StringComparer.OrdinalIgnoreCase)
-                ?? new Dictionary<string, EmptyWagonUnit>(StringComparer.OrdinalIgnoreCase);
             var fulfilled = routes.Where(x => !x.IsDefective && linesById.ContainsKey(x.MonthlyOrderLineId)).ToList();
             registry.OrderDeductedWagons = fulfilled.Count;
             registry.OrderDeductedNetWeight = 0;
@@ -1503,9 +1522,26 @@ public static class DbSeeder
             {
                 var line = linesById[route.MonthlyOrderLineId];
                 line.FulfilledWagonCount++;
-                if (!units.TryGetValue(route.WagonNumber, out var unit)
-                    || !EmptyWagonUnitSync.TryParseWeight(EmptyWagonUnitSync.FormatNetto(unit.TareWeight, unit.GrossWeight), out var net))
-                    continue;
+
+                var wKey = (route.WagonNumber ?? "").Trim().ToUpperInvariant();
+                EmptyWagonUnit? unit = null;
+                if (route.SourceArrivalId.HasValue)
+                    unit = unitsByArrivalAndNumber[(route.SourceArrivalId.Value, wKey)].FirstOrDefault();
+                if (unit == null && registry.EmptyWagonArrivalId != Guid.Empty)
+                    unit = unitsByArrivalAndNumber[(registry.EmptyWagonArrivalId, wKey)].FirstOrDefault();
+                if (unit == null)
+                    unit = unitsByNumber[wKey].FirstOrDefault();
+
+                decimal net = 0;
+                if (unit != null && EmptyWagonUnitSync.TryParseWeight(EmptyWagonUnitSync.FormatNetto(unit.TareWeight, unit.GrossWeight), out var parsedNet))
+                {
+                    net = parsedNet;
+                }
+                else if (route.NetWeight > 0)
+                {
+                    net = route.NetWeight;
+                }
+
                 net = Math.Max(0, net);
                 line.FulfilledNetWeight += net;
                 registry.OrderDeductedNetWeight += net;

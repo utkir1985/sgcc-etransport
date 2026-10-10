@@ -147,8 +147,8 @@ export function WeightControlPage() {
           </p>
           <h1 className="thub__title">Peregruz va Nedogruz nazorati</h1>
           <p className="thub__lead">
-            Vagon tarozidan o‘tganda uning pasport sig‘imi (68.0 t) bilan avtomatik taqqoslash.
-            Kengsoy stansiyasidan qaytarish xavfi, otsipkalar va bo‘sh havo tashish zararlari tahlili.
+            Vagon tarozidan o‘tganda mahsulot turi (Suyultirilgan gaz ~32 t, Polietilen 50 t, Kondensat ~55 t, Oltingugurt ~64 t) bo‘yicha pasport sig‘imi bilan taqqoslash.
+            Kengsoy stansiyasidan qaytarish xavfi, otsipkalar va bo‘sh quvvat tashish zararlari tahlili.
           </p>
         </div>
 
@@ -213,7 +213,7 @@ export function WeightControlPage() {
               Nedogruz (Kam yuk)
             </span>
             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200/80 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
-              &gt; 3.5 t kam
+              Me'yordan kam
             </span>
           </div>
           <div>
@@ -253,7 +253,7 @@ export function WeightControlPage() {
               {summary.avgNettoTons} <span className="text-sm font-normal text-slate-400">t / vagon</span>
             </div>
             <div className="text-[11px] text-slate-400 mt-1">
-              Standart pasport sig‘imi: <b>68.0 t</b>
+              Mahsulot turi bo‘yicha me’yoriy yuklash
             </div>
           </div>
         </div>
@@ -304,17 +304,17 @@ export function WeightControlPage() {
           <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200">
             <div className="font-bold flex items-center gap-1.5 mb-1">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              Optimal yuklash (65.0 — 68.5 t)
+              Optimal yuklash (Mahsulot me’yori bo‘yicha)
             </div>
             <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
-              Vagon sig‘imidan 95-100% samarali foydalanilmoqda. Temir yo‘l qabuliga va xavfsizlik talablariga to‘liq javob beradi.
+              Suyultirilgan gaz: ~32.0 t | Polietilen: 50.0 t | Kondensat: ~55.0 t | Oltingugurt: ~64.0 t. Temir yo‘l qabuliga va xavfsizlik talablariga to‘liq javob beradi.
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200">
             <div className="font-bold flex items-center gap-1.5 mb-1">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              Nedogruz zarari (&lt; 64.5 t)
+              Nedogruz zarari (Me’yordan kam)
             </div>
             <p className="text-[11px] text-amber-700 dark:text-amber-300">
               Vagonga kam yuklanganda korxona bo‘sh havo tashigani uchun temir yo‘l tarifini to‘liq to‘laydi. Har bir kam yuklangan vagon — korxona uchun bevosita moliyaviy yo‘qotish.
@@ -380,7 +380,7 @@ export function WeightControlPage() {
               Tarozi vedomosti va Pasport sig‘imi taqqoslash qaydnomasi
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Netto = Brutto - Tara. Farq pasport yuk ko‘tarish chegarasi (68.0 t) asosida solishtirilgan.
+              Netto = Brutto - Tara. Farq mahsulot turi (Gaz: ~32 t, Polietilen: 50 t, Kondensat: ~55 t, Oltingugurt: ~64 t) bo‘yicha pasport sig‘imi bilan taqqoslangan.
             </p>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">

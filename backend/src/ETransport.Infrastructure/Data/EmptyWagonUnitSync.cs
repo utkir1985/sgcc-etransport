@@ -157,13 +157,23 @@ public static class EmptyWagonUnitSync
                 unit.GrossWeight = gross;
 
             // Statusni faqat yangi/bo‘sh unit uchun party stage dan taxmin qilamiz.
-            // Mavjud «AwaitingTare» vagon partiya bosqichiga qarab surilmaydi: partiya
-            // bosqichi eng ilgarilagan vagon bo‘yicha yuriladi (bittasi estakadaga o‘tsa
-            // partiya EstakadaPlaced), qolganlari esa tara tekshiruvida turishi kerak.
             if (isNewUnit || string.IsNullOrWhiteSpace(unit.Status))
+            {
                 unit.Status = InferStatusFromArrival(arrival, unit);
+            }
             else
+            {
                 unit.Status = NormalizeStatus(unit);
+                // Zavod amaliyotida tara kirishda olinmaydi — 1C chiqish siklida beradi.
+                // Kirish ruxsatnomasi tasdiqlangan yoki estakadaga yo'naltirilgan partiyadagi AwaitingTare vagonlar
+                // sun'iy bloklanib qolmasligi uchun yuklashga tayyor (Estakada) maqomiga suriladi.
+                if (unit.Status == EmptyWagonUnitStatuses.AwaitingTare
+                    && (arrival.Stage is "ReadyForEstakada" or "EstakadaPlaced" or "Loading" or "Loaded" or "ToRailwayScale" or "GrossWeighed" or "SealInstallation" or "Sealed" or "DocumentsIssued"
+                        || (arrival.EntryPermitPermitApprovedAt != null && arrival.EntryPermitSecurityApprovedAt != null)))
+                {
+                    unit.Status = EmptyWagonUnitStatuses.Estakada;
+                }
+            }
         }
 
         foreach (var orphan in arrival.Units.Where(u => !keep.Contains(u.WagonNumber)).ToList())
@@ -229,11 +239,13 @@ public static class EmptyWagonUnitSync
         return unit.Status;
     }
 
-    /// <summary>Tara og‘irligi 1C dan chiqishda keladi; shu yerda faqat tekshiruvdan o‘tganlik.</summary>
+    /// <summary>Tara og‘irligi 1C dan chiqishda keladi; kirish ruxsati berilgan yoki tekshiruvdan o'tgan bo'lsa yetarli.</summary>
     public static bool PassedTareCheck(EmptyWagonUnit unit) =>
         unit.Status != EmptyWagonUnitStatuses.AwaitingTare
         || unit.TareWeighedAt.HasValue
-        || !string.IsNullOrWhiteSpace(unit.TareWeight);
+        || !string.IsNullOrWhiteSpace(unit.TareWeight)
+        || unit.TareCheckedAt.HasValue
+        || (unit.Arrival?.EntryPermitPermitApprovedAt != null && unit.Arrival?.EntryPermitSecurityApprovedAt != null);
 
     private static string InferStatusFromArrival(EmptyWagonArrival arrival, EmptyWagonUnit unit)
     {
@@ -262,13 +274,15 @@ public static class EmptyWagonUnitSync
 
         return arrival.Stage switch
         {
-            "EstakadaPlaced" => EmptyWagonUnitStatuses.Estakada,
+            "EstakadaPlaced" or "ReadyForEstakada" or "DocumentsIssued" => EmptyWagonUnitStatuses.Estakada,
             "Loading" => EmptyWagonUnitStatuses.Loading,
             "Loaded" or "ToRailwayScale" => EmptyWagonUnitStatuses.Loaded,
             "GrossWeighed" => EmptyWagonUnitStatuses.GrossWeighed,
             "SealInstallation" => EmptyWagonUnitStatuses.SealPending,
             "Sealed" => EmptyWagonUnitStatuses.Sealed,
-            _ => EmptyWagonUnitStatuses.AwaitingTare,
+            _ => (arrival.EntryPermitPermitApprovedAt != null && arrival.EntryPermitSecurityApprovedAt != null)
+                ? EmptyWagonUnitStatuses.Estakada
+                : EmptyWagonUnitStatuses.AwaitingTare,
         };
     }
 
@@ -433,11 +447,13 @@ public static class EmptyWagonUnitSync
         var active = arrival.Units
             .Where(u => u.Status != EmptyWagonUnitStatuses.Returned)
             .ToList();
-        if (active.Count == 0 || active.Any(u => u.Status == EmptyWagonUnitStatuses.AwaitingTare))
-            return false;
+        if (active.Count == 0) return false;
 
         foreach (var unit in active)
-            unit.Status = EmptyWagonUnitStatuses.Estakada;
+        {
+            if (unit.Status == EmptyWagonUnitStatuses.AwaitingTare)
+                unit.Status = EmptyWagonUnitStatuses.Estakada;
+        }
 
         arrival.Stage = "EstakadaPlaced";
         SyncMirrors(arrival);

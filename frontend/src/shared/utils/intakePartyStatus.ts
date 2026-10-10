@@ -52,9 +52,20 @@ export function getIntakePartyStatus(
     return 'Tara tortilmoqda';
   }
 
-  // Kirish xizmat xati jarayoni Tara tortilishi bilan to'liq yakunlanadi.
   // Keyingi barcha operatsiyalar (yuklash, brutto, plomba, yuk xati, kengsoyga chiqarish)
-  // chiqish bosqichiga tegishli bo'lib, kirish xizmat xati "Zavodga qabul qilindi" maqomida qoladi.
+  if (stage === 'EstakadaPlaced') return 'Yuklashga tayyor';
+  if (stage === 'Loading') return 'Yuklanmoqda';
+  if (stage === 'Loaded') return 'Yuklangan';
+  if (stage === 'ToRailwayScale') return 'Brutto kutmoqda';
+  if (stage === 'GrossWeighed') return 'Plomba kutmoqda';
+  if (stage === 'SealInstallation') return 'Plomba o‘rnatilmoqda';
+  if (stage === 'SealPending') return 'Plomba tasdig‘i kutilmoqda';
+  if (stage === 'Sealed') return 'Yuk xati kutmoqda';
+  if (stage === 'RegistryPrepared') return 'Yuk xati shakllantirildi';
+  if (stage === 'DocumentsIssued') return '1C / e-naklga kiritildi';
+  if (stage === 'PermitAndSecurityApproved') return 'Chiqishga ruxsat berildi';
+  if (stage === 'Exited') return 'Kengsoyga chiqarildi';
+
   return 'Zavodga qabul qilindi';
 }
 

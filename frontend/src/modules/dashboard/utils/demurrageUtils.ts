@@ -123,6 +123,23 @@ export interface WeightSummary {
   estimatedLostCapacityCostUzs: number;
 }
 
+export interface ContractorLimitDetail {
+  orderLineId?: string;
+  orderNumber: string;
+  contractNumber: string;
+  productType: string;
+  destinationStation: string;
+  planTons: number;
+  planWagons: number;
+  loadedTons: number;
+  loadedWagons: number;
+  remainingTons: number;
+  remainingWagons: number;
+  progressPercent: number;
+  status: 'ok' | 'warning' | 'danger';
+  lastLoadedDate?: string;
+}
+
 export interface ContractorLimitItem {
   contractorName: string;
   orderNumber: string;
@@ -138,6 +155,9 @@ export interface ContractorLimitItem {
   progressPercent: number;
   status: 'ok' | 'warning' | 'danger';
   lastLoadedDate?: string;
+  orderCount?: number;
+  stationCount?: number;
+  details?: ContractorLimitDetail[];
 }
 
 export interface DefectGu23Item {
@@ -240,7 +260,100 @@ export function saveTariffSettings(settings: LogisticsTariffSettings): void {
   }
 }
 
-const DEFAULT_CAPACITY_TONS = 68.0;
+export interface ProductCapacityConfig {
+  nominalCapacityTons: number;
+  minNormalTons: number;
+  maxNormalTons: number;
+  label: string;
+}
+
+/**
+ * Mahsulot turi va vagon tipiga qarab standart yuklash/pasport sig'imi me'yorlari:
+ * - Suyultirilgan gaz: ~32.0 t (sisterna hajmi 75-84 m³, zichligi ~0.52 t/m³, 85% to'ldirish chegarasi)
+ * - Buten-1: ~36.0 t (gaz sisternasi, zichligi ~0.59 t/m³)
+ * - Etilenning polimerlari (polietilen): 50.0 t (yopiq vagon, palletlar bilan to'liq sig'im)
+ * - Tabiiy gaz kondensati: ~55.0 t (neft-gaz sisternasi, zichligi ~0.75 t/m³)
+ * - Oltingugurt (sera): ~64.0 t (poluvagon/yopiq vagon)
+ * - Standart boshqa vagonlar: 66.0 t
+ */
+export function getProductCapacityConfig(
+  productType?: string | null,
+  wagonType?: string | null
+): ProductCapacityConfig {
+  const p = (productType || '').toLowerCase();
+  const w = (wagonType || '').toLowerCase();
+
+  // 1. Suyultirilgan gaz (LPG / Propan-butan)
+  if (
+    p.includes('suyultirilgan') ||
+    p.includes('lpg') ||
+    p.includes('propan') ||
+    p.includes('butan') ||
+    w.includes('suyultirilgan')
+  ) {
+    return {
+      nominalCapacityTons: 32.0,
+      minNormalTons: 29.5,
+      maxNormalTons: 33.5,
+      label: 'Suyultirilgan gaz (Norma: ~32.0 t)',
+    };
+  }
+
+  // 2. Buten-1 monomer
+  if (p.includes('buten')) {
+    return {
+      nominalCapacityTons: 36.0,
+      minNormalTons: 33.0,
+      maxNormalTons: 38.0,
+      label: 'Buten-1 (Norma: ~36.0 t)',
+    };
+  }
+
+  // 3. Etilenning polimerlari (Polietilen granula)
+  if (
+    p.includes('polietilen') ||
+    p.includes('etilen') ||
+    p.includes('granula') ||
+    w.includes('granula')
+  ) {
+    return {
+      nominalCapacityTons: 50.0,
+      minNormalTons: 47.0,
+      maxNormalTons: 51.5,
+      label: 'Polietilen (Norma: 50.0 t)',
+    };
+  }
+
+  // 4. Tabiiy gaz kondensati
+  if (p.includes('kondensat') || w.includes('kondensat')) {
+    return {
+      nominalCapacityTons: 55.0,
+      minNormalTons: 50.0,
+      maxNormalTons: 60.0,
+      label: 'Gaz kondensati (Norma: ~55.0 t)',
+    };
+  }
+
+  // 5. Oltingugurt (Sera)
+  if (p.includes('oltingugurt') || p.includes('sera') || w.includes('sera')) {
+    return {
+      nominalCapacityTons: 64.0,
+      minNormalTons: 58.0,
+      maxNormalTons: 66.5,
+      label: 'Oltingugurt (Norma: ~64.0 t)',
+    };
+  }
+
+  // Standart umumiy vagon sig'imi
+  return {
+    nominalCapacityTons: 66.0,
+    minNormalTons: 62.0,
+    maxNormalTons: 68.5,
+    label: 'Standart vagon (66.0 t)',
+  };
+}
+
+export const DEFAULT_CAPACITY_TONS = 68.0;
 
 function parseHoursDiff(fromIso?: string | null, toIso?: string | null): number {
   if (!fromIso) return 0;
@@ -651,14 +764,15 @@ export function buildDemurrageAnalysis(
       const tare = parseFloat(unit.tareWeight || '0') || 0;
       const gross = parseFloat(unit.grossWeight || '0') || 0;
       const netto = unit.nettoWeight ? parseFloat(String(unit.nettoWeight)) : (gross > tare && tare > 0 ? Math.round((gross - tare) * 100) / 100 : null);
-      const capacityTons = DEFAULT_CAPACITY_TONS;
+      const capCfg = getProductCapacityConfig(unit.productType || arrival.productType, unit.wagonType);
+      const capacityTons = capCfg.nominalCapacityTons;
       let weightDiff = 0;
       let weightStatus: DemurrageWagonItem['weightStatus'] = 'unweighed';
 
       if (netto !== null && netto > 5) {
         weightDiff = Math.round((netto - capacityTons) * 100) / 100;
-        if (weightDiff > 0.5) weightStatus = 'overload';
-        else if (weightDiff < -3.5) weightStatus = 'underload';
+        if (netto > capCfg.maxNormalTons) weightStatus = 'overload';
+        else if (netto < capCfg.minNormalTons) weightStatus = 'underload';
         else weightStatus = 'normal';
       }
 
@@ -837,7 +951,8 @@ export function buildWeightAnalysis(
       const nettoVal = u.nettoWeight ? parseFloat(String(u.nettoWeight)) : (gross > tare && tare > 0 ? gross - tare : 0);
       if (nettoVal <= 5) continue;
 
-      const capacityTons = DEFAULT_CAPACITY_TONS;
+      const capCfg = getProductCapacityConfig(u.productType || arrival.productType, u.wagonType);
+      const capacityTons = capCfg.nominalCapacityTons;
       const netto = Math.round(nettoVal * 100) / 100;
       const diffTons = Math.round((netto - capacityTons) * 100) / 100;
 
@@ -845,13 +960,15 @@ export function buildWeightAnalysis(
       let note = 'Me\'yorda yuklangan';
       let stationRisk = false;
 
-      if (diffTons > 0.5) {
+      if (netto > capCfg.maxNormalTons) {
         status = 'overload';
-        note = `Ortiqcha yuk (+${diffTons} t). Kengsoy qabul qilmaslik va jarima xavfi!`;
+        const over = Math.round((netto - capCfg.maxNormalTons) * 100) / 100;
+        note = `Ortiqcha yuk (+${diffTons} t, me'yordan +${over} t oshiq). Kengsoy qabul qilmaslik xavfi!`;
         stationRisk = true;
-      } else if (diffTons < -3.5) {
+      } else if (netto < capCfg.minNormalTons) {
         status = 'underload';
-        note = `Kam yuklangan (${Math.abs(diffTons)} t kam). Bo'sh quvvat tashilgan.`;
+        const under = Math.round((capCfg.minNormalTons - netto) * 100) / 100;
+        note = `Kam yuklangan (${Math.abs(diffTons)} t kam, me'yordan ${under} t kam). Bo'sh quvvat tashilgan.`;
       }
 
       const info = regMap.get(`${arrival.id}_${u.wagonNumber.trim()}`);
@@ -915,14 +1032,35 @@ function parseWagonWeight(val: any): number {
   return isNaN(n) ? 0 : n;
 }
 
+export function normalizeContractorName(name?: string | null): string {
+  if (!name) return "Noma'lum";
+  let s = name.trim().replace(/[«»“”]/g, '"');
+  if (/navoi.*uran/i.test(s)) {
+    return '"Navoiyuran" DK';
+  }
+  return s;
+}
+
+function cleanStationName(st?: string | null): string {
+  if (!st) return 'Kengsoy';
+  return st.trim().replace(/\s+\d{5,6}$/, '');
+}
+
 export function buildContractorLimitsAnalysis(
   orders: MonthlyOrder[],
   registries: LoadingRegistry[]
-): { items: ContractorLimitItem[]; totals: { totalPlanTons: number; totalLoadedTons: number; remainingTons: number; dangerCount: number; warningCount: number } } {
+): {
+  items: ContractorLimitItem[];
+  totals: {
+    totalPlanTons: number;
+    totalLoadedTons: number;
+    remainingTons: number;
+    dangerCount: number;
+    warningCount: number;
+  };
+} {
   // Aggregate registries by lineId, contractor+station, and contractor
   const byLineId = new Map<string, { tons: number; wagons: number; lastDate?: string }>();
-  const byContractorStation = new Map<string, { tons: number; wagons: number; lastDate?: string }>();
-  const byContractor = new Map<string, { tons: number; wagons: number; lastDate?: string }>();
 
   const trackLoaded = (
     map: Map<string, { tons: number; wagons: number; lastDate?: string }>,
@@ -952,17 +1090,9 @@ export function buildContractorLimitsAnalysis(
           rwObj.netWeight ?? rwObj.NetWeight ?? rwObj.nettoWeight ?? rwObj.netto ?? 0
         );
         const lineId = (rwObj.monthlyOrderLineId || reg.monthlyOrderLineId || '').trim();
-        const cName = cleanContractorKey(rwObj.contractorName || reg.contractorName || '');
-        const stName = cleanContractorKey(rwObj.destinationStation || reg.destinationStation || '');
 
         if (lineId) {
           trackLoaded(byLineId, lineId, w, 1, regDate);
-        }
-        if (cName && stName) {
-          trackLoaded(byContractorStation, `${cName}__${stName}`, w, 1, regDate);
-        }
-        if (cName) {
-          trackLoaded(byContractor, cName, w, 1, regDate);
         }
       }
     } else {
@@ -970,30 +1100,43 @@ export function buildContractorLimitsAnalysis(
       const w = parseWagonWeight(regObj.orderDeductedNetWeight ?? 0);
       const wagons = Number(regObj.orderDeductedWagons ?? regObj.wagonCount ?? 0) || 0;
       const lineId = (regObj.monthlyOrderLineId || '').trim();
-      const cName = cleanContractorKey(regObj.contractorName || '');
-      const stName = cleanContractorKey(regObj.destinationStation || '');
 
       if (lineId) {
         trackLoaded(byLineId, lineId, w, wagons, regDate);
       }
-      if (cName && stName) {
-        trackLoaded(byContractorStation, `${cName}__${stName}`, w, wagons, regDate);
-      }
-      if (cName) {
-        trackLoaded(byContractor, cName, w, wagons, regDate);
-      }
     }
   }
 
-  const items: ContractorLimitItem[] = [];
+  // Group by (Contractor + Station) so the same client is NEVER shown twice for the same destination,
+  // and new waybills/orders correctly aggregate limits without false stop-limits.
+  interface StationGroup {
+    contractorName: string;
+    contracts: Set<string>;
+    productType: string;
+    destinationStation: string;
+    planTons: number;
+    planWagons: number;
+    loadedTons: number;
+    loadedWagons: number;
+    lastLoadedDate?: string;
+  }
+
+  const stationGroups = new Map<string, StationGroup>();
 
   for (const order of orders) {
+    const contractNo = order.contractNumber || '—';
+    const prodType = order.productType || 'Mahsulot';
+
     for (const line of order.lines || []) {
-      const contractorName = (line.contractor || order.contractNumber || 'Noma\'lum').trim();
+      const rawContractor = (line.contractor || order.contractNumber || "Noma'lum").trim();
+      const contractorName = normalizeContractorName(rawContractor);
+      const station = cleanStationName(line.destinationStation || 'Kengsoy');
+      const groupKey = `${cleanContractorKey(contractorName)}__${cleanContractorKey(station)}`;
+
       let planTons = line.tonCount || 0;
       let planWagons = line.wagonCount || 0;
 
-      // Defensive check: auto-convert kg to tons if entered incorrectly in the past/future
+      // Defensive check: auto-convert kg to tons if entered incorrectly in kg
       if (planTons > 500 && planWagons <= 5 && (planTons / (planWagons || 1)) > 500) {
         planTons = Math.round((planTons / 1000) * 100) / 100;
       }
@@ -1001,73 +1144,97 @@ export function buildContractorLimitsAnalysis(
       // Check direct line fulfillment from backend
       const lineNetWeight = parseWagonWeight(line.fulfilledNetWeight);
       const lineFulfilledWagons = Number(line.fulfilledWagonCount) || 0;
-
-      // Check registry aggregations
-      const cKey = cleanContractorKey(contractorName);
-      const stKey = cleanContractorKey(line.destinationStation || '');
       const byLineMatch = line.id ? byLineId.get(line.id) : undefined;
-      const byStMatch = (cKey && stKey) ? byContractorStation.get(`${cKey}__${stKey}`) : undefined;
-      const byContrMatch = cKey ? byContractor.get(cKey) : undefined;
 
-      // Determine loaded tons & wagons with graceful fallbacks
-      let loadedTons = 0;
-      let loadedWagons = 0;
-      let lastLoadedDate: string | undefined = line.lastLoadingDate || undefined;
+      let lineLoadedTons = 0;
+      let lineLoadedWagons = 0;
+      let lineLastDate: string | undefined = line.lastLoadingDate || undefined;
 
       if (lineNetWeight > 0 || lineFulfilledWagons > 0) {
-        loadedTons = lineNetWeight;
-        loadedWagons = lineFulfilledWagons;
+        lineLoadedTons = lineNetWeight;
+        lineLoadedWagons = lineFulfilledWagons;
       } else if (byLineMatch && (byLineMatch.tons > 0 || byLineMatch.wagons > 0)) {
-        loadedTons = byLineMatch.tons;
-        loadedWagons = byLineMatch.wagons;
-        lastLoadedDate = lastLoadedDate || byLineMatch.lastDate;
-      } else if (byStMatch && (byStMatch.tons > 0 || byStMatch.wagons > 0)) {
-        loadedTons = byStMatch.tons;
-        loadedWagons = byStMatch.wagons;
-        lastLoadedDate = lastLoadedDate || byStMatch.lastDate;
-      } else if (byContrMatch && (byContrMatch.tons > 0 || byContrMatch.wagons > 0)) {
-        loadedTons = byContrMatch.tons;
-        loadedWagons = byContrMatch.wagons;
-        lastLoadedDate = lastLoadedDate || byContrMatch.lastDate;
+        lineLoadedTons = byLineMatch.tons;
+        lineLoadedWagons = byLineMatch.wagons;
+        lineLastDate = lineLastDate || byLineMatch.lastDate;
       }
 
-      if (!lastLoadedDate) {
-        lastLoadedDate = byLineMatch?.lastDate || byStMatch?.lastDate || byContrMatch?.lastDate;
+      let grp = stationGroups.get(groupKey);
+      if (!grp) {
+        grp = {
+          contractorName,
+          contracts: new Set<string>(),
+          productType: prodType,
+          destinationStation: station,
+          planTons: 0,
+          planWagons: 0,
+          loadedTons: 0,
+          loadedWagons: 0,
+          lastLoadedDate: undefined,
+        };
+        stationGroups.set(groupKey, grp);
       }
 
-      loadedTons = Math.round(loadedTons * 10) / 10;
-      const remainingTons = Math.round(Math.max(0, planTons - loadedTons) * 10) / 10;
-      const remainingWagons = Math.max(0, planWagons - loadedWagons);
+      if (contractNo && contractNo !== '—') grp.contracts.add(contractNo);
+      if (prodType && prodType !== 'Mahsulot') grp.productType = prodType;
+      grp.planTons += planTons;
+      grp.planWagons += planWagons;
+      grp.loadedTons += lineLoadedTons;
+      grp.loadedWagons += lineLoadedWagons;
 
-      const progressPercent = planTons > 0 ? Math.min(150, Math.round((loadedTons / planTons) * 100)) : 100;
-
-      let status: ContractorLimitItem['status'] = 'ok';
-      if (progressPercent >= 100 || (planTons > 0 && remainingTons <= 0)) {
-        status = 'danger';
-      } else if (progressPercent >= 85) {
-        status = 'warning';
+      if (lineLastDate && (!grp.lastLoadedDate || new Date(lineLastDate) > new Date(grp.lastLoadedDate))) {
+        grp.lastLoadedDate = lineLastDate;
       }
-
-      items.push({
-        contractorName,
-        orderNumber: order.contractNumber || 'Buyurtma',
-        contractNumber: order.contractNumber || '—',
-        productType: order.productType || 'Mahsulot',
-        destinationStation: line.destinationStation || 'Kengsoy',
-        planTons,
-        planWagons,
-        loadedTons,
-        loadedWagons,
-        remainingTons,
-        remainingWagons,
-        progressPercent,
-        status,
-        lastLoadedDate,
-      });
     }
   }
 
-  items.sort((a, b) => b.progressPercent - a.progressPercent);
+  const items: ContractorLimitItem[] = [];
+
+  for (const grp of stationGroups.values()) {
+    const planTons = Math.round(grp.planTons * 10) / 10;
+    const planWagons = grp.planWagons;
+    const loadedTons = Math.round(grp.loadedTons * 10) / 10;
+    const loadedWagons = grp.loadedWagons;
+    const remainingTons = Math.round(Math.max(0, planTons - loadedTons) * 10) / 10;
+    const remainingWagons = Math.max(0, planWagons - loadedWagons);
+
+    const progressPercent =
+      planTons > 0 ? Math.min(150, Math.round((loadedTons / planTons) * 100)) : loadedTons > 0 ? 100 : 0;
+
+    let status: ContractorLimitItem['status'] = 'ok';
+    if (planTons > 0 && (remainingTons <= 0 || progressPercent >= 100)) {
+      status = 'danger';
+    } else if (progressPercent >= 85) {
+      status = 'warning';
+    }
+
+    const contractsArr = Array.from(grp.contracts);
+    const contractNumber = contractsArr.length > 0 ? contractsArr.join(', ') : '—';
+
+    items.push({
+      contractorName: grp.contractorName,
+      orderNumber: contractNumber,
+      contractNumber,
+      productType: grp.productType,
+      destinationStation: grp.destinationStation,
+      planTons,
+      planWagons,
+      loadedTons,
+      loadedWagons,
+      remainingTons,
+      remainingWagons,
+      progressPercent,
+      status,
+      lastLoadedDate: grp.lastLoadedDate,
+    });
+  }
+
+  // Sort: STOP limits first, then warning, then highest progress
+  items.sort((a, b) => {
+    if (a.status === 'danger' && b.status !== 'danger') return -1;
+    if (b.status === 'danger' && a.status !== 'danger') return 1;
+    return b.progressPercent - a.progressPercent;
+  });
 
   const totalPlanTons = Math.round(items.reduce((s, x) => s + x.planTons, 0) * 10) / 10;
   const totalLoadedTons = Math.round(items.reduce((s, x) => s + x.loadedTons, 0) * 10) / 10;
@@ -1080,6 +1247,7 @@ export function buildContractorLimitsAnalysis(
     totals: { totalPlanTons, totalLoadedTons, remainingTons, dangerCount, warningCount },
   };
 }
+
 export function buildDefectsGu23Analysis(
   arrivals: EmptyWagonArrival[],
   registries: LoadingRegistry[]

@@ -270,12 +270,7 @@ function parseWagonTares(tareWeight: string | undefined, wagonNumbers: string[])
 
 function unitsFromArrival(item: EmptyWagonArrival): EmptyWagonUnit[] {
   if (item.wagons && item.wagons.length > 0) {
-    const list = [...item.wagons].sort((a, b) => a.sortOrder - b.sortOrder);
-    if (item.stage !== 'Exited') {
-      const active = list.filter(u => !u.scaleExitedAt && u.status !== 'Exited' && u.status !== 'Departed');
-      if (active.length > 0) return active;
-    }
-    return list;
+    return [...item.wagons].sort((a, b) => a.sortOrder - b.sortOrder);
   }
   const nums = parseList(item.verifiedWagonNumbers || item.wagonNumbers);
   const tares = parseWagonTares(item.tareWeight, nums);
@@ -1131,11 +1126,11 @@ export function EmptyWagonsPage() {
     }
     if (normalized.includes('ruxsat berildi') || normalized.includes('tasdiqlandi')
       || normalized.includes('yakun') || normalized.includes('tayyor')
-      || normalized.includes('qabul qilindi')
+      || normalized.includes('qabul qilindi') || normalized.includes('chiqarildi')
       || stage === 'Loaded' || stage === 'Exited') {
       return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300';
     }
-    if (stage === 'RegistryPrepared') {
+    if (stage === 'RegistryPrepared' || stage === 'DocumentsIssued' || normalized.includes('1c') || normalized.includes('nakl')) {
       return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-300';
     }
     if (normalized.includes('kutil') || normalized.includes('kelishuv')
@@ -1564,10 +1559,13 @@ export function EmptyWagonsPage() {
   // (qaytarilmagan) vagonlari tara tekshiruvidan o‘tib yuklashga uzatilgach xat shakllanadi.
   // Yuk xati / chiqishga bog‘liq emas. Ichki fond (ZF-) va 1C yozuvlari xizmat xati emas.
   const entryProcessDone = useCallback((a: EmptyWagonArrival) => {
+    // Agar Qo'riqlash yoki Ruxsatnoma byurosi kelishgan bo'lsa, xizmat xati rasmiylashtirilgan va zavodga qabul qilingan
+    if (a.entryPermitSecurityApprovedAt || a.entryPermitPermitApprovedAt || a.entryPermitShiftApprovedAt) return true;
+    const s = getStage(a);
+    if (['ReadyForEstakada', 'TareWeighing', 'Loading', 'SealInstallation', 'Exited'].includes(s)) return true;
     const units = (a.wagons ?? []).filter(u => u.status !== 'Returned');
     if (units.length > 0) return units.every(u => u.status !== 'AwaitingTare');
-    const s = getStage(a);
-    return !['RailwayInspected', 'KengsoyInspection', 'SecurityInspection', 'ReadyForEstakada', 'TareWeighing', 'Draft', 'Created'].includes(s);
+    return !['RailwayInspected', 'KengsoyInspection', 'SecurityInspection', 'Draft', 'Created'].includes(s);
   }, []);
   const entryLetterArrivals = useMemo(
     () => arrivals.filter(a =>

@@ -693,6 +693,7 @@ public class DocumentsController(
                     ? Math.Max(0, net)
                     : 0;
             });
+            var limitWarnings = new List<string>();
             foreach (var group in fulfilledRoutes.GroupBy(x => new { OrderId = x.MonthlyOrderId!.Value, LineId = x.MonthlyOrderLineId }))
             {
                 if (!ordersById.TryGetValue(group.Key.OrderId, out var grpOrder)) continue;
@@ -707,12 +708,18 @@ public class DocumentsController(
                         : 0;
                 });
                 if (orderLine.WagonCount > 0 && orderLine.FulfilledWagonCount + wagonDelta > orderLine.WagonCount)
-                    return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
-                        $"{orderLine.Contractor}: buyurtmada {Math.Max(0, orderLine.WagonCount - orderLine.FulfilledWagonCount)} ta vagon qoldi"));
+                {
+                    var excess = orderLine.FulfilledWagonCount + wagonDelta - orderLine.WagonCount;
+                    limitWarnings.Add(
+                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.WagonCount} ta) to‘lgan, ortiqcha {excess} ta vagon biriktirildi");
+                }
                 if (orderLine.WagonCount <= 0 && orderLine.TonCount > 0
                     && orderLine.FulfilledNetWeight + netDelta > orderLine.TonCount)
-                    return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
-                        $"{orderLine.Contractor}: buyurtmada {Math.Max(0, orderLine.TonCount - orderLine.FulfilledNetWeight):0.###} t yuk qoldi"));
+                {
+                    var excess = orderLine.FulfilledNetWeight + netDelta - orderLine.TonCount;
+                    limitWarnings.Add(
+                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.TonCount:0.###} t) to‘lgan, ortiqcha {excess:0.###} t yuk biriktirildi");
+                }
             }
 
             var registry = new LoadingRegistry
@@ -915,7 +922,10 @@ public class DocumentsController(
                 Details: $"Stansiya: {registry.DestinationStation}"
             ));
 
-            return Ok(new ApiResponse<LoadingRegistryDto>(true, existingToDto(registry)));
+            var createRegMsg = limitWarnings.Count > 0
+                ? $"Yuk xati shakllantirildi. Diqqat: {string.Join("; ", limitWarnings)}"
+                : "Yuk xati muvaffaqiyatli shakllantirildi";
+            return Ok(new ApiResponse<LoadingRegistryDto>(true, existingToDto(registry), createRegMsg));
         }
         catch (Exception ex)
         {
@@ -1191,6 +1201,8 @@ public class DocumentsController(
         if (duplicateNumber is not null)
             return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null, "Bunday raqamli yuk xati allaqachon mavjud"));
 
+        var limitWarnings = new List<string>();
+
         if (request.WagonRoutes is not null && request.WagonRoutes.Count > 0)
         {
             var requestedRoutes = request.WagonRoutes;
@@ -1426,12 +1438,18 @@ public class DocumentsController(
                         : 0;
                 });
                 if (orderLine.WagonCount > 0 && orderLine.FulfilledWagonCount + wagonDelta > orderLine.WagonCount)
-                    return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
-                        $"{orderLine.Contractor}: buyurtmada {Math.Max(0, orderLine.WagonCount - orderLine.FulfilledWagonCount)} ta vagon qoldi"));
+                {
+                    var excess = orderLine.FulfilledWagonCount + wagonDelta - orderLine.WagonCount;
+                    limitWarnings.Add(
+                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.WagonCount} ta) to‘lgan, ortiqcha {excess} ta vagon biriktirildi");
+                }
                 if (orderLine.WagonCount <= 0 && orderLine.TonCount > 0
                     && orderLine.FulfilledNetWeight + netDelta > orderLine.TonCount)
-                    return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
-                        $"{orderLine.Contractor}: buyurtmada {Math.Max(0, orderLine.TonCount - orderLine.FulfilledNetWeight):0.###} t yuk qoldi"));
+                {
+                    var excess = orderLine.FulfilledNetWeight + netDelta - orderLine.TonCount;
+                    limitWarnings.Add(
+                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.TonCount:0.###} t) to‘lgan, ortiqcha {excess:0.###} t yuk biriktirildi");
+                }
 
                 orderLine.FulfilledWagonCount += wagonDelta;
                 orderLine.FulfilledNetWeight += netDelta;
@@ -1597,8 +1615,10 @@ public class DocumentsController(
             registry.EmptyWagonArrival.Stage = "RegistryPrepared";
 
         await db.SaveChangesAsync();
-        return Ok(new ApiResponse<LoadingRegistryDto>(true, existingToDto(registry),
-            wasReturned ? "Yuk xati tahrirlandi — qayta kelishuv uchun yuborildi" : "Yuk xati yangilandi"));
+        var updateSuccessMsg = limitWarnings.Count > 0
+            ? $"Yuk xati yangilandi. Diqqat: {string.Join("; ", limitWarnings)}"
+            : (wasReturned ? "Yuk xati tahrirlandi — qayta kelishuv uchun yuborildi" : "Yuk xati yangilandi");
+        return Ok(new ApiResponse<LoadingRegistryDto>(true, existingToDto(registry), updateSuccessMsg));
     }
 
     [HttpDelete("loading-registry/{id:guid}")]

@@ -66,8 +66,23 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                 if (model.Signers == null || model.Signers.Count != 5 || model.Signers.Any(s =>
                     !s.At.HasValue || string.IsNullOrWhiteSpace(s.Name) || s.Name == "—" || s.Status == "Kutilmoqda"))
                     throw new InvalidOperationException("Yakuniy yuk xatida tasdiqlovchi F.I.Sh. yoki sana mavjud emas.");
+                
+                var registryDate = r.SecurityApprovedAt ?? r.PreparedAt;
+                var ownerName = Name(r.SecurityApprovedByName, r.PreparedByName);
+                var workflowJson = JsonSerializer.Serialize(new {
+                    workflowName = "Tasdiqlangan",
+                    approvedByName = ownerName,
+                    completedAt = registryDate.ToString("O")
+                });
+                var metadataJson = JsonSerializer.Serialize(new {
+                    documentDate = r.PreparedAt.ToString("O"),
+                    registryNumber = r.RegistryNumber,
+                    productType = model.ProductType,
+                    wagonCount = model.Wagons.Count
+                });
+
                 var request = new QrLinkRegisterRequest(r.RegistryNumber, "Yuk xati", $"Yuk xati № {r.RegistryNumber}",
-                    OwnerName: Name(r.SecurityApprovedByName, r.PreparedByName));
+                    Status: "Approved", OwnerName: ownerName, MetadataJson: metadataJson, WorkflowJson: workflowJson);
                 var identity = await ReserveAsync(request, ct);
                 model = model with { QrGlobalId = identity.GlobalId, QrVerificationUrl = identity.VerificationUrl };
                 var result = await UploadAsync(request, identity, pdf.GenerateYukXatiPdf(model), $"YukXati_{r.RegistryNumber}.pdf", ct);
@@ -99,7 +114,23 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                     a.EntryPermitSecurityApprovedByName, a.EntryPermitSecurityApprovedAt,
                     a.EntryPermitSecurityApprovedAt, true);
                 if (a.EntryPermitQrFinalFileHash == Hash(model)) return false;
-                var request = new QrLinkRegisterRequest(no, "Kirish xizmat xati", $"Kirish xizmat xati № {no}", OwnerName: Name(a.CreatedBy?.FullName));
+
+                var approvalDate = a.EntryPermitSecurityApprovedAt ?? a.EntryPermitPermitApprovedAt ?? a.CreatedAt;
+                var approverName = Name(a.EntryPermitSecurityApprovedByName, a.EntryPermitPermitApprovedByName, a.CreatedBy?.FullName);
+                var workflowJson = JsonSerializer.Serialize(new {
+                    workflowName = "Tasdiqlangan",
+                    approvedByName = approverName,
+                    completedAt = approvalDate.ToString("O")
+                });
+                var metadataJson = JsonSerializer.Serialize(new {
+                    documentDate = a.CreatedAt.ToString("O"),
+                    arrivalNumber = a.ArrivalNumber,
+                    productType = a.ProductType,
+                    wagonCount = a.WagonCount
+                });
+
+                var request = new QrLinkRegisterRequest(no, "Kirish xizmat xati", $"Kirish xizmat xati № {no}",
+                    Status: "Approved", OwnerName: Name(a.CreatedBy?.FullName), MetadataJson: metadataJson, WorkflowJson: workflowJson);
                 var identity = await ReserveAsync(request, ct);
                 model = model with { QrGlobalId = identity.GlobalId, QrVerificationUrl = identity.VerificationUrl };
                 var result = await UploadAsync(request, identity, pdf.GenerateEntryPermitPdf(model), $"XizmatXati_{no}.pdf", ct);
@@ -140,8 +171,22 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                     ScaleAt: u.TareWeighedAt ?? u.GrossWeighedAt ?? u.DefectActUploadedAt,
                     ApprovedAt: u.DefectActUploadedAt);
                 if (u.DefectActQrFinalFileHash == Hash(model)) return false;
+
+                var defectDate = u.DefectActUploadedAt ?? DateTime.UtcNow;
+                var workflowJson = JsonSerializer.Serialize(new {
+                    workflowName = "Tasdiqlangan",
+                    approvedByName = dispName,
+                    completedAt = defectDate.ToString("O")
+                });
+                var metadataJson = JsonSerializer.Serialize(new {
+                    documentDate = defectDate.ToString("O"),
+                    actNumber = u.DefectActNumber,
+                    wagonNumber = u.WagonNumber
+                });
+
                 var request = new QrLinkRegisterRequest(u.DefectActNumber!, "Dalolatnoma",
-                    $"Nomuvofiqlik dalolatnomasi № {u.DefectActNumber} ({u.WagonNumber})", Status: "Approved", OwnerName: Name(u.DefectActUploadedByName));
+                    $"Nomuvofiqlik dalolatnomasi № {u.DefectActNumber} ({u.WagonNumber})",
+                    Status: "Approved", OwnerName: dispName, MetadataJson: metadataJson, WorkflowJson: workflowJson);
                 var identity = await ReserveAsync(request, ct);
                 model = model with { QrGlobalId = identity.GlobalId, QrVerificationUrl = identity.VerificationUrl };
                 var bytes = pdf.GenerateDefectActPdf(model);

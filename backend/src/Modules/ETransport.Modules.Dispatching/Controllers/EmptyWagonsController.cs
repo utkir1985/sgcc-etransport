@@ -790,10 +790,9 @@ public class EmptyWagonsController(
                 if (role is not ("Railway" or "Admin" or "Scale" or "Warehouse" or "Dispatching" or "DispatchSupervisor"))
                     return StatusCode(403,
                         new ApiResponse<EmptyWagonArrivalDto>(false, null, "Ruxsat yo‘q"));
-                if (arrival.Stage is not ("ReadyForEstakada" or "TareWeighing" or "SecurityInspection"
-                        or "EstakadaPlaced"))
+                if (arrival.Stage is "Exited" or "Cancelled")
                     return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null,
-                        "Avval qo‘riqlash tekshiruvi yakunlanishi kerak."));
+                        "Ushbu partiya yopilgan yoki bekor qilingan."));
                 try
                 {
                     EmptyWagonUnitSync.PromoteToEstakada(arrival);
@@ -901,8 +900,8 @@ public class EmptyWagonsController(
 
         if (!EmptyWagonUnitSync.HasEntryApprovals(arrival))
             return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Avval kirish kelishuvlarini yakunlang."));
-        if (arrival.Stage is "RegistryPrepared" or "PermitAndSecurityApproved" or "DocumentsIssued" or "Exited" or "Cancelled")
-            return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Ushbu partiyaning kirish jarayoni yopilgan."));
+        if (arrival.Stage is "Exited" or "Cancelled")
+            return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Ushbu partiyaning jarayoni yopilgan."));
         await EmptyWagonUnitSync.EnsureUnitsAsync(db, arrival);
         var unit = EmptyWagonUnitSync.FindUnit(arrival, wagonNumber);
         if (unit is null)
@@ -919,7 +918,8 @@ public class EmptyWagonsController(
             unit.Status = EmptyWagonUnitStatuses.Estakada;
 
         arrival.DailyPlanLineId = null;
-        arrival.Stage = "EstakadaPlaced";
+        if (arrival.Stage is not ("Loading" or "Loaded" or "ToRailwayScale" or "GrossWeighed" or "SealInstallation" or "Sealed" or "DocumentsIssued" or "RegistryPrepared"))
+            arrival.Stage = "EstakadaPlaced";
 
         EmptyWagonUnitSync.SyncMirrors(arrival);
         EmptyWagonUnitSync.DerivePartyStage(arrival);
@@ -945,8 +945,8 @@ public class EmptyWagonsController(
 
         if (!EmptyWagonUnitSync.HasEntryApprovals(arrival))
             return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Avval kirish kelishuvlarini yakunlang."));
-        if (arrival.Stage is "RegistryPrepared" or "PermitAndSecurityApproved" or "DocumentsIssued" or "Exited" or "Cancelled")
-            return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Ushbu partiyaning kirish jarayoni yopilgan."));
+        if (arrival.Stage is "Exited" or "Cancelled")
+            return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Ushbu partiyaning jarayoni yopilgan."));
         await EmptyWagonUnitSync.EnsureUnitsAsync(db, arrival);
 
         var requested = (request?.WagonNumbers ?? Array.Empty<string>())
@@ -974,7 +974,8 @@ public class EmptyWagonsController(
         }
 
         arrival.DailyPlanLineId = null;
-        arrival.Stage = "EstakadaPlaced";
+        if (arrival.Stage is not ("Loading" or "Loaded" or "ToRailwayScale" or "GrossWeighed" or "SealInstallation" or "Sealed" or "DocumentsIssued" or "RegistryPrepared"))
+            arrival.Stage = "EstakadaPlaced";
 
         EmptyWagonUnitSync.SyncMirrors(arrival);
         EmptyWagonUnitSync.DerivePartyStage(arrival);

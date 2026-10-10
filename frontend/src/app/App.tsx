@@ -15,6 +15,7 @@ import { WeightControlPage } from '../modules/dashboard/pages/WeightControlPage'
 import { ContractorLimitsPage } from '../modules/dashboard/pages/ContractorLimitsPage';
 import { DefectsGu23Page } from '../modules/dashboard/pages/DefectsGu23Page';
 import { LogisticsTariffsPage } from '../modules/dashboard/pages/LogisticsTariffsPage';
+import { TelegramAlertsPage } from '../modules/dashboard/pages/TelegramAlertsPage';
 import OrdersPage from '../modules/marketing/pages/OrdersPage';
 import ShipmentsPage from '../modules/dispatching/pages/ShipmentsPage';
 import DispatchJournalPage from '../modules/dispatching/pages/DispatchJournalPage';
@@ -145,6 +146,7 @@ export default function App() {
         <Route path="reports/contractor-limits" element={<ContractorLimitsPage />} />
         <Route path="reports/defects-gu23" element={<DefectsGu23Page />} />
         <Route path="reports/tariffs" element={<AdminOnlyRoute><LogisticsTariffsPage /></AdminOnlyRoute>} />
+        <Route path="reports/telegram" element={<AdminOnlyRoute><TelegramAlertsPage /></AdminOnlyRoute>} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="analytics" element={<Navigate to="/reports" replace />} />
         <Route path="monitoring" element={<ServerStatusPage />} />

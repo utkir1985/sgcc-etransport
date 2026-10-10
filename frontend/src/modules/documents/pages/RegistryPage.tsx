@@ -347,6 +347,9 @@ function registryZone(r: LoadingRegistry): Exclude<RegZone, 'create'> {
 
 function registryStatusText(r: LoadingRegistry): string {
   if (isRegistryReturned(r)) return 'Qaytarilgan';
+  if (r.exitedToKengsoyAt) {
+    return 'Kengsoyga chiqarildi';
+  }
   const zone = registryZone(r);
   if (zone === 'agree') {
     if (r.isApprovedByPermit && !r.isApprovedBySecurity) {
@@ -359,7 +362,7 @@ function registryStatusText(r: LoadingRegistry): string {
   }
   if (zone === 'docs') {
     if (!r.exitedToKengsoyAt) return 'Vagonlarni olib chiqish kutilmoqda';
-    if (!r.isSentToOneC || !r.isSentToENakl) return '1C / e-nakl ro‘yxatidan o‘tkazish kutilmoqda';
+    if (!r.isSentToOneC || !r.isSentToENakl) return '1C / e-nakl kutilmoqda';
     return 'Chiqish rasmiylashtirilmoqda';
   }
   return 'Yakunlangan';
@@ -367,13 +370,16 @@ function registryStatusText(r: LoadingRegistry): string {
 
 function registryStatusClass(r: LoadingRegistry): string {
   if (isRegistryReturned(r)) {
-    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300';
+    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300';
   }
-  if (registryZone(r) === 'done') {
+  if (r.exitedToKengsoyAt || registryZone(r) === 'done') {
     return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300';
   }
+  if (!r.isSentToOneC || !r.isSentToENakl) {
+    return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-300';
+  }
   if (r.isApprovedByPermit && !r.isApprovedBySecurity) {
-    return 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-300';
+    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300';
   }
   if (r.isApprovedByPermit && r.isApprovedBySecurity) {
     return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300';
@@ -636,7 +642,7 @@ export default function RegistryPage() {
         return true;
       }));
       // Buyurtmalar modulida barcha kelishuvlardan o‘tgan yakuniy holat `Active`.
-      setOrders(excludeOneCOrders((orderResult?.data ?? []).filter(o => o.status === 'Active')));
+      setOrders(excludeOneCOrders((orderResult?.data ?? []).filter(o => o.status === 'Active' || o.status === 'Completed')));
       if (canCreate) {
         setLoadingTasks((taskResult?.data ?? []).filter(t => !(t.arrivalNumber || '').startsWith('1C-')));
       } else {
@@ -3040,6 +3046,7 @@ export default function RegistryPage() {
               <th>Vagon soni</th>
               <th>Mahsulot</th>
               <th>Vagon turi</th>
+              <th>Holat</th>
               <th>Hujjat</th>
             </tr>
           </thead>
@@ -3047,7 +3054,7 @@ export default function RegistryPage() {
             {pagedYuk.slice.map((row, i) => {
               const idx = pagedYuk.startIndex + i;
               return row.kind === 'reg'
-                ? renderRegCard(row.registry, idx, false)
+                ? renderRegCard(row.registry, idx, true)
                 : null;
             })}
           </tbody>
@@ -3486,11 +3493,15 @@ export default function RegistryPage() {
                       className="w-full py-1 px-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:opacity-50"
                     >
                       <option value="">— Stansiya va kontragent —</option>
-                      {(orders.find(o => o.id === batchAssignOrderId)?.lines || []).map(line => (
-                        <option key={line.id} value={line.id}>
-                          {line.destinationStation} — {line.contractor || 'Kontragent'}
-                        </option>
-                      ))}
+                      {(orders.find(o => o.id === batchAssignOrderId)?.lines || []).map(line => {
+                        const isOverLimit = line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount;
+                        const remaining = line.wagonCount > 0 ? Math.max(0, line.wagonCount - (line.fulfilledWagonCount ?? 0)) : 0;
+                        return (
+                          <option key={line.id} value={line.id}>
+                            {line.destinationStation} — {line.contractor || 'Kontragent'} {line.wagonCount > 0 ? (isOverLimit ? `[Limit to‘lgan: ${line.fulfilledWagonCount}/${line.wagonCount} ⚠️]` : `(Qoldiq: ${remaining} ta)`) : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                   <div className="sm:col-span-2">
@@ -3504,6 +3515,20 @@ export default function RegistryPage() {
                     </button>
                   </div>
                 </div>
+                {(() => {
+                  const selectedLine = orders.find(o => o.id === batchAssignOrderId)?.lines.find(l => l.id === batchAssignLineId);
+                  if (!selectedLine) return null;
+                  const isOver = selectedLine.wagonCount > 0 && (selectedLine.fulfilledWagonCount ?? 0) >= selectedLine.wagonCount;
+                  if (isOver) {
+                    return (
+                      <div className="mt-2 text-[11px] text-amber-800 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-2 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span><strong>Ogohlantirish (Limit to‘lgan):</strong> {selectedLine.destinationStation} ({selectedLine.contractor}) bo‘yicha reja {selectedLine.wagonCount} ta, bajarilgan {selectedLine.fulfilledWagonCount} ta. Vagonlar ogohlantirish bilan biriktiriladi va yuk xati shakllantiriladi.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
 
@@ -3674,11 +3699,15 @@ export default function RegistryPage() {
                               }`}
                             >
                               <option value="">— Stansiya / Kontragent —</option>
-                              {(selectedOrder?.lines || []).map(line => (
-                                <option key={line.id} value={line.id}>
-                                  {line.destinationStation} — {line.contractor || 'Kontragent'}
-                                </option>
-                              ))}
+                              {(selectedOrder?.lines || []).map(line => {
+                                const isOverLimit = line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount;
+                                const remaining = line.wagonCount > 0 ? Math.max(0, line.wagonCount - (line.fulfilledWagonCount ?? 0)) : 0;
+                                return (
+                                  <option key={line.id} value={line.id}>
+                                    {line.destinationStation} — {line.contractor || 'Kontragent'} {line.wagonCount > 0 ? (isOverLimit ? `[Limit to‘lgan: ${line.fulfilledWagonCount}/${line.wagonCount} ⚠️]` : `(Qoldiq: ${remaining} ta)`) : ''}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
                         </div>

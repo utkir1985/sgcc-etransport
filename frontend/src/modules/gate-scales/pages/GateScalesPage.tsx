@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Clock,
   FileText,
   Lock,
   RefreshCw,
@@ -227,6 +228,21 @@ function unitExited(arrival: EmptyWagonArrival, unit: EmptyWagonUnit): boolean {
 
 function unitNeedsGross(arrival: EmptyWagonArrival, unit: EmptyWagonUnit): boolean {
   return !fromOneC(arrival, unit) && !unitExited(arrival, unit) && hasMeasuredNet(unit) && needsGrossReview(unit);
+}
+
+function unitInGrossZone(arrival: EmptyWagonArrival, unit: EmptyWagonUnit): boolean {
+  if (fromOneC(arrival, unit)) return false;
+  if (unitExited(arrival, unit)) return false;
+  if (unit.status === 'Returned') return false;
+  if (isReadyForWaybill(unit)) return false;
+  if (hasMeasuredNet(unit) && Boolean(unit.sealNumber?.trim())) return false;
+  const isLoadedOrGross = unit.status === 'Loaded'
+    || unit.status === 'ToRailwayScale'
+    || unit.status === 'GrossWeighed'
+    || Boolean(unit.loadingCompletedAt)
+    || hasGross(unit)
+    || (unit.status === 'Loading' && Boolean(unit.loadingComment?.includes('Brutto')));
+  return isLoadedOrGross;
 }
 
 function unitNeedsSeal(arrival: EmptyWagonArrival, unit: EmptyWagonUnit): boolean {
@@ -555,7 +571,7 @@ export function GateScalesPage() {
       const tareDone = units.filter(hasTareCheck).length;
       const grossDone = units.filter(hasGross).length;
       const sealsDone = units.filter(u => sealProgress(u).scale).length;
-      const needsGross = units.filter(u => unitNeedsGross(arrival, u)).length;
+      const needsGross = units.filter(u => unitInGrossZone(arrival, u) || unitNeedsGross(arrival, u)).length;
       const needsTare = units.filter(u => unitNeedsTare(arrival, u)).length;
       const needsSeal = units.filter(u => unitNeedsSeal(arrival, u)).length;
       const defectCount = units.filter(isUnitDefective).length;
@@ -594,7 +610,7 @@ export function GateScalesPage() {
       grossDone: units.filter(hasGross).length,
       sealsDone: units.filter(unit => sealProgress(unit).scale).length,
       total: units.length,
-      needsGross: units.filter(unit => unitNeedsGross(arrival, unit)).length,
+      needsGross: units.filter(unit => unitInGrossZone(arrival, unit) || unitNeedsGross(arrival, unit)).length,
       needsTare: units.filter(unit => unitNeedsTare(arrival, unit)).length,
       needsSeal: units.filter(unit => unitNeedsSeal(arrival, unit)).length,
       defectCount: units.filter(isUnitDefective).length,
@@ -617,7 +633,7 @@ export function GateScalesPage() {
         }
 
         // 2. Brutto / Netto: yuklangan vagonlar va brutto tekshiruvi kutilayotgan vagonlar
-        if (unitNeedsGross(p.arrival, unit) || (unit.status === 'Loading' && unit.loadingComment?.includes('Brutto'))) {
+        if (unitInGrossZone(p.arrival, unit) || unitNeedsGross(p.arrival, unit) || (unit.status === 'Loading' && unit.loadingComment?.includes('Brutto'))) {
           grossGroup.arrival ??= p.arrival;
           grossGroup.units.push(unit);
         }
@@ -765,7 +781,7 @@ export function GateScalesPage() {
       grossDone: units.filter(hasGross).length,
       sealsDone: units.filter(u => sealProgress(u).scale).length,
       total: units.length,
-      needsGross: units.filter(u => unitNeedsGross(arr, u)).length,
+      needsGross: units.filter(u => unitInGrossZone(arr, u) || unitNeedsGross(arr, u)).length,
       needsTare: units.filter(u => unitNeedsTare(arr, u)).length,
       needsSeal: units.filter(u => unitNeedsSeal(arr, u)).length,
       defectCount: units.filter(isUnitDefective).length,
@@ -1021,15 +1037,16 @@ export function GateScalesPage() {
       return 'Tara uchun navbat yo‘q. Zavodga qabul qilingan bo‘sh vagonlar shu yerda ko‘rinadi.';
     }
     if (activeZone === 'gross') {
-      return 'Brutto/netto ma’lumoti to‘liq kelgan vagonlar shu yerda ko‘rinadi.';
+      return 'Yuklangan va 1C tarozi ma’lumoti kutilayotgan vagonlar navbati yo‘q. Mahsulot yuklangach vagonlar avtomatik shu yerda aks etadi.';
     }
     return 'Plomba o‘rnatish uchun navbat yo‘q. Brutto tortilgan vagonlar shu yerda ko‘rinadi.';
   };
 
   const renderParty = (bundle: PartyBundle, idx: number) => {
     const visibleBundle = activeZone === 'gross'
-      ? { ...bundle, units: bundle.units.filter(hasMeasuredNet),
-          total: bundle.units.filter(hasMeasuredNet).length,
+      ? { ...bundle,
+          units: bundle.units,
+          total: bundle.units.length,
           grossDone: bundle.units.filter(hasMeasuredNet).length }
       : bundle;
     const { arrival, units, oneC, tareDone, grossDone, sealsDone, total } = visibleBundle;
@@ -1055,7 +1072,7 @@ export function GateScalesPage() {
       : activeZone === 'tare'
         ? (tareDone === total ? 'Tara tortildi' : 'Tara kutilmoqda')
         : activeZone === 'gross'
-          ? (grossDone === total ? 'Brutto tortildi' : 'Brutto kutilmoqda')
+          ? (grossDone === total && total > 0 ? 'Brutto tortildi' : `${grossDone}/${total} Brutto olingan`)
           : (sealsDone === total ? 'Plombalandi' : 'Plomba kutilmoqda');
 
     const statusClass = isExited
@@ -1159,24 +1176,27 @@ export function GateScalesPage() {
                   </div>
                 </div>
               </div>
-            ) : activeZone === 'gross' && pendingGrossUnits.length > 0 ? (
+            ) : activeZone === 'gross' && bundle.units.length > 0 ? (
               <div className="mb-3 flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                     1C dan tasdiqlangan: {grossDone}/{total}
-                    {` · Tekshiruv kutilmoqda: ${pendingGrossUnits.length}`}
+                    {total - grossDone > 0 ? ` · 1C kutilmoqda: ${total - grossDone} ta` : ''}
+                    {pendingGrossUnits.length > 0 ? ` · Tekshiruv kutilmoqda: ${pendingGrossUnits.length} ta` : ''}
                   </span>
                   <div className="ml-auto flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="btn-primary !px-3.5 !py-1.5 !text-xs !bg-emerald-600 hover:!bg-emerald-700 inline-flex items-center gap-1.5 font-semibold text-white shadow-sm"
-                      disabled={sendingLoading}
-                      onClick={() => sendPartyToSeals(bundle)}
-                      title="Barcha yaroqli vagonlarni yuk tortishini yakunlash"
-                    >
-                      <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.2} />
-                      {sendingLoading ? 'Yuborilmoqda…' : `Yuk tortishni yakunlash (${pendingGrossUnits.length})`}
-                    </button>
+                    {pendingGrossUnits.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn-primary !px-3.5 !py-1.5 !text-xs !bg-emerald-600 hover:!bg-emerald-700 inline-flex items-center gap-1.5 font-semibold text-white shadow-sm"
+                        disabled={sendingLoading}
+                        onClick={() => sendPartyToSeals(bundle)}
+                        title="Barcha yaroqli vagonlarni yuk tortishini yakunlash"
+                      >
+                        <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        {sendingLoading ? 'Yuborilmoqda…' : `Yuk tortishni yakunlash (${pendingGrossUnits.length})`}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1431,9 +1451,22 @@ export function GateScalesPage() {
                               {toLatinProductName(unit.productType || sourceArrival.productType) || 'Tanlanmagan'}
                             </td>
                             <td className="tabular-nums font-medium">{displayTare(unit)}</td>
-                            <td className="tabular-nums font-medium">{displayGross(unit)}</td>
+                            <td className="tabular-nums font-medium">
+                              {hasMeasuredNet(unit) ? (
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">{displayGross(unit)}</span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                  <Clock className="h-3 w-3 animate-pulse" />
+                                  1C kutilmoqda
+                                </span>
+                              )}
+                            </td>
                             <td className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                              {displayNetto(unit)}
+                              {hasMeasuredNet(unit) ? (
+                                displayNetto(unit)
+                              ) : (
+                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500">—</span>
+                              )}
                             </td>
                             <td className="text-center px-2 py-2">
                               {unitDefective ? (
@@ -1449,9 +1482,15 @@ export function GateScalesPage() {
                                   <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
                                   SHGKM plombasi 1C ga kiritilmagan
                                 </span>
+                              ) : hasMeasuredNet(unit) ? (
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                  <Check className="h-3 w-3 text-emerald-600" />
+                                  Brutto olindi
+                                </span>
                               ) : (
-                                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                  {unitStatusLabel(unit)}
+                                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                  <RefreshCw className="h-3 w-3 animate-spin text-amber-600" />
+                                  1C kutilmoqda
                                 </span>
                               )}
                             </td>
@@ -1577,6 +1616,16 @@ export function GateScalesPage() {
                                     Nomuvofiqlik
                                   </button>
                                 </>
+                              ) : !hasMeasuredNet(unit) ? (
+                                <button
+                                  type="button"
+                                  className="table-row-ctrl !inline-flex !items-center !gap-1.5 !border-amber-300 !bg-amber-50 !text-amber-800 hover:!bg-amber-100 dark:!border-amber-700 dark:!bg-amber-950/40 dark:text-amber-300"
+                                  disabled={defectSubmitting || sendingLoading}
+                                  onClick={() => openGrossReturn(row)}
+                                >
+                                  <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
+                                  Nomuvofiqlik
+                                </button>
                               ) : (
                                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{unitStatusLabel(unit)}</span>
                               )}

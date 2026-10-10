@@ -26,6 +26,13 @@ function getOrderSheetHeaderClass(header: string): string | undefined {
   return undefined;
 }
 
+function getLineFulfilledTons(line: { wagonCount?: number | null; tonCount?: number | null; fulfilledWagonCount?: number | null; fulfilledNetWeight?: number | null }): number {
+  if (line.fulfilledNetWeight != null && Number(line.fulfilledNetWeight) > 0) {
+    return Math.round(Number(line.fulfilledNetWeight) * 100) / 100;
+  }
+  return 0;
+}
+
 interface OrderSheetViewProps {
   order: MonthlyOrder;
   logisticsType: LogisticsType;
@@ -106,7 +113,30 @@ export function OrderSheetView({
                       )}
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
-                      {lineTonCount(line)}
+                      <div className="font-semibold">{lineTonCount(line)}</div>
+                      {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                        const linePlanT = lineTonCount(line);
+                        const lineDoneT = getLineFulfilledTons(line);
+                        const lineRemT = Math.max(0, Math.round((linePlanT - lineDoneT) * 100) / 100);
+                        // Tonna ijrosi FAQAT haqiqiy yuklangan tonna rejaga yetganda yopilgan hisoblanadi.
+                        // Vagonlar soni to'lgan bo'lsa ham, agar yuklangan og'irlik yetmasa, qoldiq tonna ko'rsatiladi.
+                        const isTonDone = linePlanT > 0 && lineDoneT >= linePlanT;
+                        const pctStr = linePlanT > 0 ? ` (${Math.min(100, Math.round((lineDoneT / linePlanT) * 100))}%)` : '';
+                        return (
+                          <div
+                            className="text-[10px] whitespace-nowrap mt-0.5"
+                            title={lineDoneT > 0 ? `Yuklandi: ${lineDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t · Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t${pctStr}` : `Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t`}
+                          >
+                            {isTonDone ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
+                            ) : (
+                              <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                                Qoldiq: {lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     {isFirstInTable && (
                       <td rowSpan={totalRows} className="order-sheet-contract order-sheet-center">
@@ -132,7 +162,18 @@ export function OrderSheetView({
                     </div>
                   )}
                 </td>
-                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{totals.tonTotal}</td>
+                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
+                  <div>{totals.tonTotal}</div>
+                  {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                    const totalDoneT = Math.round(lines.reduce((s, l) => s + getLineFulfilledTons(l), 0) * 100) / 100;
+                    const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
+                    return (
+                      <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
+                        Yuklandi: {totalDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} · Qoldiq: {totalRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />
               </tr>
@@ -223,7 +264,30 @@ export function OrderSheetView({
                       )}
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
-                      {lineTonCount(line)}
+                      <div className="font-semibold">{lineTonCount(line)}</div>
+                      {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                        const linePlanT = lineTonCount(line);
+                        const lineDoneT = getLineFulfilledTons(line);
+                        const lineRemT = Math.max(0, Math.round((linePlanT - lineDoneT) * 100) / 100);
+                        // Tonna ijrosi FAQAT haqiqiy yuklangan tonna rejaga yetganda yopilgan hisoblanadi.
+                        // Vagonlar soni to'lgan bo'lsa ham, agar yuklangan og'irlik yetmasa, qoldiq tonna ko'rsatiladi.
+                        const isTonDone = linePlanT > 0 && lineDoneT >= linePlanT;
+                        const pctStr = linePlanT > 0 ? ` (${Math.min(100, Math.round((lineDoneT / linePlanT) * 100))}%)` : '';
+                        return (
+                          <div
+                            className="text-[10px] whitespace-nowrap mt-0.5"
+                            title={lineDoneT > 0 ? `Yuklandi: ${lineDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t · Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t${pctStr}` : `Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t`}
+                          >
+                            {isTonDone ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
+                            ) : (
+                              <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                                Qoldiq: {lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     {isFirstInTable && (
                       <td rowSpan={totalRows} className="order-sheet-contract order-sheet-center">
@@ -249,7 +313,18 @@ export function OrderSheetView({
                     </div>
                   )}
                 </td>
-                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{totals.tonTotal}</td>
+                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
+                  <div>{totals.tonTotal}</div>
+                  {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                    const totalDoneT = Math.round(lines.reduce((s, l) => s + getLineFulfilledTons(l), 0) * 100) / 100;
+                    const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
+                    return (
+                      <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
+                        Yuklandi: {totalDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} · Qoldiq: {totalRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />
               </tr>
