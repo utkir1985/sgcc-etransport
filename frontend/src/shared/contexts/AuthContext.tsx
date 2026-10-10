@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { clearStoredReturnTo, redirectToLogin } from '../utils/authReturnTo';
 import { SessionTimeoutWarningModal } from '../components/SessionTimeoutWarningModal';
 
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 daqiqa harakatsizlik
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 60 daqiqa (1 soat) harakatsizlik
 const WARNING_THRESHOLD_MS = 60 * 1000; // Chiqishdan 60 soniya oldin ogohlantirish (9-daqiqada)
 const STORAGE_KEY_USER = 'etransport_user';
 const STORAGE_KEY_ACTIVITY = 'etransport_last_activity';
