@@ -339,6 +339,13 @@ public static class EmptyWagonUnitSync
         var active = units.Where(u => u.Status != EmptyWagonUnitStatuses.Returned).ToList();
         if (active.Count == 0) return;
 
+        // Barcha faol vagonlar zavoddan chiqib ketgan bo'lsa, partiya avtomatik Exited holatiga o'tadi
+        if (active.All(u => u.ScaleExitedAt.HasValue))
+        {
+            arrival.Stage = "Exited";
+            return;
+        }
+
         // Qisman yuklash / qayta yuklash: yuklash guruhiga kirganlar (cycle) zanjirni yuritadi;
         // estakadada qolganlar yoki qayta yuklanayotgan vagonlar Loaded/Gross/Seal ni bloklamaydi.
         var cycle = active.Where(InLoadingCycle).ToList();
@@ -404,6 +411,7 @@ public static class EmptyWagonUnitSync
     /// Estakadada kutayotgan qoldiqlar (batch yo‘q) cycle emas.
     /// </summary>
     public static bool InLoadingCycle(EmptyWagonUnit unit) =>
+        unit.ScaleExitedAt == null && (
         unit.Status is EmptyWagonUnitStatuses.Loading
             or EmptyWagonUnitStatuses.ToRailwayScale
             or EmptyWagonUnitStatuses.Loaded
@@ -412,7 +420,7 @@ public static class EmptyWagonUnitSync
             or EmptyWagonUnitStatuses.Sealed
         || !string.IsNullOrWhiteSpace(unit.LoadingBatchNumber)
         || unit.LoadingStartedAt.HasValue
-        || unit.LoadingCompletedAt.HasValue;
+        || unit.LoadingCompletedAt.HasValue);
 
     public static void PromoteToEstakada(EmptyWagonArrival arrival)
     {
