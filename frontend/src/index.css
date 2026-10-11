@@ -16607,38 +16607,68 @@ html.dark .order-progress-track,
 .wagon-flow-link { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; color: #94a3b8; overflow: visible; }
 .wagon-flow-link--ready { color: #10b981; }
 
-/* Each process keeps its own card inside the shared wagon panel. */
+/* Merged wagon process panel: reduce outer padding so the outer container isn't bulky */
+.wagon-process-panel--merged {
+  padding: 8px 10px !important;
+  border-radius: 20px;
+}
+@media (min-width: 640px) {
+  .wagon-process-panel--merged {
+    padding: 10px 12px !important;
+    border-radius: 22px;
+  }
+}
+
+/* Each process keeps its own card inside the shared wagon panel — enlarged for better prominence. */
 .wagon-process-row {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 10px 12px 12px;
+  padding: 14px 16px 16px;
   border-radius: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #e2e8f0;
   background: #f8fafc;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
 }
 .dark .wagon-process-row {
   border-color: var(--color-dark-border);
   background: var(--color-dark-hover);
+  box-shadow: none;
 }
-.wagon-process-row--done { border-color: rgba(16, 185, 129, 0.35); }
-.wagon-process-row--current { border-color: rgba(245, 158, 11, 0.45); }
+.wagon-process-row--done { border-color: rgba(16, 185, 129, 0.45); }
+.wagon-process-row--current { border-color: rgba(245, 158, 11, 0.55); }
 .wagon-process-row__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .wagon-process-row__title {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: #0f172a;
 }
 .dark .wagon-process-row__title { color: #ffffff; }
-.wagon-process-row .flow { flex: 1 0 auto; margin-top: 6px; }
+.wagon-process-row .flow {
+  flex: 1 0 auto;
+  margin-top: 8px;
+  gap: 8px;
+  width: 100%;
+}
+.wagon-process-row .flow__item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.wagon-process-row .flow__card {
+  min-height: 94px;
+  padding: 10px 11px;
+}
+.wagon-process-row .flow__item--done .flow__card {
+  min-height: 106px;
+}
 .wagon-process-panels__item { position: relative; min-width: 0; }
 .wagon-process-panel { display: flex; flex-direction: column; min-width: 0; }
 
@@ -16674,21 +16704,15 @@ html.dark .order-progress-track,
 /* Give the single process chain breathing room below its heading. */
 .bento .bento-flow-wrap > .flow { margin-top: 10px; }
 
-/* Distribute actual remaining viewport space among the three process rows. */
+/* Naturally fit process panels without forcing huge empty bottom viewport voids */
 @media (min-width: 1101px) {
-  .bento--fit-processes > .bento__grid {
-    min-height: calc(100dvh - var(--layout-header-height) - 3rem);
-    /* Order chain is content-sized; only the wagon rows absorb spare viewport height. */
-    grid-template-rows: auto auto minmax(min-content, 1fr);
-  }
   .bento--fit-processes .bento-flow-wrap { display: flex; flex-direction: column; }
   .bento--fit-processes .bento-flow-wrap > .flow { flex: 1 0 auto; }
   .bento--fit-processes .flow__card,
-  .bento--fit-processes .flow__item--done .flow__card { min-height: 88px; }
+  .bento--fit-processes .flow__item--done .flow__card { min-height: 92px; }
   .bento--fit-processes .wagon-process-panels { flex: 1; }
-  .bento--fit-processes .wagon-process-panels__item { display: flex; flex-direction: column; flex: 1; }
+  .bento--fit-processes .wagon-process-panels__item { display: flex; flex-direction: column; }
   .bento--fit-processes .wagon-process-panel { flex: 1; }
-  .bento--fit-processes .wagon-process-row { flex: 1; }
   .bento--fit-processes .wagon-process-connector { flex-shrink: 0; }
 }
 

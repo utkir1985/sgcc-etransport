@@ -2082,7 +2082,7 @@ function WagonProcessSection({
               : 0;
           const isEntry = phase.key === 'kirish';
           return (
-            <div key={phase.key} className="flex flex-col gap-2.5 min-w-0">
+            <div key={phase.key} className="wagon-process-panels__item flex flex-col gap-2.5 min-w-0">
               <section
                 id={`wagon-process-${phase.key}`}
                 style={{ scrollMarginTop: 90 }}
