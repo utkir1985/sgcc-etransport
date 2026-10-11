@@ -46,7 +46,7 @@ import {
   isPartyEntryFinished,
 } from '../../../shared/utils/wagonFlowTiles';
 import { computeTransportFlowMetrics } from '../utils/transportHub';
-import { buildHistoryTimeline, localDateKey } from '../utils/sharedPanels';
+import { localDateKey, wagonCountOf, loadedWagonCountOf, registryWagonCountOf } from '../utils/sharedPanels';
 import { usesSequentialWorkflow, isRegistryReturned, registryRejectionSummary } from '../../../shared/utils/registryWorkflow';
 import { formatOrderPeriod } from '../../../shared/utils/dates';
 import { excludeOneCArrivals, excludeOneCOrders } from '../../../shared/utils/oneCSources';
@@ -2385,20 +2385,28 @@ function DashboardOverviewPanel({
   const historyCounts = useMemo(() => {
     const cleanArrivals = excludeOneCArrivals(arrivals);
     const today = localDateKey(new Date().toISOString());
-    const timeline = buildHistoryTimeline(cleanArrivals, registries)
-      .filter(item => localDateKey(item.at) === today);
 
-    const countProcessWagons = (kind: 'entry' | 'load' | 'exit') =>
-      timeline
-        .filter(item => item.kind === kind)
-        .reduce((sum, item) => {
-          const match = item.detail.match(/(\d+)\s+vagon\b/i);
-          return sum + (match ? Number(match[1]) : 0);
-        }, 0);
+    // 1. Bugun qabul qilingan vagonlar (har bir partiya faqat 1 marta hisoblanadi)
+    const todayEntries = cleanArrivals.filter(a => {
+      const stamp = a.arrivalDate || a.createdAt;
+      return stamp && localDateKey(stamp) === today;
+    });
+    const entries = todayEntries.reduce((s, a) => s + wagonCountOf(a), 0);
 
-    const entries = countProcessWagons('entry');
-    const loads = countProcessWagons('load');
-    const exits = countProcessWagons('exit');
+    // 2. Bugun yuklangan vagonlar
+    const todayLoads = cleanArrivals.filter(a => {
+      const stamp = a.loadingCompletedAt || (a.wagons ?? []).some(w => w.loadingCompletedAt && localDateKey(w.loadingCompletedAt) === today);
+      return Boolean(stamp);
+    });
+    const loads = todayLoads.reduce((s, a) => s + loadedWagonCountOf(a), 0);
+
+    // 3. Bugun Kengsoy stansiyasiga jo'natilgan vagonlar
+    const todayExits = (registries || []).filter(r => {
+      const stamp = r.exitedToKengsoyAt;
+      return stamp && localDateKey(stamp) === today;
+    });
+    const exits = todayExits.reduce((s, r) => s + registryWagonCountOf(r), 0);
+
     return {
       all: entries + loads + exits,
       entries,
