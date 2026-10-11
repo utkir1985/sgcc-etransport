@@ -274,6 +274,18 @@ export default function HistoryPage() {
     [filteredDefects],
   );
 
+  const entryWagonsCount = useMemo(() => {
+    return filteredTimeline
+      .filter(item => item.id.startsWith('entry-'))
+      .reduce((sum, item) => sum + (item.wagonCount || 0), 0);
+  }, [filteredTimeline]);
+
+  const exitWagonsCount = useMemo(() => {
+    return filteredTimeline
+      .filter(item => item.id.startsWith('exit-'))
+      .reduce((sum, item) => sum + (item.wagonCount || 0), 0);
+  }, [filteredTimeline]);
+
   const filteredEntries = useMemo(
     () =>
       entries.filter(a => {
@@ -371,7 +383,9 @@ export default function HistoryPage() {
     {
       id: 'entries',
       label: 'Kirish',
-      hint: 'Vagonlarni kiritish',
+      hint: entryWagonsCount > 0
+        ? `${entryWagonsCount} ta vagon · ${filteredTimeline.filter(item => item.kind === 'entry').length} ta qayd`
+        : 'Vagonlarni kiritish',
       count: filteredTimeline.filter(item => item.kind === 'entry').length,
       icon: ArrowDownToLine,
       tone: 'amber',
@@ -395,7 +409,9 @@ export default function HistoryPage() {
     {
       id: 'exits',
       label: 'Vagon chiqarish',
-      hint: 'Zavoddan chiqarilgan vagonlar',
+      hint: exitWagonsCount > 0
+        ? `${exitWagonsCount} ta vagon · ${filteredTimeline.filter(item => item.kind === 'exit').length} ta qayd`
+        : 'Zavoddan chiqarilgan vagonlar',
       count: filteredTimeline.filter(item => item.kind === 'exit').length,
       icon: ArrowUpFromLine,
       tone: 'emerald',
