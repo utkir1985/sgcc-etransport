@@ -247,7 +247,8 @@ function MarketingOrdersPanel({
   }, [orders]);
 
   const matchingOrders = useMemo(() => {
-    if (!hubMode) {
+    const hasViewFilter = Boolean(searchParams.get('view'));
+    if (!hubMode && !hasViewFilter) {
       return listMarketingOrdersForPeriod(orders, periodFrom, periodTo, filterProductType);
     }
 
@@ -1330,7 +1331,7 @@ function MarketingOrdersPanel({
             );
           })()}
         </div>
-      ) : hubMode ? (
+      ) : (hubMode || Boolean(searchParams.get('view'))) ? (
         <MarketingOrdersHome
           title={LOGISTICS_LABELS[logisticsType]}
           panelTitle="Buyurtmalar"
@@ -1500,6 +1501,7 @@ function MarketingOrdersPanel({
 
 export default function OrdersPage() {
   const { logisticsRoute } = useParams<{ logisticsRoute: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isMarketing = user?.role === 'Marketing';
   const isAdmin = user?.role === 'Admin';
@@ -1537,7 +1539,7 @@ export default function OrdersPage() {
         canReviewAccounting={user?.role === 'Accounting' || isAdmin}
         currentUserName={user?.fullName}
         onToolbarChange={setOrdersToolbar}
-        hubMode={!isMarketingOrAdmin}
+        hubMode={!isMarketingOrAdmin || Boolean(searchParams.get('view'))}
         defaultListView={isChainApprover ? 'tasdiq' : 'all'}
       />
     </div>

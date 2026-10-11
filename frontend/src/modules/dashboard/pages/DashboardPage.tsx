@@ -2476,19 +2476,28 @@ function DashboardOverviewPanel({
               {
                 label: 'Tanlangan buyurtma qoldig‘i',
                 value: loading ? dash : currentFulfillment.remainingWagons,
+                actionLabel: currentSelectedOrder?.orderNumber
+                  ? `${currentSelectedOrder.orderNumber} ijro holatini ochish`
+                  : undefined,
+                onClick: currentSelectedOrder ? goOrderFulfillment : undefined,
               },
               {
                 label: 'Tanlangan buyurtma hajmi, t',
                 value: loading ? dash : formatDashboardTon(currentFulfillment.remainingTons),
+                actionLabel: currentSelectedOrder?.orderNumber
+                  ? `${currentSelectedOrder.orderNumber} ijro holatini ochish`
+                  : undefined,
+                onClick: currentSelectedOrder ? goOrderFulfillment : undefined,
               },
               {
                 label: 'Jami faol buyurtmalar',
                 value: loading ? dash : activeExecutionOrders.length,
-                actionLabel: currentSelectedOrder?.orderNumber
-                  ? `${currentSelectedOrder.orderNumber} ijro holatini ochish`
-                  : undefined,
+                actionLabel: 'Faol buyurtmalarni filtrlash',
                 tone: 'sky',
-                onClick: currentSelectedOrder ? goOrderFulfillment : undefined,
+                onClick: (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  navigate('/orders/railway?view=faol');
+                },
               },
             ],
           },
