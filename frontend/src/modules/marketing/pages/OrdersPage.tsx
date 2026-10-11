@@ -1021,6 +1021,7 @@ function MarketingOrdersPanel({
                 label: entry.title,
               }))}
               onChange={next => setHeader(h => ({ ...h, productType: next }))}
+              disabled={!isNew && (editingOrder?.status === 'Active' || Boolean(editingOrder?.approvedAt))}
               allowEmpty={false}
               emptyLabel="Mahsulotni tanlang"
               widthLabel={RAILWAY_PRODUCT_TYPE_WIDTH_LABEL}

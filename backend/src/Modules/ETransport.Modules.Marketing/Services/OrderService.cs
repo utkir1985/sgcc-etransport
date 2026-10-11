@@ -127,7 +127,15 @@ public class OrderService(
 
         var changes = new List<string>();
         if (!string.Equals(order.ProductType, request.ProductType, StringComparison.Ordinal))
+        {
+            if (order.Status == OrderStatus.Active || order.ApprovedAt != null || order.DispatchApprovedAt != null)
+                throw new ArgumentException("Tasdiqlangan buyurtmaning mahsulot turini o‘zgartirish mumkin emas");
+
+            var oldNumber = order.OrderNumber;
+            order.OrderNumber = await GenerateNextOrderNumberAsync(order.LogisticsType, request.ProductType);
             changes.Add($"Mahsulot turi: {order.ProductType} → {request.ProductType}");
+            changes.Add($"Buyurtma raqami mahsulot prefiksiga moslab yangilandi: {oldNumber} → {order.OrderNumber}");
+        }
         if (!string.Equals(order.ContractNumber, request.ContractNumber.Trim(), StringComparison.Ordinal))
             changes.Add($"Shartnoma: {order.ContractNumber} → {request.ContractNumber.Trim()}");
         if (order.Deadline.Date != request.Deadline.Date)
