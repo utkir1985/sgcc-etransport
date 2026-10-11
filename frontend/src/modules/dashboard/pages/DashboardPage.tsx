@@ -2474,15 +2474,15 @@ function DashboardOverviewPanel({
             count: loading ? dash : activeExecutionOrders.length,
             metrics: [
               {
-                label: 'Qoldiq vagon',
+                label: 'Tanlangan buyurtma qoldig‘i',
                 value: loading ? dash : currentFulfillment.remainingWagons,
               },
               {
-                label: 'Qoldiq, t',
+                label: 'Tanlangan buyurtma hajmi, t',
                 value: loading ? dash : formatDashboardTon(currentFulfillment.remainingTons),
               },
               {
-                label: 'Ijrodagi buyurtmalar',
+                label: 'Jami faol buyurtmalar',
                 value: loading ? dash : activeExecutionOrders.length,
                 actionLabel: currentSelectedOrder?.orderNumber
                   ? `${currentSelectedOrder.orderNumber} ijro holatini ochish`
