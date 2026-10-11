@@ -192,16 +192,32 @@ function sameProduct(a?: string | null, b?: string | null): boolean {
   const normalize = (v?: string | null) => {
     const s = (v || '').trim().toLowerCase();
     if (!s) return '';
-    if (s.includes('suyultirilgan') || s.includes('propan') || s.includes('butan') || s.includes('lpg')) return 'lpg';
+    if (s.includes('suyultirilgan') || s.includes('propan') || s.includes('butan') || s.includes('lpg') || s.includes('spbt')) return 'lpg';
     if (s.includes('polietilen') || s.includes('etilen') || s.includes('pe')) return 'polietilen';
-    if (s.includes('oltingugurt') || s.includes('sulfur')) return 'oltingugurt';
-    if (s.includes('kondensat')) return 'kondensat';
+    if (s.includes('oltingugurt') || s.includes('sulfur') || s.includes('ol')) return 'oltingugurt';
+    if (s.includes('kondensat') || s.includes('gk')) return 'kondensat';
+    if (s.includes('buten') || s.includes('b1')) return 'buten';
     return s;
   };
   const left = normalize(a);
   const right = normalize(b);
-  if (!left || !right) return true;
+  if (!left || !right) return false;
   return left === right;
+}
+
+function getMatchingActiveOrders(
+  orders: MonthlyOrder[],
+  wagonProduct?: string | null,
+  currentOrderId?: string | null,
+): MonthlyOrder[] {
+  return orders.filter(order => {
+    // Yopilgan (Completed) yoki boshqa nofaol buyurtmalar yangi biriktirish uchun chiqmasin
+    const isAvailable = order.status === 'Active' || (Boolean(currentOrderId) && order.id === currentOrderId);
+    if (!isAvailable) return false;
+
+    // Mahsulot turi bo'yicha qat'iy tekshiruv
+    return sameProduct(order.productType, wagonProduct);
+  });
 }
 
 function wagonTypeText(value?: string | null): string {
@@ -1506,6 +1522,27 @@ export default function RegistryPage() {
         ...prev,
         [viewedDraftGroup.key]: [...new Set([...(prev[viewedDraftGroup.key] || []), ...toAttachDefect])],
       }));
+    }
+
+    const newOrderAssignments: Record<string, string> = {};
+    const newRouteAssignments: Record<string, string> = {};
+    keys.forEach(k => {
+      if (!wagonOrderIds[k]) {
+        const r = createPoolRows.find(row => pooledWagonKey(row) === k);
+        if (r && r.status !== 'Returned') {
+          const match = getMatchingActiveOrders(orders, r.product, null);
+          if (match.length === 1) {
+            newOrderAssignments[k] = match[0].id;
+            if (match[0].lines.length === 1) {
+              newRouteAssignments[k] = match[0].lines[0].id;
+            }
+          }
+        }
+      }
+    });
+    if (Object.keys(newOrderAssignments).length > 0) {
+      setWagonOrderIds(prev => ({ ...prev, ...newOrderAssignments }));
+      setWagonRouteLines(prev => ({ ...prev, ...newRouteAssignments }));
     }
 
     setSelectedDraftWagonKeys(prev => {
@@ -3478,7 +3515,7 @@ export default function RegistryPage() {
                       className="w-full py-1 px-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     >
                       <option value="">— Buyurtma tanlash —</option>
-                      {orders.map(o => (
+                      {orders.filter(o => o.status === 'Active' && (selectedDraftRows.length === 0 || selectedDraftRows.some(r => sameProduct(o.productType, r.product)))).map(o => (
                         <option key={o.id} value={o.id}>
                           {o.orderNumber} ({toLatinProductName(o.productType || '')})
                         </option>
@@ -3584,7 +3621,7 @@ export default function RegistryPage() {
                   const defective = row.status === 'Returned';
                   const currentOrderId = wagonOrderIds[formKey] || '';
                   const currentRouteLine = wagonRouteLines[formKey] || '';
-                  const matchingOrders = orders.filter(o => sameProduct(o.productType, row.product));
+                  const matchingOrders = getMatchingActiveOrders(orders, row.product, currentOrderId);
                   const selectedOrder = orders.find(o => o.id === currentOrderId);
                   const isConfigured = defective || (currentOrderId && currentRouteLine);
 
@@ -4094,8 +4131,8 @@ export default function RegistryPage() {
                             const defective = row.status === 'Returned';
                             const isAttachedDefect = Boolean(draftAttachedDefectKeys[viewedDraftGroup.key]?.includes(formKey));
                             const isAttachedBuffer = Boolean(draftAttachedBufferKeys[viewedDraftGroup.key]?.includes(formKey));
-                            const matchingOrdersForRow = orders.filter(order => sameProduct(order.productType, row.product));
                             const currentOrderId = wagonOrderIds[formKey] || '';
+                            const matchingOrdersForRow = getMatchingActiveOrders(orders, row.product, currentOrderId);
                             const selectedOrderForWagon = orders.find(order => order.id === currentOrderId);
                             const isChecked = Boolean(selectedDraftWagonKeys[formKey]);
 
@@ -4310,8 +4347,8 @@ export default function RegistryPage() {
                             const defective = row.status === 'Returned';
                             const isAttachedDefect = Boolean(editAttachedDefectKeys.includes(formKey));
                             const isAttachedBuffer = Boolean(editAttachedBufferKeys.includes(formKey));
-                            const matchingOrdersForRow = orders.filter(order => sameProduct(order.productType, row.product));
                             const currentOrderId = wagonOrderIds[formKey] || '';
+                            const matchingOrdersForRow = getMatchingActiveOrders(orders, row.product, currentOrderId);
                             const selectedOrderForWagon = orders.find(order => order.id === currentOrderId);
                             const isChecked = Boolean(selectedEditWagonKeys[formKey]);
 
@@ -5094,7 +5131,7 @@ export default function RegistryPage() {
                               const formKey = pooledWagonKey(row);
                               const defective = row.status === 'Returned';
                               const selectedOrderForWagon = orders.find(order => order.id === wagonOrderIds[formKey]);
-                              const matchingOrders = orders.filter(order => sameProduct(order.productType, row.product));
+                              const matchingOrders = getMatchingActiveOrders(orders, row.product, wagonOrderIds[formKey]);
                               const assignedLine = selectedOrderForWagon?.lines.find(line => line.id === wagonRouteLines[formKey]);
                               const checked = Boolean(selectedWagons[formKey]);
                               return (
@@ -5943,8 +5980,8 @@ export default function RegistryPage() {
                         targetList.map((row, index) => {
                           const key = pooledWagonKey(row);
                           const isSelected = selectedPickerBufferKeys.includes(key);
-                          const matchingOrdersForRow = orders.filter(order => sameProduct(order.productType, row.product));
-                          const currentOrderId = wagonOrderIds[key] || (matchingOrdersForRow.length === 1 ? matchingOrdersForRow[0].id : '');
+                          const currentOrderId = wagonOrderIds[key] || '';
+                          const matchingOrdersForRow = getMatchingActiveOrders(orders, row.product, currentOrderId);
 
                           return (
                             <tr
@@ -6080,7 +6117,7 @@ export default function RegistryPage() {
                         if (!wagonOrderIds[k]) {
                           const r = targetList.find(row => pooledWagonKey(row) === k);
                           if (r) {
-                            const match = orders.filter(o => sameProduct(o.productType, r.product));
+                            const match = getMatchingActiveOrders(orders, r.product, null);
                             if (match.length === 1) {
                               newOrderAssignments[k] = match[0].id;
                               if (match[0].lines.length === 1) {
