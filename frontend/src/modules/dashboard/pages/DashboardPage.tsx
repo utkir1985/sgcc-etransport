@@ -2471,7 +2471,7 @@ function DashboardOverviewPanel({
             ),
             icon: ClipboardList,
             tone: 'sky' as HubZoneTone,
-            count: loading ? dash : (currentSelectedOrder ? 1 : 0),
+            count: loading ? dash : activeExecutionOrders.length,
             metrics: [
               {
                 label: 'Qoldiq vagon',
@@ -2483,7 +2483,7 @@ function DashboardOverviewPanel({
               },
               {
                 label: 'Ijrodagi buyurtmalar',
-                value: loading ? dash : (currentSelectedOrder ? 1 : 0),
+                value: loading ? dash : activeExecutionOrders.length,
                 actionLabel: currentSelectedOrder?.orderNumber
                   ? `${currentSelectedOrder.orderNumber} ijro holatini ochish`
                   : undefined,
