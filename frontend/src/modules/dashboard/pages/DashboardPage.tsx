@@ -2394,11 +2394,15 @@ function DashboardOverviewPanel({
     const entries = todayEntries.reduce((s, a) => s + wagonCountOf(a), 0);
 
     // 2. Bugun yuklangan vagonlar
-    const todayLoads = cleanArrivals.filter(a => {
-      const stamp = a.loadingCompletedAt || (a.wagons ?? []).some(w => w.loadingCompletedAt && localDateKey(w.loadingCompletedAt) === today);
-      return Boolean(stamp);
-    });
-    const loads = todayLoads.reduce((s, a) => s + loadedWagonCountOf(a), 0);
+    const loads = cleanArrivals.reduce((sum, a) => {
+      if (a.loadingCompletedAt && localDateKey(a.loadingCompletedAt) === today) {
+        return sum + loadedWagonCountOf(a);
+      }
+      const loadedWagonsToday = (a.wagons ?? []).filter(
+        w => w.loadingCompletedAt && localDateKey(w.loadingCompletedAt) === today
+      ).length;
+      return sum + loadedWagonsToday;
+    }, 0);
 
     // 3. Bugun Kengsoy stansiyasiga jo'natilgan vagonlar
     const todayExits = (registries || []).filter(r => {
