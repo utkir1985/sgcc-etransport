@@ -1,7 +1,7 @@
 const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('etransport_orders_realtime') : null;
 
 /** Barcha rollar / panellar uchun bir xil avto-yangilanish oralig‘i. */
-export const AUTO_REFRESH_MS = 5000;
+export const AUTO_REFRESH_MS = 30000;
 
 export function notifyOrdersChanged(): void {
   if (channel) {

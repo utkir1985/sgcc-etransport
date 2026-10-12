@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { notifyOrdersChanged, startAutoRefresh } from '../../utils/realtimeSync';
+// realtime sync handled per-component
 
 export default function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -28,8 +28,7 @@ export default function MainLayout() {
     return undefined;
   }, [mobileOpen, isDesktop]);
 
-  // Barcha rollar / ochiq panellar: har 5 soniyada global yangilanish signali
-  useEffect(() => startAutoRefresh(() => notifyOrdersChanged()), []);
+  // Global reaktiv o'zgarishlar faqat real harakat (yaratish/tasdiqlash) bo'lganda notifyOrdersChanged orqali tarqaladi
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] dark:bg-[var(--color-dark-base)] transition-colors duration-300">

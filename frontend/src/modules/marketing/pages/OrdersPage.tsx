@@ -29,7 +29,7 @@ import {
   isRogueContractor,
   saveStoredContractors,
 } from '../../../shared/constants/railwayContractors';
-import { notifyOrdersChanged, subscribeOrdersChanged } from '../../../shared/utils/realtimeSync';
+import { notifyOrdersChanged, subscribeOrdersChanged, startAutoRefresh } from '../../../shared/utils/realtimeSync';
 import { ORDER_QUANTITY_UNITS } from '../../../shared/constants/orderQuantityUnits';
 import { calcTonsFromUnits } from '../../../shared/constants/orderTons';
 import { isLineEditable } from '../../../shared/constants/lineAccountingStatuses';
@@ -398,8 +398,14 @@ function MarketingOrdersPanel({
       load({ silent: true });
       loadContractors();
     });
+    const stopPoll = startAutoRefresh(() => {
+      load({ silent: true });
+    }, 30000);
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      stopPoll();
+    };
   }, [logisticsType]);
 
   useEffect(() => {

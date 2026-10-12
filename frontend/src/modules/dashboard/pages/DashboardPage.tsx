@@ -35,7 +35,7 @@ import type {
   MonthlyOrder,
 } from '../../../shared/types';
 import { LOGISTICS_TYPES } from '../../../shared/constants/logisticsTypes';
-import { subscribeOrdersChanged } from '../../../shared/utils/realtimeSync';
+import { subscribeOrdersChanged, startAutoRefresh } from '../../../shared/utils/realtimeSync';
 import {
   computeDashboardOverview,
   formatDashboardTon,
@@ -2695,7 +2695,11 @@ export default function DashboardPage() {
   useEffect(() => {
     load();
     const unsub = subscribeOrdersChanged(() => load(true));
-    return unsub;
+    const stopPoll = startAutoRefresh(() => load(true), 30000);
+    return () => {
+      unsub();
+      stopPoll();
+    };
   }, []);
 
   const overview = useMemo(
