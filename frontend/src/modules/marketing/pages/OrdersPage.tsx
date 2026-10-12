@@ -1034,7 +1034,18 @@ function MarketingOrdersPanel({
                 value: entry.productType,
                 label: entry.title,
               }))}
-              onChange={next => setHeader(h => ({ ...h, productType: next }))}
+              onChange={next => {
+                setHeader(h => ({ ...h, productType: next }));
+                setLines(prev => prev.map(line => {
+                  if (line.wagonCount > 0) {
+                    return {
+                      ...line,
+                      tonCount: calcTonsFromUnits(line.wagonCount, next, logisticsType),
+                    };
+                  }
+                  return line;
+                }));
+              }}
               disabled={!isNew && (editingOrder?.status === 'Active' || Boolean(editingOrder?.approvedAt))}
               allowEmpty={false}
               emptyLabel="Mahsulotni tanlang"

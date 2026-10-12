@@ -9,7 +9,7 @@ const PRODUCT_TONS_PER_UNIT: Record<string, number> = {
   'Suyultirilgan gaz': 31,
   'Suyultirilgan uglevodorod gazi': 31,
   'Buten-1': 31,
-  'Tabiiy gaz kondensati': 31,
+  'Tabiiy gaz kondensati': 50,
   'Barcha turdagi oltingugurt': 31,
   'Etilenning polimerlari (polietilen)': 31,
   'Polietilen otxod': 31,
@@ -19,7 +19,11 @@ export function getTonsPerUnit(productType: string, logisticsType: LogisticsType
   if (logisticsType === LOGISTICS_TYPES.Road) {
     return DEFAULT_TONS_PER_TRUCK;
   }
-  const mapped = PRODUCT_TONS_PER_UNIT[productType.trim()];
+  const clean = productType.trim();
+  if (clean.toLowerCase().includes('kondensat')) {
+    return 50;
+  }
+  const mapped = PRODUCT_TONS_PER_UNIT[clean];
   if (mapped && mapped > 0) return mapped;
   return DEFAULT_TONS_PER_WAGON;
 }
