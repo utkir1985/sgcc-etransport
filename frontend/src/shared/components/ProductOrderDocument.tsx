@@ -197,17 +197,19 @@ export function ProductOrderDocument({
 
         <div className="yxn-signatures">
           <SignerBlock
-            title="MS va MX boshlig‘i"
+            title={order.productType.toLowerCase().includes('kondensat') ? "IChDX boshlig‘i" : "MS va MX boshlig‘i"}
             name={order.marketingApproverName || order.createdBy}
             at={order.createdAt}
             status="Yaratildi"
           />
-          <SignerBlock
-            title="Buxgalteriya"
-            name={order.accountingApproverName}
-            at={order.approvedAt}
-            status="Kelishildi"
-          />
+          {!order.productType.toLowerCase().includes('kondensat') && (
+            <SignerBlock
+              title="Buxgalteriya"
+              name={order.accountingApproverName}
+              at={order.approvedAt}
+              status="Kelishildi"
+            />
+          )}
         </div>
 
         <footer className="yxn-footer">

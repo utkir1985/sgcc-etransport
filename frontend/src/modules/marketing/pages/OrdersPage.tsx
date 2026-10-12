@@ -150,6 +150,8 @@ function MarketingOrdersPanel({
   defaultListView?: OrderListView;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const role = user?.role;
   const listView: OrderListView = parseOrderListView(searchParams.get('view')) ?? defaultListView;
   const now = new Date();
   const [searchQuery, setSearchQuery] = useState('');
@@ -200,8 +202,17 @@ function MarketingOrdersPanel({
   const tableConfig = getTableConfig(logisticsType);
 
   const productEntries = useMemo(
-    () => entriesFromProductNames(catalogProducts.filter(p => p.isActive).map(p => p.name)),
-    [catalogProducts],
+    () => {
+      const activeProducts = catalogProducts.filter(p => p.isActive);
+      const filtered = activeProducts.filter(p => {
+        const isCondensate = p.name.toLowerCase().includes('kondensat');
+        if (role === 'DispatchSupervisor') return isCondensate;
+        if (role === 'Marketing') return !isCondensate;
+        return true;
+      });
+      return entriesFromProductNames(filtered.map(p => p.name));
+    },
+    [catalogProducts, role],
   );
 
   const loadCatalogProducts = () => {
@@ -848,6 +859,8 @@ function MarketingOrdersPanel({
 
     if (!canCreate && !canUpdate) return null;
 
+    const isCondensate = order.productType.toLowerCase().includes('kondensat');
+
     return (
       <div className="order-sheet-footer-actions">
         {order.status === 'Draft' && (
@@ -858,7 +871,7 @@ function MarketingOrdersPanel({
             className="btn-primary order-sheet-submit-btn"
           >
             <Send className="w-4 h-4" />
-            {submitting ? 'Yuborilmoqda...' : 'Buxgalteriya bilan kelishish'}
+            {submitting ? 'Yuborilmoqda...' : isCondensate ? 'Direktor o‘rinbosari tasdig‘iga yuborish' : 'Buxgalteriya bilan kelishish'}
           </button>
         )}
         {order.status === 'ReturnedToMarketing' && (
@@ -869,7 +882,7 @@ function MarketingOrdersPanel({
             className="btn-primary order-sheet-submit-btn"
           >
             <Send className="w-4 h-4" />
-            {submitting ? 'Yuborilmoqda...' : 'Qayta buxgalteriya kelishuviga yuborish'}
+            {submitting ? 'Yuborilmoqda...' : isCondensate ? 'Direktor o‘rinbosari tasdig‘iga qayta yuborish' : 'Qayta buxgalteriya kelishuviga yuborish'}
           </button>
         )}
         {order.status === 'PendingAccounting' && (

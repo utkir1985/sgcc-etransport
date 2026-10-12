@@ -70,7 +70,7 @@ public class OrderService(
 
     public async Task<MonthlyOrderDto> CreateAsync(CreateMonthlyOrderRequest request, Guid userId)
     {
-        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.ContractNumber, request.Lines);
+        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.ContractNumber, request.Lines, userId);
 
         var creator = await db.Users.FindAsync(userId);
         var order = new MonthlyOrder
@@ -123,7 +123,7 @@ public class OrderService(
         if (string.IsNullOrWhiteSpace(request.EditComment))
             throw new ArgumentException("Tahrirlash izohini kiriting");
 
-        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.ContractNumber, request.Lines);
+        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.ContractNumber, request.Lines, userId);
 
         var changes = new List<string>();
         if (!string.Equals(order.ProductType, request.ProductType, StringComparison.Ordinal))
@@ -198,14 +198,33 @@ public class OrderService(
         if (order.Attachments.Count == 0)
             throw new ArgumentException("Ilova biriktirish majburiy — kamida bitta fayl qo‘shing");
 
-        foreach (var line in order.Lines)
+        var isCondensate = order.ProductType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
+
+        if (isCondensate)
         {
-            line.AccountingStatus = LineAccountingStatuses.Pending;
-            line.AccountantSigned = false;
-            line.AccountingReviewChecked = null;
+            foreach (var line in order.Lines)
+            {
+                line.AccountingStatus = LineAccountingStatuses.PendingDeputy;
+                line.AccountantSigned = true;
+                line.AccountingReviewChecked = true;
+            }
+
+            order.Status = OrderStatus.PendingDeputyDirector;
+            order.AccountingApproverName = "Talab etilmaydi";
+            order.ApprovedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            foreach (var line in order.Lines)
+            {
+                line.AccountingStatus = LineAccountingStatuses.Pending;
+                line.AccountantSigned = false;
+                line.AccountingReviewChecked = null;
+            }
+
+            order.Status = OrderStatus.PendingAccounting;
         }
 
-        order.Status = OrderStatus.PendingAccounting;
         order.SubmittedAt = DateTime.UtcNow;
         order.SubmittedById = userId;
 
@@ -337,11 +356,12 @@ public class OrderService(
         if (rejected.Count == 0)
             throw new ArgumentException("Qayta yuborish uchun kontragent topilmadi");
 
+        var isCondensate = order.ProductType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
         foreach (var line in rejected)
         {
-            line.AccountingStatus = LineAccountingStatuses.Pending;
-            line.AccountantSigned = false;
-            line.AccountingReviewChecked = null;
+            line.AccountingStatus = isCondensate ? LineAccountingStatuses.PendingDeputy : LineAccountingStatuses.Pending;
+            line.AccountantSigned = isCondensate;
+            line.AccountingReviewChecked = isCondensate ? true : null;
         }
 
         order.SubmittedAt = DateTime.UtcNow;
@@ -351,6 +371,12 @@ public class OrderService(
         order.MarketingApproverName = submitter?.FullName ?? "";
         order.MarketingApprovedAt = DateTime.UtcNow;
         order.ApprovedByMarketingId = userId;
+
+        if (isCondensate)
+        {
+            order.AccountingApproverName = "Talab etilmaydi";
+            order.ApprovedAt = DateTime.UtcNow;
+        }
 
         RefreshOrderStatus(order);
 
@@ -366,7 +392,8 @@ public class OrderService(
         if (order.Status != OrderStatus.ReadyForDispatch)
             throw new ArgumentException("Faqat buxgalteriya kelishgan buyurtmani tasdiqlash mumkin");
 
-        if (string.IsNullOrWhiteSpace(order.AccountingApproverName))
+        var isCondensate = order.ProductType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
+        if (!isCondensate && string.IsNullOrWhiteSpace(order.AccountingApproverName))
             throw new ArgumentException("Buxgalteriya tasdiqi topilmadi");
 
         var approver = await db.Users.FindAsync(userId);
@@ -399,7 +426,8 @@ public class OrderService(
         if (order.Status != OrderStatus.PendingDeputyDirector)
             throw new ArgumentException("Buyurtma Bosh direktor o‘rinbosari tasdig‘ida emas");
 
-        if (string.IsNullOrWhiteSpace(order.AccountingApproverName))
+        var isCondensate = order.ProductType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
+        if (!isCondensate && string.IsNullOrWhiteSpace(order.AccountingApproverName))
             throw new ArgumentException("Buxgalteriya tasdiqi topilmadi");
 
         var approver = await db.Users.FindAsync(userId);
@@ -754,10 +782,20 @@ public class OrderService(
         string logisticsType,
         string productType,
         string contractNumber,
-        List<MonthlyOrderLineInput> lines)
+        List<MonthlyOrderLineInput> lines,
+        Guid userId)
     {
         if (!LogisticsTypes.IsValid(logisticsType))
             throw new ArgumentException("Noto'g'ri logistika turi");
+
+        var user = await db.Users.FindAsync(userId);
+        var isCondensate = productType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
+
+        if (user?.Role == UserRoles.Marketing && isCondensate)
+            throw new ArgumentException("Marketing xodimi «Tabiiy gaz kondensati» mahsulotini kirita olmaydi. Ushbu mahsulot faqat IChDX boshlig‘i tomonidan kiritiladi.");
+
+        if (user?.Role == UserRoles.DispatchSupervisor && !isCondensate)
+            throw new ArgumentException("IChDX boshlig‘i faqat «Tabiiy gaz kondensati» mahsulotini kiritishi mumkin. Boshqa mahsulotlar Marketing bo‘limi tomonidan kiritiladi.");
 
         var productExists = await db.CatalogProducts.AnyAsync(p =>
             p.LogisticsType == logisticsType

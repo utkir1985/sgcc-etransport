@@ -930,9 +930,11 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
         var deputyQrPayload = $"Holat: Tasdiqlandi\nBo'lim/sex: Bosh direktor o'rinbosari\nF.I.Sh.: {FormatShortName(deputyName)}\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {FormatUzt(model.DeputyApprovedAt ?? model.ApprovedAt ?? DateTime.UtcNow)}";
         var deputyQrBytes = deputyApproved ? GenerateQrPngBytes(deputyQrPayload) : Array.Empty<byte>();
 
-        var marketingName = !string.IsNullOrWhiteSpace(model.MarketingApproverName) ? model.MarketingApproverName : "Normurodov Bekzod Kenjayevich";
+        var isCondensate = model.ProductType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
+        var creatorRoleTitle = isCondensate ? "IChDX boshlig‘i" : "MS va MX boshlig‘i";
+        var marketingName = !string.IsNullOrWhiteSpace(model.MarketingApproverName) ? model.MarketingApproverName : (isCondensate ? "IChDX boshlig‘i" : "Normurodov Bekzod Kenjayevich");
         var marketingAt = model.MarketingApprovedAt ?? model.ApprovedAt ?? DateTime.UtcNow;
-        var marketingQrPayload = $"Bo'lim/sex: MS va MX boshlig'i\nHolat: Yaratildi\nF.I.Sh.: {marketingName}\nSana/vaqt: {FormatUzt(marketingAt)}";
+        var marketingQrPayload = $"Bo'lim/sex: {creatorRoleTitle}\nHolat: Yaratildi\nF.I.Sh.: {marketingName}\nSana/vaqt: {FormatUzt(marketingAt)}";
         var marketingQrBytes = GenerateQrPngBytes(marketingQrPayload);
 
         var accountingName = !string.IsNullOrWhiteSpace(model.AccountingApproverName) ? model.AccountingApproverName : "Nazarov Xudoyqul Zamonovich";
@@ -1089,7 +1091,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                                         stRow.ConstantItem(10).Height(10).AlignMiddle().Svg(CheckCircleSvg);
                                         stRow.RelativeItem().PaddingLeft(3).AlignMiddle().Text("Yaratildi").FontColor(Colors.Green.Darken2).Bold().FontSize(8.5f);
                                     });
-                                    sc.Item().Text("MS va MX boshlig‘i").FontSize(8f).FontColor(Colors.Grey.Darken3);
+                                    sc.Item().Text(creatorRoleTitle).FontSize(8f).FontColor(Colors.Grey.Darken3);
                                     sc.Item().Text(marketingName).Bold().FontSize(8.5f);
                                     sc.Item().Text(FormatUzt(marketingAt)).FontSize(8f).FontColor(Colors.Grey.Darken1);
                                 });
@@ -1104,37 +1106,40 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             });
                         });
 
-                        sr.ConstantItem(20);
-
-                        // Accounting Card
-                        sr.ConstantItem(225).Height(56).Layers(layers =>
+                        if (!isCondensate)
                         {
-                            layers.Layer().Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 225 56' preserveAspectRatio='none' width='100%' height='100%'><rect x='0.5' y='0.5' width='224' height='55' rx='6' ry='6' fill='#ffffff' stroke='#cbd5e1' stroke-width='1'/></svg>");
+                            sr.ConstantItem(20);
 
-                            layers.PrimaryLayer().PaddingVertical(5).PaddingHorizontal(6).Row(cr2 =>
+                            // Accounting Card
+                            sr.ConstantItem(225).Height(56).Layers(layers =>
                             {
-                                cr2.RelativeItem().AlignMiddle().Column(sc =>
+                                layers.Layer().Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 225 56' preserveAspectRatio='none' width='100%' height='100%'><rect x='0.5' y='0.5' width='224' height='55' rx='6' ry='6' fill='#ffffff' stroke='#cbd5e1' stroke-width='1'/></svg>");
+
+                                layers.PrimaryLayer().PaddingVertical(5).PaddingHorizontal(6).Row(cr2 =>
                                 {
-                                    sc.Spacing(0.8f);
-                                    sc.Item().Row(stRow =>
+                                    cr2.RelativeItem().AlignMiddle().Column(sc =>
                                     {
-                                        stRow.ConstantItem(10).Height(10).AlignMiddle().Svg(CheckCircleSvg);
-                                        stRow.RelativeItem().PaddingLeft(3).AlignMiddle().Text("Kelishildi").FontColor(Colors.Green.Darken2).Bold().FontSize(8.5f);
+                                        sc.Spacing(0.8f);
+                                        sc.Item().Row(stRow =>
+                                        {
+                                            stRow.ConstantItem(10).Height(10).AlignMiddle().Svg(CheckCircleSvg);
+                                            stRow.RelativeItem().PaddingLeft(3).AlignMiddle().Text("Kelishildi").FontColor(Colors.Green.Darken2).Bold().FontSize(8.5f);
+                                        });
+                                        sc.Item().Text("Buxgalteriya").FontSize(8f).FontColor(Colors.Grey.Darken3);
+                                        sc.Item().Text(accountingName).Bold().FontSize(8.5f);
+                                        sc.Item().Text(FormatUzt(accountingAt)).FontSize(8f).FontColor(Colors.Grey.Darken1);
                                     });
-                                    sc.Item().Text("Buxgalteriya").FontSize(8f).FontColor(Colors.Grey.Darken3);
-                                    sc.Item().Text(accountingName).Bold().FontSize(8.5f);
-                                    sc.Item().Text(FormatUzt(accountingAt)).FontSize(8f).FontColor(Colors.Grey.Darken1);
+                                    if (accountingQrBytes.Length > 0)
+                                    {
+                                        cr2.ConstantItem(44).Height(44).AlignMiddle().Layers(ql =>
+                                        {
+                                            ql.Layer().Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44' width='100%' height='100%'><rect x='0' y='0' width='44' height='44' rx='4' ry='4' fill='#f1f5f9'/></svg>");
+                                            ql.PrimaryLayer().Padding(1).Image(accountingQrBytes);
+                                        });
+                                    }
                                 });
-                                if (accountingQrBytes.Length > 0)
-                                {
-                                    cr2.ConstantItem(44).Height(44).AlignMiddle().Layers(ql =>
-                                    {
-                                        ql.Layer().Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44' width='100%' height='100%'><rect x='0' y='0' width='44' height='44' rx='4' ry='4' fill='#f1f5f9'/></svg>");
-                                        ql.PrimaryLayer().Padding(1).Image(accountingQrBytes);
-                                    });
-                                }
                             });
-                        });
+                        }
                     });
                 });
 
