@@ -130,12 +130,14 @@ html.dark body {
 
 @media (hover: hover) {
   .sidebar-nav-item:hover .nav-icon {
-    transform: scale(1.15);
+    transform: scale(1.14);
+    filter: brightness(1.2) drop-shadow(0 0 5px currentColor);
   }
 
   .nav-item-active-light:hover .nav-icon,
   .dark .nav-item-active-dark:hover .nav-icon {
     transform: scale(1.08);
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
   }
 }
 

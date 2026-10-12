@@ -22,7 +22,7 @@ import { api } from '../../services/api';
 import { buildRoleNotifications } from '../../utils/roleNotifications';
 import { subscribeOrdersChanged } from '../../utils/realtimeSync';
 
-const ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
+const ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidth?: number; style?: React.CSSProperties }>> = {
   LayoutDashboard, FileText, Calendar, Train, Users, BarChart3, Settings,
   BookOpen, CalendarCheck, Receipt, Package, MapPin, PackageOpen, Scale,
   Lock, FileCheck, Shield, ShieldCheck, FileSearch, Plug, TrendingUp, Activity, Truck,
@@ -30,6 +30,84 @@ const ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidt
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
   Weight, Play, BadgeCheck, Target,
 };
+
+
+const MENU_ITEM_COLORS: Record<string, string> = {
+  dashboard: '#818cf8',         // Indigo: Boshqaruv paneli
+  orders: '#34d399',            // Emerald: Buyurtmalar
+  'orders-railway': '#38bdf8',  // Sky: Temir yo'l
+  'orders-road': '#fbbf24',     // Amber: Avtotransport
+  'loading-docs': '#fbbf24',    // Amber: Yuklash jarayonlari
+  registry: '#34d399',          // Emerald: Yuk xatlari
+  'empty-wagons': '#fb923c',    // Orange: Kiritish xizmat xatlari
+  'defect-acts': '#f43f5e',     // Rose: Dalolatnomalar
+  transport: '#38bdf8',         // Sky: Majmuadagi vagonlar
+  'transport-tared': '#818cf8', // Indigo: Tara qilingan
+  'transport-loading': '#fbbf24',// Amber: Yuklanmoqda
+  'transport-loaded': '#34d399',// Emerald: Yuklangan
+  'transport-dispatched': '#22d3ee', // Cyan: Chiqishga tayyor
+  history: '#c084fc',           // Purple: Hisobotlar va reja
+  reports: '#c084fc',           // Purple: Hisobotlar
+  plans: '#a855f7',             // Purple: Rejalar
+  'normative-docs': '#2dd4bf',  // Teal: Normativ hujjatlar
+  'railway-intake': '#22d3ee',  // Cyan: Vagonlar reestri
+  'wagon-registry': '#22d3ee',  // Cyan
+  loading: '#fb923c',           // Orange: Yuklash (TM va XA)
+  users: '#60a5fa',             // Blue: Foydalanuvchilar
+  roles: '#10b981',             // Emerald: Rollar va Huquqlar
+  catalogs: '#a78bfa',          // Violet: Ma'lumotnomalar
+  integrations: '#facc15',      // Yellow: Integratsiyalar
+  audit: '#38bdf8',             // Sky: Audit Log
+  'recycle-bin': '#f43f5e',     // Rose: O'chirilganlar
+  'server-status': '#4ade80',   // Green: Server holati
+  seals: '#f59e0b',             // Amber: Plombalar
+  weighing: '#818cf8',          // Indigo: Tarozi
+  'wagon-gate-check': '#10b981',// Emerald: Tekshirish va kiritish
+};
+
+const ICON_COLORS: Record<string, string> = {
+  LayoutDashboard: '#818cf8',
+  FileText: '#34d399',
+  FileCheck: '#fbbf24',
+  Train: '#38bdf8',
+  TrainFront: '#22d3ee',
+  Truck: '#fbbf24',
+  BarChart3: '#c084fc',
+  TrendingUp: '#c084fc',
+  BookOpen: '#2dd4bf',
+  Package: '#fb923c',
+  PackageOpen: '#fb923c',
+  PackageCheck: '#34d399',
+  Users: '#60a5fa',
+  Shield: '#10b981',
+  ShieldCheck: '#10b981',
+  Book: '#a78bfa',
+  Database: '#a78bfa',
+  Layers: '#a78bfa',
+  Plug: '#facc15',
+  FileSearch: '#38bdf8',
+  History: '#38bdf8',
+  ScrollText: '#38bdf8',
+  Trash2: '#f43f5e',
+  Activity: '#4ade80',
+  Scale: '#818cf8',
+  Weight: '#818cf8',
+  Factory: '#fb923c',
+  Clock: '#fbbf24',
+  ArrowDownToLine: '#38bdf8',
+  ArrowUpFromLine: '#34d399',
+  KeyRound: '#10b981',
+  AlertTriangle: '#f59e0b',
+  Play: '#3b82f6',
+  BadgeCheck: '#10b981',
+  Target: '#ec4899',
+};
+
+function getMenuItemColor(item: MenuItem): string {
+  if (MENU_ITEM_COLORS[item.key]) return MENU_ITEM_COLORS[item.key];
+  if (ICON_COLORS[item.icon]) return ICON_COLORS[item.icon];
+  return '#60a5fa';
+}
 
 interface SidebarProps {
   isDesktop: boolean;
@@ -87,6 +165,7 @@ function SidebarMenuItem({
   const wrapRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const Icon = ICONS[item.icon] || LayoutDashboard;
+  const itemColor = getMenuItemColor(item);
   const hasChildren = !!item.children?.length;
   const isGroupActive = hasChildren && item.children!.some(
     child => menuItemMatches(child, location.pathname, location.search),
@@ -114,7 +193,7 @@ function SidebarMenuItem({
         title={!showLabels ? item.label : undefined}
         className={() => `${navClass(isItemActive, isDark, showLabels)} relative`}
       >
-        <Icon className="nav-icon" strokeWidth={isItemActive ? 2 : 1.5} />
+        <Icon className="nav-icon" strokeWidth={isItemActive ? 2 : 1.75} style={!isItemActive ? { color: itemColor } : undefined} />
         {showLabels && <span className="nav-label min-w-0 flex-1 truncate">{item.label}</span>}
         {notificationCount > 0 && (
           <span
@@ -141,7 +220,7 @@ function SidebarMenuItem({
           aria-haspopup="true"
           className={[navClass(isGroupActive || flyoutOpen, isDark, showLabels), 'w-full'].join(' ')}
         >
-          <Icon className="nav-icon" strokeWidth={isGroupActive || flyoutOpen ? 2 : 1.5} />
+          <Icon className="nav-icon" strokeWidth={isGroupActive || flyoutOpen ? 2 : 1.75} style={!(isGroupActive || flyoutOpen) ? { color: itemColor } : undefined} />
         </button>
 
         {flyoutOpen && (
@@ -153,6 +232,7 @@ function SidebarMenuItem({
               {item.children!.map(child => {
                 const ChildIcon = ICONS[child.icon] || Train;
                 const childActive = menuItemMatches(child, location.pathname, location.search);
+                const childColor = getMenuItemColor(child);
                 return (
                   <NavLink
                     key={child.key}
@@ -160,7 +240,10 @@ function SidebarMenuItem({
                     onClick={onNavigate}
                     className={`sidebar-flyout-item${childActive ? ' sidebar-flyout-item--active' : ''}`}
                   >
-                    <span className="sidebar-flyout-item__icon">
+                    <span
+                      className="sidebar-flyout-item__icon"
+                      style={!childActive ? { color: childColor } : undefined}
+                    >
                       <ChildIcon strokeWidth={childActive ? 2 : 1.75} />
                     </span>
                     <span className="sidebar-flyout-item__label">{child.label}</span>
@@ -186,7 +269,7 @@ function SidebarMenuItem({
         ].join(' ')}
         aria-expanded={expanded}
       >
-        <Icon className="nav-icon" strokeWidth={isGroupActive ? 2 : 1.5} />
+        <Icon className="nav-icon" strokeWidth={isGroupActive ? 2 : 1.75} style={!isGroupActive ? { color: itemColor } : undefined} />
         {showLabels && (
           <>
             <span className="nav-label truncate flex-1">{item.label}</span>
@@ -203,6 +286,7 @@ function SidebarMenuItem({
           {item.children!.map(child => {
             const ChildIcon = ICONS[child.icon] || Train;
             const childActive = menuItemMatches(child, location.pathname, location.search);
+            const childColor = getMenuItemColor(child);
             return (
               <NavLink
                 key={child.key}
@@ -211,7 +295,11 @@ function SidebarMenuItem({
                 onClick={onNavigate}
                 className={subNavClass(childActive, isDark, showLabels)}
               >
-                <ChildIcon className="nav-icon nav-icon--sub" strokeWidth={childActive ? 2 : 1.5} />
+                <ChildIcon
+                  className="nav-icon nav-icon--sub"
+                  strokeWidth={childActive ? 2 : 1.75}
+                  style={!childActive ? { color: childColor } : undefined}
+                />
                 <span className="nav-label truncate">{child.label}</span>
               </NavLink>
             );
