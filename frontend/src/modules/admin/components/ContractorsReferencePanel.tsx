@@ -315,7 +315,7 @@ export function ContractorsReferencePanel() {
                           {canContractorsUpdate && (
                             <button
                               type="button"
-                              className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all shadow-2xs"
+                              className="flex items-center justify-center w-8 h-8 rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 hover:scale-105 transition-all shadow-2xs"
                               title="Tahrirlash"
                               onClick={() => openEdit(c)}
                             >

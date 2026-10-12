@@ -788,7 +788,7 @@ export default function NormativeDocsPage() {
                           <button
                             type="button"
                             onClick={() => setDocToDelete(doc)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 transition-colors"
                             title="O‘chirish"
                           >
                             <Trash2 className="w-4 h-4" />

@@ -102,7 +102,7 @@ export function DocumentPackChip({
           setOpen(v => !v);
         }}
       >
-        <Paperclip className="w-3.5 h-3.5" strokeWidth={1.75} />
+        <Paperclip className="w-3.5 h-3.5 shrink-0 text-sky-600 dark:text-sky-400" strokeWidth={2} />
         <span>Hujjat</span>
         <span className="order-sheet-annex-chip__count">{documents.length}</span>
       </button>
@@ -163,7 +163,7 @@ export function DocumentChipButton({
         onClick();
       }}
     >
-      <Paperclip className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+      <Paperclip className="h-3.5 w-3.5 shrink-0 text-sky-600 dark:text-sky-400" strokeWidth={2} />
       <span>Hujjat</span>
     </button>
   );

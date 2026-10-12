@@ -108,11 +108,11 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
             e.stopPropagation();
             onEdit(order);
           }}
-          className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg shrink-0"
+          className="p-1.5 text-blue-600 dark:text-blue-400 bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 rounded-lg shrink-0 transition-all hover:scale-110 shadow-2xs"
           title="Tahrirlash"
           aria-label="Tahrirlash"
         >
-          <Pencil className="w-4 h-4" />
+          <Pencil className="w-4 h-4 stroke-[2]" />
         </button>
       )}
 
@@ -337,22 +337,22 @@ export function OrderList({
                           <button
                             type="button"
                             onClick={() => onEdit(order)}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                            className="p-1.5 text-blue-600 dark:text-blue-400 bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 rounded-lg transition-all hover:scale-110 shadow-2xs"
                             title="Tahrirlash"
                             aria-label="Tahrirlash"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-4 h-4 stroke-[2]" />
                           </button>
                         )}
                         {canDeleteOrder?.(order) && onDelete && (
                           <button
                             type="button"
                             onClick={() => onDelete(order)}
-                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                            className="p-1.5 text-rose-600 dark:text-rose-400 bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 rounded-lg transition-all hover:scale-110 shadow-2xs"
                             title="O'chirish"
                             aria-label="O'chirish"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 stroke-[2]" />
                           </button>
                         )}
                       </div>
