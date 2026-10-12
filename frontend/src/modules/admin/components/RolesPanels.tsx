@@ -481,7 +481,7 @@ export function RolesManagePanel() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all shadow-2xs"
+                            className="p-1.5 rounded-lg border border-blue-200/80 bg-blue-50/80 text-blue-600 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
                             title="Rolni tahrirlash"
                             onClick={() => {
                               setSelected(role);
@@ -494,7 +494,7 @@ export function RolesManagePanel() {
                           {!role.isSystem && (
                             <button
                               type="button"
-                              className="flex items-center justify-center w-9 h-9 rounded-xl border border-rose-200 dark:border-rose-900 bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 transition-all shadow-2xs"
+                              className="p-1.5 rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
                               title="Rolni o'chirish"
                               onClick={() => setDeleteKey(role.key)}
                             >
@@ -1410,8 +1410,8 @@ export function RolesCrudPanel() {
                                     <WfSwitch on={on} onToggle={() => toggleActionRole(item.key, role)} />
                                     {custom && (
                                       <>
-                                        <button type="button" className="admin-icon-btn hover:!bg-blue-50 hover:!text-blue-600" title="Tahrirlash" onClick={() => { setSelectedAction(item); setDialog('edit'); }}><Pencil className="w-3.5 h-3.5" strokeWidth={1.75} /></button>
-                                        <button type="button" className="admin-icon-btn admin-icon-btn--danger" title="O‘chirish" onClick={() => setDeleteKey(item.key)}><Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} /></button>
+                                        <button type="button" className="p-1 rounded-md border border-blue-200/80 bg-blue-50/80 text-blue-600 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer" title="Tahrirlash" onClick={() => { setSelectedAction(item); setDialog('edit'); }}><Pencil className="w-3.5 h-3.5 stroke-[2]" /></button>
+                                        <button type="button" className="p-1 rounded-md border border-rose-200/80 bg-rose-50/80 text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer" title="O‘chirish" onClick={() => setDeleteKey(item.key)}><Trash2 className="w-3.5 h-3.5 stroke-[2]" /></button>
                                       </>
                                     )}
                                   </div>

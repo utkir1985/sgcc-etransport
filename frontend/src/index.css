@@ -5268,12 +5268,11 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .dark .thub-table.reestr-table .reestr-icon-btn {
-  color: #667588;
+  color: #60a5fa;
 }
 
-.dark .thub-table.reestr-table .reestr-icon-btn:hover {
-  background: rgba(120, 135, 155, 0.1);
-  color: #9aabbc;
+.dark .thub-table.reestr-table .reestr-icon-btn--danger {
+  color: #fb7185;
 }
 
 .dark .thub-table.reestr-table .reestr-sort:hover {
@@ -5464,17 +5463,11 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .dark .reestr .reestr-icon-btn {
-  color: #94a3b8;
+  color: #60a5fa;
 }
 
-.dark .reestr .reestr-icon-btn:hover {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-}
-
-.dark .reestr .reestr-icon-btn--danger:hover {
-  background: rgba(248, 113, 113, 0.12);
-  color: #fca5a5;
+.dark .reestr .reestr-icon-btn--danger {
+  color: #fb7185;
 }
 
 .dark .reestr .order-sheet-menu__trigger {
@@ -5517,11 +5510,13 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .reestr-icon-btn {
-  @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-primary-700 dark:hover:bg-slate-800 dark:hover:text-primary-300;
+  @apply inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200/80 bg-blue-50/70 text-blue-600 transition-all shadow-2xs;
+  @apply hover:bg-blue-100 hover:text-blue-700 hover:scale-105 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/60 dark:hover:text-blue-300;
 }
 
 .reestr-icon-btn--danger {
-  @apply hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400;
+  @apply border-rose-200/80 bg-rose-50/70 text-rose-600 transition-all;
+  @apply hover:bg-rose-100 hover:text-rose-700 hover:scale-105 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-950/60 dark:hover:text-rose-300;
 }
 
 /* Vagon / konteyner tahrirlash — zamonaviy sheet */

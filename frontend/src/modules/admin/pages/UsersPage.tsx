@@ -836,18 +836,33 @@ export default function UsersPage() {
                       <td>
                         <div className="admin-table__action-group">
                           {canUsersUpdate && (
-                            <button type="button" className="admin-icon-btn" title="Tahrirlash" onClick={() => openEdit(user)}>
-                              <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                            <button
+                              type="button"
+                              className="p-1.5 rounded-lg border border-blue-200/80 bg-blue-50/80 text-blue-600 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
+                              title="Tahrirlash"
+                              onClick={() => openEdit(user)}
+                            >
+                              <Pencil className="w-4 h-4 stroke-[2]" />
                             </button>
                           )}
                           {canUsersUpdate && (
-                            <button type="button" className="admin-icon-btn" title="Parolni tiklash" onClick={() => openReset(user)}>
-                              <KeyRound className="w-4 h-4" strokeWidth={1.75} />
+                            <button
+                              type="button"
+                              className="p-1.5 rounded-lg border border-amber-200/80 bg-amber-50/80 text-amber-600 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-400 dark:hover:bg-amber-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
+                              title="Parolni tiklash"
+                              onClick={() => openReset(user)}
+                            >
+                              <KeyRound className="w-4 h-4 stroke-[2]" />
                             </button>
                           )}
                           {canUsersDelete && (
-                            <button type="button" className="admin-icon-btn admin-icon-btn--danger" title="Bloklash" onClick={() => openBlock(user)}>
-                              <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                            <button
+                              type="button"
+                              className="p-1.5 rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
+                              title="Bloklash"
+                              onClick={() => openBlock(user)}
+                            >
+                              <Trash2 className="w-4 h-4 stroke-[2]" />
                             </button>
                           )}
                           {!canUsersUpdate && !canUsersDelete && (

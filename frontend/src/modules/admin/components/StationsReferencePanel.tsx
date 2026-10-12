@@ -175,22 +175,22 @@ export function StationsReferencePanel() {
                         {canStationsUpdate && (
                           <button
                             type="button"
-                            className="admin-icon-btn"
+                            className="p-1.5 rounded-lg border border-blue-200/80 bg-blue-50/80 text-blue-600 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
                             title="Tahrirlash"
                             onClick={() => openEdit(st)}
                           >
-                            <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                            <Pencil className="w-4 h-4 stroke-[2]" />
                           </button>
                         )}
                         {canStationsDelete && (
                           <button
                             type="button"
-                            className="admin-icon-btn admin-icon-btn--danger"
+                            className="p-1.5 rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                             title={st.isSystem ? "Tizim stansiyasini o'chirish mumkin emas" : "O'chirish"}
                             disabled={st.isSystem}
                             onClick={() => setDeleteId(st.id)}
                           >
-                            <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                            <Trash2 className="w-4 h-4 stroke-[2]" />
                           </button>
                         )}
                         {!canStationsUpdate && !canStationsDelete && (
