@@ -931,7 +931,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Yangi buyurtma yaratish',
     description: 'POST /api/orders — temir yo‘l / avto buyurtma kiritish',
     flags: ['C'],
-    roles: ['Admin', 'Marketing'],
+    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
   },
   {
     key: 'orders.update',
@@ -939,7 +939,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Buyurtmani tahrirlash',
     description: 'PUT /api/orders/{id} — loyiha holatidagi buyurtmani tahrirlash',
     flags: ['U'],
-    roles: ['Admin', 'Marketing'],
+    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
   },
   {
     key: 'orders.delete',
@@ -947,7 +947,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Buyurtmani o\'chirish',
     description: 'DELETE /api/orders/{id} — bekor qilingan/loyiha buyurtmani o\'chirish',
     flags: ['D'],
-    roles: ['Admin', 'Marketing'],
+    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
   },
   {
     key: 'orders.submit-approval',
@@ -956,7 +956,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     description: 'POST /api/orders/{id}/submit-for-approval — buyurtmani to‘lov/limit tekshiruviga yuborish',
     flags: ['A'],
     order: 1,
-    roles: ['Admin', 'Marketing'],
+    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
   },
   {
     key: 'orders.resubmit',
@@ -965,7 +965,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     description: 'POST /api/orders/{id}/resubmit-rejected — kamchiliklar tuzatilib qayta kelishuvga yuborish',
     flags: ['A'],
     order: 2,
-    roles: ['Admin', 'Marketing'],
+    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
   },
   {
     key: 'orders.accounting-save',

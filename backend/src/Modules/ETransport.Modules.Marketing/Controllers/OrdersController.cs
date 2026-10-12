@@ -68,11 +68,15 @@ public class OrdersController(
     }
 
     [HttpPost]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> Create([FromBody] CreateMonthlyOrderRequest request)
     {
         try
         {
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            if (!await rbacService.HasActionAsync(role, "orders.create"))
+                return Forbid();
+
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var order = await orderService.CreateAsync(request, userId);
             return CreatedAtAction(nameof(GetById), new { id = order.Id }, new ApiResponse<MonthlyOrderDto>(true, order));
@@ -92,11 +96,15 @@ public class OrdersController(
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> Update(Guid id, [FromBody] UpdateMonthlyOrderRequest request)
     {
         try
         {
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            if (!await rbacService.HasActionAsync(role, "orders.update"))
+                return Forbid();
+
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var order = await orderService.UpdateAsync(id, request, userId);
             if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
@@ -262,7 +270,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/attachments")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     [RequestSizeLimit(MaxAttachmentBytes + 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxAttachmentBytes + 1024 * 1024)]
     public async Task<ActionResult<ApiResponse<OrderAttachmentDto>>> UploadAttachment(Guid id, IFormFile? file)
@@ -371,7 +379,7 @@ public class OrdersController(
     }
 
     [HttpDelete("{id:guid}/attachments/{attachmentId:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteAttachment(Guid id, Guid attachmentId)
     {
         var attachment = await db.OrderAttachments
@@ -429,11 +437,15 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/submit-for-approval")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> SubmitForApproval(Guid id)
     {
         try
         {
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            if (!await rbacService.HasActionAsync(role, "orders.submit-approval"))
+                return Forbid();
+
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var order = await orderService.SubmitForAccountingAsync(id, userId);
             if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
@@ -446,11 +458,15 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/resubmit-rejected")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> ResubmitRejected(Guid id)
     {
         try
         {
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            if (!await rbacService.HasActionAsync(role, "orders.resubmit"))
+                return Forbid();
+
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var order = await orderService.ResubmitRejectedToAccountingAsync(id, userId);
             if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
@@ -498,7 +514,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/submit-to-dispatch")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> SubmitToDispatch(Guid id)
     {
         try

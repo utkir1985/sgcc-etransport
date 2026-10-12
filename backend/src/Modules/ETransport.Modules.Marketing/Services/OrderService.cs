@@ -115,9 +115,9 @@ public class OrderService(
         if (order is null) return null;
 
         var user = await db.Users.FindAsync(userId);
-        var isAdminOrMarketing = user?.Role is UserRoles.Admin or UserRoles.Marketing;
+        var isAdminOrMarketing = user?.Role is UserRoles.Admin or UserRoles.Marketing or UserRoles.DispatchSupervisor;
         if (!isAdminOrMarketing && order.CreatedById != userId && order.CreatedById != Guid.Empty)
-            throw new ArgumentException("Buyurtmani faqat uni yaratgan Marketing xodimi yoki Administrator tahrirlashi mumkin");
+            throw new ArgumentException("Buyurtmani faqat uni yaratgan xodim yoki Administrator tahrirlashi mumkin");
         if (order.Status is OrderStatus.Completed or OrderStatus.Cancelled)
             throw new ArgumentException("Yakunlangan yoki bekor qilingan buyurtmani tahrirlash mumkin emas");
         if (string.IsNullOrWhiteSpace(request.EditComment))

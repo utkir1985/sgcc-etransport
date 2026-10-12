@@ -22,12 +22,12 @@ public class RbacService(AppDbContext db) : IRbacService
     private static readonly Dictionary<string, string[]> DefaultActionRoles = new()
     {
         ["orders.read"] = UserRoles.All,
-        ["orders.create"] = [UserRoles.Admin, UserRoles.Marketing],
-        ["orders.update"] = [UserRoles.Admin, UserRoles.Marketing],
-        ["orders.delete"] = [UserRoles.Admin, UserRoles.Marketing],
-        ["orders.submit-approval"] = [UserRoles.Admin, UserRoles.Marketing],
-        ["orders.resubmit"] = [UserRoles.Admin, UserRoles.Marketing],
-        ["orders.submit-dispatch"] = [UserRoles.Admin, UserRoles.Marketing],
+        ["orders.create"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
+        ["orders.update"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
+        ["orders.delete"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
+        ["orders.submit-approval"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
+        ["orders.resubmit"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
+        ["orders.submit-dispatch"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
         ["orders.approve-deputy"] = [UserRoles.Admin, UserRoles.DeputyDirector],
         ["orders.accounting-save"] = [UserRoles.Admin, UserRoles.Accounting],
         ["orders.accounting-finalize"] = [UserRoles.Admin, UserRoles.Accounting],
