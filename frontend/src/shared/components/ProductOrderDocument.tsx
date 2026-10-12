@@ -69,6 +69,10 @@ function SignerBlock({ title, name, at, status }: {
 }
 
 export function isProductOrderPrintReady(order: MonthlyOrder): boolean {
+  const isCondensate = order.productType?.toLowerCase().includes('kondensat');
+  if (isCondensate) {
+    return Boolean(order.deputyApprovedAt);
+  }
   return Boolean(order.approvedAt && order.deputyApprovedAt);
 }
 
@@ -210,6 +214,12 @@ export function ProductOrderDocument({
               status="Kelishildi"
             />
           )}
+          <SignerBlock
+            title="IChDX"
+            name={order.dispatchApproverName || (order.dispatchApprovedAt ? "IChDX navbatchisi" : "")}
+            at={order.dispatchApprovedAt}
+            status="Ijroga olindi"
+          />
         </div>
 
         <footer className="yxn-footer">

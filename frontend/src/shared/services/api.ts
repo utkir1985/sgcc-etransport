@@ -578,6 +578,41 @@ class ApiClient {
     return this.request(`/orders/${orderId}/attachments/${attachmentId}`, { method: 'DELETE' });
   }
 
+  async getOrderAttachmentBlob(orderId: string, attachmentId: string, fileName: string, contentType?: string): Promise<Blob> {
+    const token = this.getToken();
+    try {
+      const response = await fetch(`${API_URL}/orders/${orderId}/attachments/${attachmentId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (response.status === 401) {
+        redirectToLogin();
+        throw new Error('Unauthorized');
+      }
+
+      if (response.ok) {
+        let blob = await response.blob();
+        const ext = fileName.split('.').pop()?.toLowerCase() || '';
+        let mime = contentType;
+        if (!mime || mime === 'application/octet-stream') {
+          if (ext === 'pdf') mime = 'application/pdf';
+          else if (['jpg', 'jpeg'].includes(ext)) mime = 'image/jpeg';
+          else if (ext === 'png') mime = 'image/png';
+          else if (ext === 'webp') mime = 'image/webp';
+        }
+        if (mime && blob.type !== mime) {
+          blob = new Blob([blob], { type: mime });
+        }
+        return blob;
+      }
+
+      return this.createFallbackAttachmentBlob(fileName, contentType);
+    } catch (err: any) {
+      if (err.message === 'Unauthorized') throw err;
+      return this.createFallbackAttachmentBlob(fileName, contentType);
+    }
+  }
+
   async downloadOrderAttachment(orderId: string, attachmentId: string, fileName: string, contentType?: string) {
     const token = this.getToken();
     try {
@@ -607,7 +642,7 @@ class ApiClient {
     }
   }
 
-  private triggerBlobDownload(blob: Blob, fileName: string) {
+  triggerBlobDownload(blob: Blob, fileName: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

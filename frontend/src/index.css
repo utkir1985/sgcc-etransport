@@ -6107,7 +6107,57 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .marketing-orders-table {
-  min-width: 1050px;
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+.marketing-orders-table.registry-archive-table thead th {
+  height: 2.65rem !important;
+  padding: 0.25rem 0.15rem !important;
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  vertical-align: middle !important;
+}
+
+.marketing-orders-table.registry-archive-table tbody td {
+  height: 2.45rem !important;
+  padding: 0.2rem 0.25rem !important;
+  font-size: 11px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  vertical-align: middle !important;
+}
+
+.marketing-orders-table.registry-archive-table tbody td .text-xs,
+.marketing-orders-table.registry-archive-table tbody td .text-\[11px\],
+.marketing-orders-table.registry-archive-table tbody td .text-\[10px\],
+.marketing-orders-table.registry-archive-table tbody td .text-sm {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.marketing-orders-table.registry-archive-table tbody td:nth-child(2),
+.marketing-orders-table.registry-archive-table tbody td:nth-child(3) {
+  text-align: left;
+}
+
+.marketing-orders-table .order-sheet-annex-chip__trigger {
+  height: 1.65rem !important;
+  padding: 0 0.5rem !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  gap: 0.25rem !important;
+  white-space: nowrap !important;
+  width: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .marketing-orders-list--mobile { display: none; }
@@ -6143,8 +6193,7 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .marketing-orders-table.registry-archive-table tbody td:nth-child(2),
-.marketing-orders-table.registry-archive-table tbody td:nth-child(3),
-.marketing-orders-table.registry-archive-table tbody td:nth-child(6) {
+.marketing-orders-table.registry-archive-table tbody td:nth-child(3) {
   text-align: left;
 }
 
@@ -16913,4 +16962,90 @@ html.dark .order-progress-track,
 
 .viz-rank__value {
   @apply tabular-nums font-semibold text-slate-900 dark:text-slate-100;
+}
+
+/* Marketing orders table - compact, 100% width, no overflow */
+.marketing-orders-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+}
+
+/* Override any generic 260px column 2 overrides from reestr-table / registry-archive-table */
+.marketing-orders-table th:nth-child(2),
+.marketing-orders-table td:nth-child(2),
+.reestr-table.marketing-orders-table th:nth-child(2),
+.reestr-table.marketing-orders-table td:nth-child(2) {
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.marketing-orders-table thead th,
+.reestr-table.marketing-orders-table thead th {
+  height: 2.85rem !important;
+  padding: 0.25rem 0.15rem !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+  letter-spacing: normal !important;
+  box-sizing: border-box !important;
+}
+
+.marketing-orders-table thead th.text-left {
+  text-align: left !important;
+  padding-left: 0.4rem !important;
+}
+
+.marketing-orders-table tbody td,
+.reestr-table.marketing-orders-table tbody td {
+  min-height: 2.75rem !important;
+  height: auto !important;
+  padding: 0.3rem 0.25rem !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.marketing-orders-table tbody td.text-left,
+.marketing-orders-table tbody td:nth-child(3),
+.marketing-orders-table tbody td:nth-child(6),
+.marketing-orders-table tbody td:nth-child(7) {
+  text-align: center !important;
+}
+
+.marketing-orders-table tbody td:nth-child(3) {
+  padding-left: 0.4rem !important;
+}
+.marketing-orders-table tbody td:nth-child(6) {
+  text-align: center !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+}
+
+.marketing-orders-table tbody td .text-xs,
+.marketing-orders-table tbody td .text-\[11px\],
+.marketing-orders-table tbody td .text-\[10px\],
+.marketing-orders-table tbody td .text-sm {
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.marketing-orders-table .order-sheet-annex-chip__trigger {
+  height: 1.65rem !important;
+  padding: 0 0.5rem !important;
+  font-size: 11px !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
 }
