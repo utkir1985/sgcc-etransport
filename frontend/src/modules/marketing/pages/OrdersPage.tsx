@@ -18,7 +18,7 @@ import {
   LOGISTICS_TYPES,
   type LogisticsType,
 } from '../../../shared/constants/logisticsTypes';
-import { formatOrderPeriod } from '../utils/orderTable';
+import { formatOrderPeriod, MONTH_NAMES_UZ } from '../utils/orderTable';
 import { OrderPeriodPicker } from '../../../shared/components/OrderPeriodPicker';
 import { ContractorSelect } from '../../../shared/components/ContractorSelect';
 import { StationSelect } from '../../../shared/components/StationSelect';
@@ -1362,8 +1362,8 @@ function MarketingOrdersPanel({
                 </h2>
                 <p className="marketing-order-page__subtitle">
                   {isNew
-                    ? 'Mahsulotni tanlang va vagon qatorlarini kiriting'
-                    : (editingOrder?.orderNumber || header.productType)}
+                    ? `${header.year}-yil ${MONTH_NAMES_UZ[header.month - 1] || ''} oyi buyurtmasi — Mahsulotni tanlang va vagon qatorlarini kiriting`
+                    : `${editingOrder?.year || header.year}-yil ${MONTH_NAMES_UZ[(editingOrder?.month || header.month) - 1] || ''} oyi buyurtmasi · ${editingOrder?.orderNumber || header.productType}`}
                 </p>
               </div>
             </div>
@@ -1410,10 +1410,17 @@ function MarketingOrdersPanel({
             <div className="marketing-order-page__bar-main">
               <ProductDetailBackButton onClick={closeOrderView} />
               <div className="min-w-0">
-                <h2 className="marketing-order-page__title">
-                  {getProductLabel(viewOrder.productType, logisticsType)}
-                </h2>
-                <p className="marketing-order-page__subtitle">{viewOrder.orderNumber}</p>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h2 className="marketing-order-page__title">
+                    {getProductLabel(viewOrder.productType, logisticsType)}
+                  </h2>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-sm">
+                    📅 {viewOrder.year ? `${viewOrder.year}-yil ` : ''}{MONTH_NAMES_UZ[viewOrder.month - 1] || ''} oyi buyurtmasi
+                  </span>
+                </div>
+                <p className="marketing-order-page__subtitle">
+                  {viewOrder.orderNumber} · {viewOrder.year ? `${viewOrder.year}-yil ` : ''}{MONTH_NAMES_UZ[viewOrder.month - 1] || ''} oyi buyurtmasi
+                </p>
               </div>
             </div>
           </div>
