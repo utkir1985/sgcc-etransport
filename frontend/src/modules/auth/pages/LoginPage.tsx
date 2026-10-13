@@ -1,4 +1,3 @@
-import { VoiceAlertWidget } from '../../../shared/components/VoiceAlertWidget';
 import { useState, useEffect } from 'react';
 import {
   TrainFront, Eye, EyeOff, Loader2,
@@ -244,8 +243,7 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              {/* Ovozli ogohlantirish boshqaruvi (Logout holatida ham ishlaydi) */}
-              <VoiceAlertWidget variant="login" />
+
             </div>
           </aside>
         </main>

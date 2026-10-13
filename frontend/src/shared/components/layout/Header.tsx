@@ -1,4 +1,3 @@
-import { VoiceAlertWidget } from '../VoiceAlertWidget';
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -297,7 +296,6 @@ export default function Header({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        <VoiceAlertWidget currentRole={user?.role} variant="header" />
         <ThemeToggle />
 
         <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-[var(--color-dark-border)]" />

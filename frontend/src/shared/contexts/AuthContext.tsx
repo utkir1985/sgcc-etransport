@@ -25,6 +25,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function persistUser(next: User) {
   sessionStorage.setItem(STORAGE_KEY_USER, JSON.stringify(next));
   localStorage.removeItem(STORAGE_KEY_USER);
+  if (next?.role) {
+    localStorage.setItem('etransport_last_role', next.role);
+  }
 }
 
 function readStoredUser(): User | null {

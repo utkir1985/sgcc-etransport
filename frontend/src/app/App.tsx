@@ -1,3 +1,4 @@
+import { GlobalVoiceAlertListener } from '../shared/components/GlobalVoiceAlertListener';
 import { processRedirectTo } from '../shared/utils/dashboardReturn';
 import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/contexts/AuthContext';
@@ -92,7 +93,9 @@ function OrdersIndexRedirect() {
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <GlobalVoiceAlertListener />
+      <Routes>
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
@@ -176,5 +179,6 @@ export default function App() {
       />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   );
 }
