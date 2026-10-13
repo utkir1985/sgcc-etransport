@@ -4863,19 +4863,19 @@ export default function RegistryPage() {
                   product={hub.product}
                   productOptions={yukProductOptions}
                   onProductChange={hub.setProduct}
+                  actions={
+                    <button
+                      type="button"
+                      className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30 shrink-0"
+                      onClick={exportYukExcel}
+                      disabled={filteredYukRows.length === 0}
+                      title="Filtrlangan yuk xatlarini vagon darajasida Excel fayliga yuklash"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Excel yuklash</span>
+                    </button>
+                  }
                 />
-                <div className="mb-3 flex justify-end">
-                  <button
-                    type="button"
-                    className="btn-secondary flex items-center gap-1.5"
-                    onClick={exportYukExcel}
-                    disabled={filteredYukRows.length === 0}
-                    title="Filtrlangan yuk xatlarini vagon darajasida Excel fayliga yuklash"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Excel yuklash</span>
-                  </button>
-                </div>
                 {board()}
                 <DocsHubPagination
                   total={filteredYukRows.length}
