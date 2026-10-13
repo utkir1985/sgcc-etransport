@@ -337,7 +337,7 @@ function entryTiles(
     makeTile(role, 'w2', 'Tasdiqlash va ijro uchun yo‘naltirish', "ICHDX smena boshlig'i",
       'Xizmat xatini tasdiqlab ijro uchun tegishli xizmatlarga yo‘naltiriladi',
       partyArrivalId ? emptyWagonsHref({ arrivalId: partyArrivalId, party: partyArrivalId }) : '/empty-wagons',
-      Send, isEntryDone ? 0 : m.intake.length, ['Dispatching'],
+      Send, isEntryDone ? 0 : m.intake.length, ['Dispatching', 'DispatchSupervisor'],
       isEntryDone ? (targetArrival?.entryPermitShiftApprovedAt || at.w2 || fallbackBaseAt) : at.w2),
     makeTile(role, 'w3', 'Vagonlarni kiritish', "Temir yo'l",
       'Vagonlarni qo‘riqlash tekshiruvigacha olib borish',

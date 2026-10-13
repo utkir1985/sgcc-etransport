@@ -177,7 +177,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost]
-    [RequirePermission("empty-wagons.create")]
+    [RequirePermission("empty-wagons.create", "empty-wagons.dispatch-approve")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> Create([FromBody] CreateEmptyWagonArrivalRequest request)
     {
         // Temir yo'l xabarnoma olmaydi — bo'sh vagonlarni o'zi kiritadi
@@ -666,7 +666,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/confirm-preparation")]
-    [RequirePermission("empty-wagons.update")]
+    [RequirePermission("empty-wagons.update", "empty-wagons.dispatch-approve")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ConfirmPreparation(Guid id, [FromBody] ConfirmPreparationRequest request)
     {
         var arrival = await db.EmptyWagonArrivals
@@ -694,7 +694,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/update-stage")]
-    [RequirePermission("empty-wagons.update")]
+    [RequirePermission("empty-wagons.update", "empty-wagons.dispatch-approve")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> UpdateStage(Guid id, [FromBody] UpdateStageRequest request)
     {
         var arrival = await db.EmptyWagonArrivals

@@ -49,7 +49,7 @@ export function getArrivalEntryPendingActionInfo(arrival: EmptyWagonArrival): En
   if (isReturned) {
     currentStep = 2; // Kengsoy ko'rigi / Qaytarilgan
   } else if (!isRailwayDispatched) {
-    currentStep = 1;
+    currentStep = 2; // ICHDX smena boshlig'i tasdiqlashi kutilmoqda (2-bosqich)
   } else if (!arrival.entryPermitShiftApprovedAt && stage === 'KengsoyInspection') {
     currentStep = 2;
   } else if (stage === 'KengsoyInspection') {
@@ -69,16 +69,18 @@ export function getArrivalEntryPendingActionInfo(arrival: EmptyWagonArrival): En
       stepNumber: 1,
       title: "Temir yo‘l qabuli",
       role: "Temir yo‘l inspektori",
-      actionRequired: "«Tasdiqlash va ijroga jo‘natish» tugmasi",
-      isDone: isRailwayDispatched,
-      isCurrent: currentStep === 1,
+      actionRequired: "Xizmat xatini rasmiylashtirish",
+      isDone: true,
+      isCurrent: false,
     },
     {
       stepNumber: 2,
       title: "Smena boshlig‘i & Kengsoy",
       role: "ICHDX smena boshlig‘i / Temir yo‘l",
-      actionRequired: !arrival.entryPermitShiftApprovedAt ? "Smena boshlig‘i tasdig‘i" : "«Vagonlarni kiritish» tugmasi",
-      isDone: isShiftDone && stage !== 'KengsoyInspection',
+      actionRequired: !isRailwayDispatched
+        ? "«Tasdiqlash va ijroga jo‘natish» tugmasi"
+        : (!arrival.entryPermitShiftApprovedAt ? "Smena boshlig‘i tasdig‘i" : "«Vagonlarni kiritish» tugmasi"),
+      isDone: isRailwayDispatched && isShiftDone && stage !== 'KengsoyInspection',
       isCurrent: currentStep === 2,
       isRejected: isReturned,
       rejectReason: isReturned ? returnNote : undefined,
@@ -118,9 +120,9 @@ export function getArrivalEntryPendingActionInfo(arrival: EmptyWagonArrival): En
     actionName = "Kamchilikni tuzatib, «Qayta yuborish»";
     detailText = `Darvoza ko‘rigida rad etilgan/qaytarilgan (${returnNote || "sababsiz"}). Temir yo‘l xizmati kamchilikni bartaraf etib, «Qayta yuborish» tugmasini bosishi kerak.`;
   } else if (!isRailwayDispatched) {
-    responsibleRole = "Temir yo‘l inspektori / Dispetcher";
+    responsibleRole = "ICHDX smena boshlig‘i";
     actionName = "«Tasdiqlash va ijroga jo‘natish» tugmasi";
-    detailText = "Temir yo‘l xodimi vagonlarni Kengsoyda qabul qilib, «Tasdiqlash va ijroga jo‘natish» tugmasini bosishi kutilmoqda.";
+    detailText = "ICHDX smena boshlig‘i kirish xizmat xatini ko‘rib chiqib, «Tasdiqlash va ijroga jo‘natish» tugmasini bosishi kutilmoqda.";
   } else if (!arrival.entryPermitShiftApprovedAt && stage === 'KengsoyInspection') {
     responsibleRole = "ICHDX smena boshlig‘i";
     actionName = "«Kelishildi» tasdiq tugmasi";

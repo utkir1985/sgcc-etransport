@@ -505,9 +505,9 @@ export const RBAC_RESOURCES: RbacResourceDef[] = [
     description: '1C tizimidan kelgan bo‘sh vagonlar partiyalarini qabul qilish va ro‘yxatga olish',
     apiPath: '/api/empty-wagon-arrivals',
     crudRoles: {
-      C: ['Admin', 'Railway'],
+      C: ['Admin', 'Railway', 'Dispatching', 'DispatchSupervisor'],
       R: ['Admin', 'Railway', 'Dispatching', 'DispatchSupervisor', 'Security', 'Scale', 'Warehouse', 'Permit', 'Economist', 'Management', 'DeputyDirector'],
-      U: ['Admin', 'Railway'],
+      U: ['Admin', 'Railway', 'Dispatching', 'DispatchSupervisor'],
       D: ['Admin', 'Railway'],
     },
     workflowActions: [
@@ -1180,7 +1180,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: '1C dan yangi vagon partiyasini qabul qilish / kiritish',
     description: 'POST /api/empty-wagon-arrivals — kelgan vagonlar partiyasini ro\'yxatga olish',
     flags: ['C'],
-    roles: ['Admin', 'Railway'],
+    roles: ['Admin', 'Railway', 'Dispatching', 'DispatchSupervisor'],
   },
   {
     key: 'empty-wagons.update',
@@ -1188,7 +1188,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Vagonlar tarkibini tahrirlash / vagon qo\'shish',
     description: 'PUT /api/empty-wagon-arrivals/{id} — vagon raqami, mahsulot turi va parametrlarini yangilash',
     flags: ['U'],
-    roles: ['Admin', 'Railway'],
+    roles: ['Admin', 'Railway', 'Dispatching', 'DispatchSupervisor'],
   },
   {
     key: 'empty-wagons.delete',

@@ -73,8 +73,8 @@ public class RbacService(AppDbContext db) : IRbacService
 
         // Empty Wagons (Kirish vagonlari)
         ["empty-wagons.read"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching, UserRoles.DispatchSupervisor, UserRoles.Security, UserRoles.Scale, UserRoles.Warehouse, UserRoles.Permit, UserRoles.Economist, UserRoles.Management, UserRoles.DeputyDirector],
-        ["empty-wagons.create"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching],
-        ["empty-wagons.update"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching],
+        ["empty-wagons.create"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching, UserRoles.DispatchSupervisor],
+        ["empty-wagons.update"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching, UserRoles.DispatchSupervisor],
         ["empty-wagons.delete"] = [UserRoles.Admin, UserRoles.Railway],
         ["empty-wagons.entry-permit"] = [UserRoles.Admin, UserRoles.Railway],
         ["empty-wagons.security-inspect"] = [UserRoles.Admin, UserRoles.Security],
@@ -114,8 +114,8 @@ public class RbacService(AppDbContext db) : IRbacService
         ["wagon-types.delete"] = [UserRoles.Admin, UserRoles.Railway],
 
         ["fleet-wagons.read"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching, UserRoles.Scale, UserRoles.Warehouse, UserRoles.Security, UserRoles.Permit, UserRoles.Economist, UserRoles.Management],
-        ["fleet-wagons.create"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching],
-        ["fleet-wagons.update"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching],
+        ["fleet-wagons.create"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching, UserRoles.DispatchSupervisor],
+        ["fleet-wagons.update"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Dispatching, UserRoles.DispatchSupervisor],
         ["fleet-wagons.delete"] = [UserRoles.Admin, UserRoles.Railway],
     };
 

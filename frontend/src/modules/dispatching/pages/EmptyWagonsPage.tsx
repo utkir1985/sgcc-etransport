@@ -522,7 +522,7 @@ export function EmptyWagonsPage() {
     return null;
   };
 
-  const canCreate = can('empty-wagons.create') || user?.role === 'Dispatching' || user?.role === 'Railway' || user?.role === 'Admin';
+  const canCreate = can('empty-wagons.create') || can('empty-wagons.dispatch-approve') || user?.role === 'Dispatching' || user?.role === 'DispatchSupervisor' || user?.role === 'Railway' || user?.role === 'Admin';
   const isRailway = can('empty-wagons.transfer-estakada') || user?.role === 'Railway' || user?.role === 'Admin';
   const isAdmin = user?.role === 'Admin';
   const isSecurity = can('empty-wagons.security-inspect') || user?.role === 'Security' || user?.role === 'Admin';
@@ -2111,7 +2111,7 @@ export function EmptyWagonsPage() {
 
 
   const canDispatchParty = (item: EmptyWagonArrival) =>
-    (user?.role === 'Dispatching' || user?.role === 'Admin') && getStage(item) === STAGES.RailwayInspected;
+    (user?.role === 'Dispatching' || user?.role === 'DispatchSupervisor' || user?.role === 'Admin' || can('empty-wagons.dispatch-approve') || can('empty-wagons.create')) && getStage(item) === STAGES.RailwayInspected;
 
   const dispatchConfirmDialog = (
     <ConfirmDialog
