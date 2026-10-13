@@ -1290,18 +1290,19 @@ export function RolesCrudPanel() {
         <div className="admin-table-scroll">
           <table className="admin-table">
             <thead>
-              <tr className="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
-                <th style={{ minWidth: 280 }} className="py-3.5 px-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Jarayon / Obyekt</th>
+              <tr className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                <th style={{ minWidth: 260 }} className="py-3.5 px-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Jarayon / Obyekt</th>
+                <th style={{ minWidth: 280 }} className="py-3.5 px-4 text-left text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Nima uchun kerak? (Vazifasi)</th>
                 {TABLE_OPS.map(op => (
-                  <th key={op} className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ width: 96 }}>{CRUD_OP_LABEL[op]}</th>
+                  <th key={op} className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ width: 92 }}>{CRUD_OP_LABEL[op]}</th>
                 ))}
-                <th className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ minWidth: 160 }}>Tasdiqlash zanjiri</th>
+                <th className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ minWidth: 150 }}>Tasdiqlash zanjiri</th>
                 <th className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ width: 85 }}>Hammasi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {tableObjects.length === 0 ? (
-                <tr><td colSpan={TABLE_OPS.length + 3} className="text-center py-12 text-sm text-slate-400">Mos jarayon topilmadi</td></tr>
+                <tr><td colSpan={TABLE_OPS.length + 4} className="text-center py-12 text-sm text-slate-400">Mos jarayon topilmadi</td></tr>
               ) : tableObjects.map((o, idx) => {
                 const Icon = o.icon;
                 const iconStyle = MODULE_ICON_STYLE[o.key] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
@@ -1314,26 +1315,26 @@ export function RolesCrudPanel() {
                 const isOpen = expanded.has(o.key);
                 const zebraBg = idx % 2 === 0
                   ? 'bg-white dark:bg-slate-900'
-                  : 'bg-slate-50/80 dark:bg-slate-800/40';
+                  : 'bg-slate-100/90 dark:bg-slate-800/60 border-y border-slate-200/50 dark:border-slate-700/50';
                 const purpose = RESOURCE_EXPLANATIONS[o.key] ?? '';
                 return (
                   <Fragment key={o.key}>
-                    <tr className={`${zebraBg} hover:bg-blue-50/60 dark:hover:bg-slate-800/80 transition-colors group`}>
+                    <tr className={`${zebraBg} hover:bg-blue-50/70 dark:hover:bg-slate-800/90 transition-colors group`}>
                       <td className="py-3.5 px-4">
-                        <div className="flex items-start gap-3">
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 mt-0.5 ${iconStyle}`}>
+                        <div className="flex items-center gap-3">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${iconStyle}`}>
                             <Icon className="w-4.5 h-4.5" strokeWidth={2} />
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">{o.label}</span>
-                            {purpose && (
-                              <span className="block text-xs font-normal text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {purpose}
-                              </span>
-                            )}
+                          <span className="min-w-0">
+                            <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{o.label}</span>
                             <ApiNote description={firstDesc} />
                           </span>
                         </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-left">
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {purpose || 'Korxonaning asosiy operativ biznes jarayoni'}
+                        </p>
                       </td>
                       {TABLE_OPS.map(op => (
                         <td key={op} className="text-center py-3.5">
@@ -1376,7 +1377,7 @@ export function RolesCrudPanel() {
                     </tr>
                     {isOpen && o.actions.length > 0 && (
                       <tr className="bg-slate-50/80 dark:bg-slate-900/60">
-                        <td colSpan={TABLE_OPS.length + 3} className="px-5 py-4.5 border-y border-slate-200/80 dark:border-slate-800/80 shadow-inner">
+                        <td colSpan={TABLE_OPS.length + 4} className="px-5 py-4.5 border-y border-slate-200/80 dark:border-slate-800/80 shadow-inner">
                           <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3.5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-xs" />
