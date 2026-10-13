@@ -231,19 +231,11 @@ export function OrderAccountingSheet({
         <div className="order-sheet-header__main">
           <ProductTypeIcon productType={order.productType} className="order-sheet-header__icon" />
           <div className="order-sheet-header__text">
-            <div className="order-sheet-header__title-row flex items-center gap-2 flex-wrap">
+            <div className="order-sheet-header__title-row">
               <span className="order-sheet-header__product">{order.productType}</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-sm">
-                📅 {order.year ? `${order.year}-yil ` : ''}{MONTH_NAMES_UZ[order.month - 1] || ''} oyi buyurtmasi
-              </span>
               <OrderStatusBadge status={order.status} />
             </div>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="order-sheet-header__code">{order.orderNumber}</span>
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                · {order.year ? `${order.year}-yil ` : ''}{MONTH_NAMES_UZ[order.month - 1] || ''} oyi buyurtmasi
-              </span>
-            </div>
+<span className="order-sheet-header__code">{order.orderNumber}</span>
           </div>
         </div>
 
