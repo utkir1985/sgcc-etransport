@@ -57,6 +57,9 @@ function resolveActionDisplay(action: string, status?: string): { text: string; 
     if (action === 'PasswordChangeFailed') return { text: 'Parol xatosi', dotColor: 'bg-rose-500' };
     return { text: `${action} (rad etildi)`, dotColor: 'bg-rose-500' };
   }
+  if (action === 'VoiceAlertAnnounced' || action.includes('VoiceAlert')) {
+    return { text: 'Ovoz eshittirildi', dotColor: 'bg-emerald-500' };
+  }
   switch (action) {
     // 1. Tizim va Xavfsizlik
     case 'LoginSuccess': return { text: 'Tizimga kirish', dotColor: 'bg-emerald-500' };
@@ -119,6 +122,9 @@ function resolveModuleDisplay(category?: string, action?: string): { text: strin
   const cat = (category || '').toLowerCase();
   const act = (action || '').toLowerCase();
 
+  if (cat === 'voicealert' || act.includes('voice') || act.includes('ovoz')) {
+    return { text: 'Ovozli xabar', bg: 'bg-emerald-50 dark:bg-emerald-950/60', textCol: 'text-emerald-700 dark:text-emerald-400' };
+  }
   if (cat === 'auth' || act.includes('login') || act.includes('password')) {
     return { text: 'Kirish', bg: 'bg-blue-50 dark:bg-blue-950/60', textCol: 'text-blue-600 dark:text-blue-400' };
   }
@@ -326,6 +332,14 @@ function resolveDescription(item: AuditLogItem) {
     return (
       <span className="text-[13px] text-slate-800 dark:text-slate-100 leading-relaxed">
         <strong>{name}</strong> <span className="text-amber-600 dark:text-amber-400 font-semibold">vagon yuklash ma'lumotlarini tahrirladi</span>
+      </span>
+    );
+  }
+  if (item.action === 'VoiceAlertAnnounced' || item.action.includes('VoiceAlert')) {
+    return (
+      <span className="text-[13px] text-slate-800 dark:text-slate-100 leading-relaxed">
+        <strong>{name}</strong> ga <span className="text-emerald-600 dark:text-emerald-400 font-semibold">ovozli ogohlantirish eshittirildi</span>
+        {item.details ? <span className="text-slate-500 dark:text-slate-400 text-[12px] block mt-0.5">{item.details}</span> : null}
       </span>
     );
   }

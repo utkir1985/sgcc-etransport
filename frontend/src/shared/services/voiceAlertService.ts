@@ -244,6 +244,45 @@ export function isRoleMatching(selectedRole: string, alertRole: string): boolean
   return false;
 }
 
+
+/** Ovoz eshittirilganini server audit logiga qayd etish */
+export async function reportVoiceAlertDelivery(alert: WorkflowStageAlert, customRole?: string): Promise<void> {
+  try {
+    let username = '';
+    let fullName = '';
+    try {
+      const stored = sessionStorage.getItem('etransport_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        username = u?.username || '';
+        fullName = u?.fullName || '';
+      }
+    } catch {}
+
+    const lastRole = localStorage.getItem('etransport_last_role') || '';
+    const clientRole = customRole || lastRole || 'ALL';
+
+    await fetch('/api/public/workflow-alerts/log-delivery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        flow: alert.flow,
+        role: alert.role,
+        department: alert.department,
+        stageKey: alert.stageKey,
+        stageTitle: alert.stageTitle,
+        pendingCount: alert.pendingCount,
+        voiceText: alert.voiceText,
+        username: username || (lastRole ? `Navbatchi (${lastRole})` : 'Logout / Noma‘lum'),
+        fullName: fullName || (lastRole ? `Navbatchi xodim (${lastRole})` : 'Anonim / Navbatchilik kompyuteri'),
+        clientRole: clientRole,
+        status: 'Success',
+        details: `${alert.flow} jarayoni bo‘yicha ovozli ogohlantirish eshittirildi: ${alert.department} (${alert.stageTitle}, ${alert.pendingCount} ta). Matn: "${alert.voiceText}"`,
+      }),
+    });
+  } catch {}
+}
+
 /** Serverdan navbatlarni tekshirib, ovoz chiqarish */
 export async function checkAndAnnouncePendingAlerts(customRole?: string): Promise<WorkflowStageAlert[]> {
   const settings = getSavedVoiceSettings();
@@ -270,6 +309,7 @@ export async function checkAndAnnouncePendingAlerts(customRole?: string): Promis
       if (isTest || now - lastTime > ANNOUNCE_COOLDOWN_MS) {
         lastAnnouncedTimes[alertKey] = now;
         await announceAlert(alert.voiceText, settings.volume);
+        void reportVoiceAlertDelivery(alert, targetRole);
         break; // Bir vaqtda xabarlar aralashib ketmasligi uchun bittadan aytadi
       }
     }
@@ -287,4 +327,13 @@ export async function testVoiceForRole(roleKey: string): Promise<void> {
   const testText = `Diqqat! Kirish va chiqish jarayoni: ${deptName}, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!`;
   const settings = getSavedVoiceSettings();
   await announceAlert(testText, settings.volume);
+  void reportVoiceAlertDelivery({
+    flow: 'Sinov',
+    role: roleKey,
+    department: deptName,
+    stageKey: 'test-voice',
+    stageTitle: 'Ovoz sinovi',
+    pendingCount: 1,
+    voiceText: testText,
+  }, roleKey);
 }

@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using ETransport.Core.DTOs;
+using ETransport.Core.Entities;
 using ETransport.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +24,36 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
         string StageTitle,       // "Yuk xatini tasdiqlash", ...
         int PendingCount,        // 1, 2, ...
         string VoiceText         // "Diqqat! Kirish jarayoni: Qo‘riqlash xizmati, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+    );
+
+        public record VoiceDeliveryLogRequest(
+        string? Flow,
+        string? Role,
+        string? Department,
+        string? StageKey,
+        string? StageTitle,
+        int? PendingCount,
+        string? VoiceText,
+        string? Username,
+        string? FullName,
+        string? ClientRole,
+        string? Status,
+        string? Details
+    );
+
+    public record VoiceDeliveryLogDto(
+        Guid Id,
+        string Username,
+        string UserFullName,
+        string UserRole,
+        string UserDepartment,
+        string IpAddress,
+        string Action,
+        string Status,
+        string EntityType,
+        string EntityId,
+        string Details,
+        DateTime CreatedAt
     );
 
     public record BroadcastRequest(string? Message, int? DurationSeconds);
@@ -209,5 +241,110 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
         }
 
         return Ok(new ApiResponse<List<WorkflowStageAlertDto>>(true, alerts));
+    }
+
+    [HttpPost("log-delivery")]
+    public async Task<ActionResult<ApiResponse<bool>>> LogDelivery([FromBody] VoiceDeliveryLogRequest req)
+    {
+        var ip = ExtractIpAddress(HttpContext);
+        var ua = ExtractUserAgent(HttpContext);
+
+        var username = !string.IsNullOrWhiteSpace(req.Username) ? req.Username.Trim() : "Noma'lum";
+        var fullName = !string.IsNullOrWhiteSpace(req.FullName) ? req.FullName.Trim() : "Anonim (Logout holatida)";
+        var role = !string.IsNullOrWhiteSpace(req.ClientRole) ? req.ClientRole.Trim() : (req.Role ?? "Noma'lum");
+        var dept = !string.IsNullOrWhiteSpace(req.Department) ? req.Department.Trim() : "Navbatchilik";
+
+        Guid? userId = null;
+        if (HttpContext.User?.Identity?.IsAuthenticated == true)
+        {
+            var rawId = HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(rawId, out var parsed))
+            {
+                userId = parsed;
+            }
+        }
+
+        var details = !string.IsNullOrWhiteSpace(req.Details)
+            ? req.Details
+            : $"{req.Flow ?? "Tizim"} jarayoni bo‘yicha ovozli ogohlantirish eshittirildi: {dept} ({req.StageTitle ?? req.StageKey}, {req.PendingCount ?? 1} ta). Matn: \"{req.VoiceText}\"";
+
+        var log = new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Username = username.Length > 100 ? username[..100] : username,
+            UserFullName = fullName.Length > 200 ? fullName[..200] : fullName,
+            UserRole = role.Length > 50 ? role[..50] : role,
+            UserPosition = "Mas'ul xodim",
+            UserDepartment = dept.Length > 200 ? dept[..200] : dept,
+            IpAddress = ip.Length > 50 ? ip[..50] : ip,
+            UserAgent = ua.Length > 500 ? ua[..500] : ua,
+            Action = "VoiceAlertAnnounced",
+            Category = "VoiceAlert",
+            Status = !string.IsNullOrWhiteSpace(req.Status) ? req.Status : "Success",
+            EntityType = "WorkflowAlert",
+            EntityId = req.StageKey ?? "Alert",
+            Details = details,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.AuditLogs.Add(log);
+        await db.SaveChangesAsync();
+
+        return Ok(new ApiResponse<bool>(true, true, "Ovozli ogohlantirish auditi muvaffaqiyatli qayd etildi"));
+    }
+
+    [HttpGet("delivery-logs")]
+    public async Task<ActionResult<ApiResponse<List<VoiceDeliveryLogDto>>>> GetDeliveryLogs([FromQuery] int limit = 50)
+    {
+        var maxLimit = Math.Min(limit, 200);
+        var logs = await db.AuditLogs
+            .AsNoTracking()
+            .Where(x => x.Category == "VoiceAlert" || x.Action == "VoiceAlertAnnounced")
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(maxLimit)
+            .Select(x => new VoiceDeliveryLogDto(
+                x.Id,
+                x.Username,
+                x.UserFullName,
+                x.UserRole,
+                x.UserDepartment,
+                x.IpAddress,
+                x.Action,
+                x.Status,
+                x.EntityType,
+                x.EntityId,
+                x.Details,
+                x.CreatedAt
+            ))
+            .ToListAsync();
+
+        return Ok(new ApiResponse<List<VoiceDeliveryLogDto>>(true, logs));
+    }
+
+    private static string ExtractIpAddress(HttpContext? http)
+    {
+        if (http is null) return string.Empty;
+        if (http.Request.Headers.TryGetValue("X-Forwarded-For", out var fwd) && !string.IsNullOrWhiteSpace(fwd))
+        {
+            var first = fwd.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(first)) return first;
+        }
+        if (http.Request.Headers.TryGetValue("X-Real-IP", out var realIp) && !string.IsNullOrWhiteSpace(realIp))
+        {
+            return realIp.ToString().Trim();
+        }
+        return http.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
+    }
+
+    private static string ExtractUserAgent(HttpContext? http)
+    {
+        if (http is null) return string.Empty;
+        if (http.Request.Headers.TryGetValue("User-Agent", out var ua) && !string.IsNullOrWhiteSpace(ua))
+        {
+            var str = ua.ToString().Trim();
+            return str.Length > 500 ? str[..500] : str;
+        }
+        return string.Empty;
     }
 }
