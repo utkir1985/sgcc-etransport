@@ -48,7 +48,12 @@ export function OrderSheetView({
   signatureOrder,
   signatureFooterActions,
 }: OrderSheetViewProps) {
-  const headers = getTableHeaders(logisticsType);
+  const isPolyethylene = order.productType?.toLowerCase().includes('polietilen')
+    || order.productType?.toLowerCase().includes('полиэтилен');
+  const baseHeaders = getTableHeaders(logisticsType);
+  const headers = isPolyethylene
+    ? [...baseHeaders, 'Yuklash oxirgi sanasi']
+    : baseHeaders;
   const targetOrder = signatureOrder ?? order;
 
   const approvedLines = targetOrder.lines.filter(l =>
@@ -149,6 +154,22 @@ export function OrderSheetView({
                         <span>{line.destinationStation}</span>
                       </span>
                     </td>
+                    {isPolyethylene && (() => {
+                      const lineDeadline = line.lastLoadingDate || order.deadline;
+                      const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+                      return (
+                        <td className="order-sheet-center px-2 py-1">
+                          <div className="text-xs font-semibold tabular-nums">
+                            {lineDeadline ? new Date(lineDeadline).toLocaleDateString('ru-RU') : '—'}
+                          </div>
+                          {isOverdue && (
+                            <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700 whitespace-nowrap">
+                              ⛔ Srok o‘tgan (Taqiq)
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })()}
                   </tr>
                 );
               })}
@@ -176,6 +197,7 @@ export function OrderSheetView({
                 </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />
+                {isPolyethylene && <td className="order-sheet-center" />}
               </tr>
             </tbody>
           </table>
@@ -300,6 +322,22 @@ export function OrderSheetView({
                         <span>{line.destinationStation}</span>
                       </span>
                     </td>
+                    {isPolyethylene && (() => {
+                      const lineDeadline = line.lastLoadingDate || order.deadline;
+                      const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+                      return (
+                        <td className="order-sheet-center px-2 py-1">
+                          <div className="text-xs font-semibold tabular-nums">
+                            {lineDeadline ? new Date(lineDeadline).toLocaleDateString('ru-RU') : '—'}
+                          </div>
+                          {isOverdue && (
+                            <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700 whitespace-nowrap">
+                              ⛔ Srok o‘tgan (Taqiq)
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })()}
                   </tr>
                 );
               })}
@@ -327,6 +365,7 @@ export function OrderSheetView({
                 </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />
+                {isPolyethylene && <td className="order-sheet-center" />}
               </tr>
             </tbody>
           </table>
@@ -354,6 +393,16 @@ export function OrderSheetView({
                 ) : null}
               </span>
               <OrderStatusBadge status={order.status} />
+              {isPolyethylene && (() => {
+                const orderDeadline = order.deadline;
+                const isOverdue = orderDeadline ? new Date(orderDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+                if (!isOverdue) return null;
+                return (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700 shadow-sm animate-pulse">
+                    ⛔ Yuklash muddati o‘tgan (Taqiq)
+                  </span>
+                );
+              })()}
             </div>
             <span className="order-sheet-header__code">{order.orderNumber}</span>
           </div>

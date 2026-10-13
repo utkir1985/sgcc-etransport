@@ -597,6 +597,18 @@ public class DocumentsController(
                     && !string.Equals(selectedOrder.ProductType.Trim(), unitProduct, StringComparison.OrdinalIgnoreCase))
                     return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
                         $"{unit.WagonNumber}: buyurtma mahsuloti yuklangan mahsulotga mos emas"));
+                var isPe = selectedOrder.ProductType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
+                    || selectedOrder.ProductType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
+                var effectiveDeadline = selectedLine.LastLoadingDate ?? (isPe ? selectedOrder.Deadline : (DateTime?)null);
+                if (isPe && effectiveDeadline.HasValue)
+                {
+                    var today = DateTime.UtcNow.Date;
+                    if (today > effectiveDeadline.Value.Date)
+                    {
+                        return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
+                            $"{unit.WagonNumber}: «{selectedLine.Contractor}» korxonasi uchun polietilenni yuklashning oxirgi sanasi ({effectiveDeadline.Value:dd.MM.yyyy}) o‘tib ketgan! Shartnoma muddati tugagani sababli yuk xati rasmiylashtirish va yuklash taqiqlanadi."));
+                    }
+                }
                 assignments[requested.WagonNumber] = (selectedOrder, selectedLine);
             }
             var routeSnapshots = requestedRoutes.Select(x =>

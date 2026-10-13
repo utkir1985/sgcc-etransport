@@ -112,8 +112,13 @@ function validateOrderDraft(
 
   const isPolyethylene = header.productType.toLowerCase().includes('polietilen')
     || header.productType.toLowerCase().includes('полиэтилен');
-  if (isPolyethylene && !header.productGrade?.trim()) {
-    return 'Polietilen markasini kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)';
+  if (isPolyethylene) {
+    if (!header.productGrade?.trim()) {
+      return 'Polietilen markasini kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)';
+    }
+    if (!header.deadline?.trim() && lines.some(l => !l.lastLoadingDate?.trim())) {
+      return 'Polietilenni yuklashning oxirgi sanasini kiritish majburiy';
+    }
   }
 
   const isBlankOrder = /zaxira|bo['‘ʼ`]?sh|favqulodda/i.test(header.contractNumber);
@@ -609,6 +614,7 @@ function MarketingOrdersPanel({
       contractor: line.contractor.trim(),
       destinationStation: line.destinationStation.trim(),
       wagonNumbers: line.wagonNumbers?.trim() ?? '',
+      lastLoadingDate: line.lastLoadingDate || header.deadline || null,
       id: line.id,
     })),
   });
@@ -1118,6 +1124,28 @@ function MarketingOrdersPanel({
                 placeholder="Shartnoma raqami"
               />
             </label>
+
+            {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (
+              <label className="marketing-order-contract-field marketing-order-deadline-field sm:w-48">
+                <span className="marketing-order-contract-field__label">
+                  Yuklash oxirgi sanasi <span className="text-rose-500 font-bold">*</span>
+                </span>
+                <input
+                  type="date"
+                  required
+                  value={header.deadline?.slice(0, 10) || ''}
+                  onChange={e => {
+                    const nextVal = e.target.value;
+                    setHeader(h => ({ ...h, deadline: nextVal }));
+                    setLines(prev => prev.map(l => ({
+                      ...l,
+                      lastLoadingDate: l.lastLoadingDate || nextVal,
+                    })));
+                  }}
+                  className="marketing-order-contract-field__input"
+                />
+              </label>
+            )}
           </div>
           <div className="marketing-order-edit-aside">
             <button
@@ -1182,6 +1210,9 @@ function MarketingOrdersPanel({
                 {tableHeaders.map(h => (
                   <th key={h} className={getOrderSheetHeaderClass(h)}>{h}</th>
                 ))}
+                {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (
+                  <th className="order-sheet-center w-40">Yuklash oxirgi sanasi</th>
+                )}
                 <th className="order-sheet-actions-col" />
               </tr>
             </thead>
@@ -1247,6 +1278,43 @@ function MarketingOrdersPanel({
                       line.destinationStation
                     )}
                   </td>
+                  {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (() => {
+                    const lineDeadline = line.lastLoadingDate?.slice(0, 10) || header.deadline?.slice(0, 10) || '';
+                    const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+                    return (
+                      <td className="order-sheet-center px-2 py-1">
+                        {editable ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <input
+                              type="date"
+                              required
+                              value={lineDeadline}
+                              onChange={e => updateLine(idx, { lastLoadingDate: e.target.value })}
+                              className={`h-9 w-36 rounded-lg border px-2 text-xs font-semibold outline-none transition-colors ${
+                                isOverdue
+                                  ? 'border-rose-400 bg-rose-50 text-rose-800 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-200'
+                                  : 'border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:border-blue-500'
+                              }`}
+                            />
+                            {isOverdue && (
+                              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                                ⛔ Srok o‘tgan (Taqiq)
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-xs font-semibold tabular-nums">{lineDeadline || '—'}</span>
+                            {isOverdue && (
+                              <span className="block text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                                ⛔ Taqiq
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })()}
                   <td className="order-sheet-actions-col">
                     {editable && lines.length > 1 && (
                       <button type="button" onClick={() => removeLine(idx)} className="order-sheet-remove" aria-label="Qatorni o'chirish">
@@ -1261,7 +1329,7 @@ function MarketingOrdersPanel({
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.wagonTotal}</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
-                <td colSpan={3} />
+                <td colSpan={(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) ? 4 : 3} />
               </tr>
             </tbody>
           </table>

@@ -102,6 +102,15 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
             )}
           </span>
           <OrderStatusBadge status={order.status} />
+          {(order.productType?.toLowerCase().includes('polietilen') || order.productType?.toLowerCase().includes('полиэтилен')) && (() => {
+            const isOverdue = order.deadline ? new Date(order.deadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+            if (!isOverdue) return null;
+            return (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                ⛔ Srok o‘tgan
+              </span>
+            );
+          })()}
         </div>
         <p className="marketing-order-row__meta">{meta}</p>
       </div>
@@ -333,7 +342,16 @@ export function OrderList({
                   <td className="whitespace-nowrap text-center text-xs">
                     {renderDateTimeCell(approvedAt)}
                   </td>
-                  <td className="text-center text-xs"><OrderStatusBadge status={order.status} /></td>
+                  <td className="text-center text-xs"><OrderStatusBadge status={order.status} />
+          {(order.productType?.toLowerCase().includes('polietilen') || order.productType?.toLowerCase().includes('полиэтилен')) && (() => {
+            const isOverdue = order.deadline ? new Date(order.deadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+            if (!isOverdue) return null;
+            return (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                ⛔ Srok o‘tgan
+              </span>
+            );
+          })()}</td>
                   <td onClick={event => event.stopPropagation()} className="text-center px-1">
                     <DocumentChipButton
                       onClick={() => setDocumentOrder(order)}

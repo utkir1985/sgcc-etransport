@@ -804,8 +804,13 @@ public class OrderService(
 
         var isPe = productType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
             || productType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
-        if (isPe && string.IsNullOrWhiteSpace(productGrade))
-            throw new ArgumentException("Polietilen mahsuloti uchun markani kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)");
+        if (isPe)
+        {
+            if (string.IsNullOrWhiteSpace(productGrade))
+                throw new ArgumentException("Polietilen mahsuloti uchun markani kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)");
+            if (lines.Any(l => !l.LastLoadingDate.HasValue))
+                throw new ArgumentException("Polietilen buyurtmasida har bir firma uchun yuklashning oxirgi sanasini belgilash majburiy");
+        }
 
         var productExists = await db.CatalogProducts.AnyAsync(p =>
             p.LogisticsType == logisticsType

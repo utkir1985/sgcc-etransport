@@ -260,6 +260,13 @@ public class PlanService(AppDbContext db) : IPlanService
         foreach (var input in lineInputs)
         {
             var line = orderLineMap[input.MonthlyOrderLineId];
+            var isPe = order.ProductType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
+                || order.ProductType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
+            var effectiveDeadline = line.LastLoadingDate ?? (isPe ? order.Deadline : (DateTime?)null);
+            if (isPe && effectiveDeadline.HasValue && plan.PlanDate.Date > effectiveDeadline.Value.Date)
+            {
+                throw new InvalidOperationException($"«{line.Contractor}» korxonasi uchun polietilenni yuklashning oxirgi sanasi ({effectiveDeadline.Value:dd.MM.yyyy}) o‘tib ketgan! Taqiq sababli vagon rejalashtirish mumkin emas.");
+            }
             plan.Lines.Add(new DailyPlanLine
             {
                 MonthlyOrderLineId = line.Id,
@@ -421,6 +428,13 @@ public class PlanService(AppDbContext db) : IPlanService
         foreach (var input in lineInputs)
         {
             var line = orderLineMap[input.MonthlyOrderLineId];
+            var isPe = order.ProductType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
+                || order.ProductType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
+            var effectiveDeadline = line.LastLoadingDate ?? (isPe ? order.Deadline : (DateTime?)null);
+            if (isPe && effectiveDeadline.HasValue && request.PlanDate.Date > effectiveDeadline.Value.Date)
+            {
+                throw new InvalidOperationException($"«{line.Contractor}» korxonasi uchun polietilenni yuklashning oxirgi sanasi ({effectiveDeadline.Value:dd.MM.yyyy}) o‘tib ketgan! Taqiq sababli vagon rejalashtirish mumkin emas.");
+            }
             var remaining = Math.Max(0, line.WagonCount - reserved.GetValueOrDefault(line.Id));
             if (input.PlannedWagons > remaining)
             {
