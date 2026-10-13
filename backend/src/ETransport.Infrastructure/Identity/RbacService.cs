@@ -60,11 +60,11 @@ public class RbacService(AppDbContext db) : IRbacService
         ["orders.approve-dispatch"] = [UserRoles.Admin, UserRoles.DispatchSupervisor, UserRoles.Dispatching],
 
         // Documents Registry (Yuk xatlari)
-        ["documents.registry.read"] = [UserRoles.Admin, UserRoles.Economist, UserRoles.Dispatching, UserRoles.Railway, UserRoles.Warehouse, UserRoles.Permit, UserRoles.Security, UserRoles.Management],
+        ["documents.registry.read"] = [UserRoles.Admin, UserRoles.Economist, UserRoles.Dispatching, UserRoles.DispatchSupervisor, UserRoles.Railway, UserRoles.Warehouse, UserRoles.Permit, UserRoles.Security, UserRoles.Management, UserRoles.DeputyDirector, UserRoles.Accounting],
         ["documents.registry.create"] = [UserRoles.Admin, UserRoles.Economist],
         ["documents.registry.update"] = [UserRoles.Admin, UserRoles.Economist],
         ["documents.registry.delete"] = [UserRoles.Admin, UserRoles.Economist],
-        ["documents.registry.approve-shift"] = [UserRoles.Admin, UserRoles.Dispatching, UserRoles.Economist],
+        ["documents.registry.approve-shift"] = [UserRoles.Admin, UserRoles.Dispatching, UserRoles.DispatchSupervisor, UserRoles.Economist],
         ["documents.registry.approve-permit"] = [UserRoles.Admin, UserRoles.Permit, UserRoles.Economist, UserRoles.Dispatching],
         ["documents.registry.approve-security"] = [UserRoles.Admin, UserRoles.Security, UserRoles.Economist, UserRoles.Dispatching],
         ["documents.registry.approve-economist"] = [UserRoles.Admin, UserRoles.Economist],

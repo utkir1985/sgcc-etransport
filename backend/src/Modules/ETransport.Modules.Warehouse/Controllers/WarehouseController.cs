@@ -922,7 +922,7 @@ public class WarehouseController(
     }
 
     [HttpGet("economist-notifications")]
-    [Authorize(Roles = "Economist,Admin,Dispatching")]
+    [Authorize(Roles = "Economist,Admin,Dispatching,DispatchSupervisor")]
     public async Task<ActionResult<ApiResponse<List<LoadingTaskDto>>>> GetEconomistNotifications() =>
         Ok(new ApiResponse<List<LoadingTaskDto>>(true, await loadingService.GetEconomistNotificationsAsync()));
 
@@ -1099,7 +1099,7 @@ public class WarehouseController(
     }
 
     [HttpGet("loading/units/{unitId:guid}/edit-history")]
-    [Authorize(Roles = "Warehouse,Admin,Dispatching")]
+    [Authorize(Roles = "Warehouse,Admin,Dispatching,DispatchSupervisor")]
     public async Task<ActionResult<ApiResponse<object>>> GetWagonEditHistory(Guid unitId)
     {
         var rows = await db.AuditLogs.AsNoTracking()

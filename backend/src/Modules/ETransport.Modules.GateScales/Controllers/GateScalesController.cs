@@ -13,7 +13,7 @@ namespace ETransport.Modules.GateScales.Controllers;
 public class GateScalesController(AppDbContext db) : ControllerBase
 {
     [HttpGet("weighing")]
-    [Authorize(Roles = "Scale,Railway,Security,Economist,Admin")]
+    [Authorize(Roles = "Scale,Railway,Security,Economist,Admin,Dispatching,DispatchSupervisor")]
     public async Task<ActionResult<ApiResponse<object>>> WeighingQueue()
     {
         var arrivals = await db.EmptyWagonArrivals
