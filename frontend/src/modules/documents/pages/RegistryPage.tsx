@@ -1166,6 +1166,16 @@ export default function RegistryPage() {
 
   /** Ekrandagi filtrlar bo'yicha yuk xatlari — vagon darajasida Excelga chiqadi. */
   const exportYukExcel = () => {
+    const filterVal = hub.product?.trim().toLowerCase();
+    const filterLatin = hub.product ? toLatinProductName(hub.product).trim().toLowerCase() : '';
+    const matchProd = (p?: string | null) => {
+      if (!filterVal) return true;
+      if (!p) return false;
+      const norm = p.trim().toLowerCase();
+      const lat = toLatinProductName(p).trim().toLowerCase();
+      return norm === filterVal || lat === filterLatin || norm === filterLatin || lat === filterVal || norm.includes(filterVal) || lat.includes(filterLatin);
+    };
+
     const rows: Array<Array<string | number>> = [
       ['Hujjat raqami', 'Sana', 'Partiya', 'Mahsulot', 'Kontragent', 'Jo‘natish stansiyasi',
        'Vagon №', 'Sisterna', 'Nomuvofiq', 'Holat'],
@@ -1173,25 +1183,34 @@ export default function RegistryPage() {
     for (const row of filteredYukRows) {
       if (row.kind === 'task') {
         const task = row.task;
-        for (const wagon of wagonRowsOf(task)) {
+        const allWagons = wagonRowsOf(task);
+        const filteredWagons = filterVal
+          ? allWagons.filter(w => matchProd(w.product || task.productType))
+          : allWagons;
+        for (const wagon of filteredWagons) {
           rows.push([
-            '—', formatDateDisplay(row.date), task.arrivalNumber || '—', row.product || '—',
+            '—', formatDateDisplay(row.date), task.arrivalNumber || '—', wagon.product || row.product || '—',
             '—', '—', wagon.wagonNumber || '—', wagon.cisternNumber || '', '', 'Shakllantirilmagan',
           ]);
         }
         continue;
       }
       const registry = row.registry;
-      const routes = registry.wagonRoutes ?? [];
+      const allRoutes = registry.wagonRoutes ?? [];
+      const routes = filterVal
+        ? allRoutes.filter(r => matchProd(r.productType || registry.productType))
+        : allRoutes;
       const state = registry.exitedToKengsoyAt
         ? 'Chiqib ketgan'
         : registry.isApprovedByPermit && registry.isApprovedBySecurity
           ? 'Kelishilgan'
           : 'Kelishuvda';
       if (routes.length === 0) {
-        rows.push([registry.registryNumber || '—', formatDateDisplay(row.date),
-          registry.arrivalNumber || '—', row.product || '—', registry.contractorName || '—',
-          registry.destinationStation || '—', '—', '', '', state]);
+        if (!filterVal || matchProd(registry.productType || row.product)) {
+          rows.push([registry.registryNumber || '—', formatDateDisplay(row.date),
+            registry.arrivalNumber || '—', row.product || '—', registry.contractorName || '—',
+            registry.destinationStation || '—', '—', '', '', state]);
+        }
         continue;
       }
       for (const route of routes) {

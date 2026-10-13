@@ -1157,6 +1157,16 @@ export function EmptyWagonsPage() {
   };
 
   const exportKiritishExcel = (itemsToExport: EmptyWagonArrival[]) => {
+    const filterVal = hub.product?.trim().toLowerCase();
+    const filterLatin = hub.product ? toLatinProductName(hub.product).trim().toLowerCase() : '';
+    const matchProd = (p?: string | null) => {
+      if (!filterVal) return true;
+      if (!p) return false;
+      const norm = p.trim().toLowerCase();
+      const lat = toLatinProductName(p).trim().toLowerCase();
+      return norm === filterVal || lat === filterLatin || norm === filterLatin || lat === filterVal;
+    };
+
     const rows: SheetCell[][] = [
       [
         '№',
@@ -1179,7 +1189,16 @@ export function EmptyWagonsPage() {
 
     let rowIdx = 1;
     for (const arrival of itemsToExport) {
-      const rowsList = rowsFromArrival(arrival);
+      const allRows = rowsFromArrival(arrival);
+      // Filtr tanlangan bo'lsa, Excelga faqat o'sha mahsulotning vagonlari chiqadi!
+      const rowsList = filterVal
+        ? allRows.filter(u => matchProd(u.productType || arrival.productType))
+        : allRows;
+
+      if (filterVal && rowsList.length === 0 && !matchProd(arrival.productType)) {
+        continue;
+      }
+
       const docNo = arrival.entryPermitNumber || arrival.arrivalNumber || '—';
       const partyNo = arrival.arrivalNumber || '—';
       const dateStr = formatDateTimeDisplay(
@@ -1192,6 +1211,7 @@ export function EmptyWagonsPage() {
       const trackNo = arrival.trackNumber || '—';
       const createdBy = arrival.createdByName || '—';
       const notes = arrival.notes || '—';
+      const countToDisplay = rowsList.length > 0 ? rowsList.length : arrival.wagonCount;
 
       if (rowsList.length === 0) {
         rows.push([
@@ -1199,7 +1219,7 @@ export function EmptyWagonsPage() {
           docNo,
           partyNo,
           dateStr,
-          arrival.wagonCount,
+          countToDisplay,
           arrival.productType || '—',
           '—',
           stageStr,
@@ -1218,7 +1238,7 @@ export function EmptyWagonsPage() {
             docNo,
             partyNo,
             dateStr,
-            arrival.wagonCount,
+            countToDisplay,
             u.productType || arrival.productType || '—',
             u.wagonType || '—',
             stageStr,
