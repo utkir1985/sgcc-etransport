@@ -354,19 +354,51 @@ function kindStatsFromRows(rows: WagonRowLite[]) {
 }
 
 /** Vagon partiyasi jadvallari uchun yagona, kesilmaydigan qisqa ko'rinish. */
-function PartyProductsSummary({ rows }: { rows: WagonRowLite[] }) {
-  const productNames = [...new Set(rows.map(row => row.productType?.trim()).filter(Boolean) as string[])];
+function PartyProductsSummary({ rows, activeProduct }: { rows: WagonRowLite[]; activeProduct?: string }) {
+  const normActive = activeProduct?.trim().toLowerCase();
+  const latinActive = activeProduct ? toLatinProductName(activeProduct).trim().toLowerCase() : '';
+  const isMatch = (name: string) => {
+    if (!normActive) return false;
+    const n = name.trim().toLowerCase();
+    const l = toLatinProductName(name).trim().toLowerCase();
+    return n === normActive || l === latinActive || n === latinActive || l === normActive;
+  };
+
+  const productNames = [...new Set(rows.map(row => row.productType?.trim()).filter(Boolean) as string[])].sort((a, b) => {
+    if (isMatch(a) && !isMatch(b)) return -1;
+    if (!isMatch(a) && isMatch(b)) return 1;
+    return a.localeCompare(b, 'uz');
+  });
   const noProductCount = rows.filter(row => !row.productType?.trim()).length;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-sm leading-5 text-slate-700 dark:text-slate-200">
-      {productNames.map((name, index) => (
-        <span key={name} className="whitespace-nowrap font-medium">
-          {name} <b className="font-semibold tabular-nums text-violet-600 dark:text-violet-300">({rows.filter(row => row.productType?.trim() === name).length})</b>
-          {index < productNames.length - 1 || noProductCount > 0 ? <span className="ml-1.5 text-slate-300 dark:text-slate-600">•</span> : null}
+      {productNames.map((name, index) => {
+        const matched = isMatch(name);
+        const count = rows.filter(row => row.productType?.trim() === name).length;
+        return (
+          <span
+            key={name}
+            className={`whitespace-nowrap transition-all ${
+              matched
+                ? 'inline-flex items-center gap-1 font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700 px-2 py-0.5 rounded-md shadow-2xs'
+                : normActive
+                ? 'font-normal text-slate-400 dark:text-slate-500 opacity-60'
+                : 'font-medium'
+            }`}
+          >
+            {name} <b className={`tabular-nums ${matched ? 'font-black text-emerald-700 dark:text-emerald-300' : 'font-semibold text-violet-600 dark:text-violet-300'}`}>({count})</b>
+            {index < productNames.length - 1 || noProductCount > 0 ? (
+              <span className={`ml-1.5 ${matched ? 'text-emerald-400 dark:text-emerald-600' : 'text-slate-300 dark:text-slate-600'}`}>•</span>
+            ) : null}
+          </span>
+        );
+      })}
+      {noProductCount > 0 ? (
+        <span className="whitespace-nowrap font-medium text-amber-700 dark:text-amber-300">
+          Mahsulotsiz <b>({noProductCount})</b>
         </span>
-      ))}
-      {noProductCount > 0 ? <span className="whitespace-nowrap font-medium text-amber-700 dark:text-amber-300">Mahsulotsiz <b>({noProductCount})</b></span> : null}
+      ) : null}
     </div>
   );
 }
@@ -1649,9 +1681,7 @@ export function EmptyWagonsPage() {
         const lat = toLatinProductName(p).trim().toLowerCase();
         return norm === filterVal || lat === filterLatin || norm === filterLatin || lat === filterVal;
       };
-      const itemMatches = matchProd(item.productType);
-      const wagonsMatch = (item.wagons ?? []).some(w => matchProd(w.productType));
-      if (!itemMatches && !wagonsMatch) return false;
+      if (!matchProd(item.productType)) return false;
     }
 
     const wagonsList = (item.wagons ?? []).map(unit => unit.wagonNumber).filter(Boolean).join(' ');
@@ -1857,7 +1887,7 @@ export function EmptyWagonsPage() {
         </td>
         <td className="whitespace-nowrap tabular-nums">{dateLabel}</td>
         <td>{item.wagonCount} ta</td>
-        <td><PartyProductsSummary rows={rows} /></td>
+        <td><PartyProductsSummary rows={rows} activeProduct={hub.product} /></td>
         <td><PartyWagonKindsSummary rows={rows} /></td>
         {showStatus ? (
           <td>
@@ -1945,7 +1975,7 @@ export function EmptyWagonsPage() {
                   <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-50">{item.wagonCount} ta</p>
                 </div>
                 <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 text-center dark:border-slate-700">
-                  <PartyProductsSummary rows={rows} />
+                  <PartyProductsSummary rows={rows} activeProduct={hub.product} />
                 </div>
                 <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 text-center dark:border-slate-700">
                   <PartyWagonKindsSummary rows={rows} />
@@ -3438,7 +3468,7 @@ export function EmptyWagonsPage() {
                           <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-50">{item.wagonCount} ta</p>
                         </div>
                         <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 text-center dark:border-slate-700">
-                          <PartyProductsSummary rows={rows} />
+                          <PartyProductsSummary rows={rows} activeProduct={hub.product} />
                         </div>
                         <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 text-center dark:border-slate-700">
                           <PartyWagonKindsSummary rows={rows} />
