@@ -95,6 +95,11 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
         <div className="marketing-order-row__identity">
           <span className="marketing-order-row__product" title={productLabel}>
             {productLabel}
+            {order.productGrade && (
+              <span className="ml-1.5 inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200/60 dark:border-violet-700/40">
+                {order.productGrade}
+              </span>
+            )}
           </span>
           <OrderStatusBadge status={order.status} />
         </div>
@@ -242,8 +247,13 @@ export function OrderList({
                   <td className="px-1.5">
                     <div className="flex items-center gap-1.5 leading-snug">
                       <ProductTypeIcon productType={order.productType} size="sm" className="shrink-0" />
-                      <strong className="text-xs font-semibold text-slate-900 dark:text-slate-100 break-words whitespace-normal line-clamp-2" title={productLabel}>
-                        {productLabel}
+                      <strong className="text-xs font-semibold text-slate-900 dark:text-slate-100 break-words whitespace-normal line-clamp-2 inline-flex items-center gap-1.5 flex-wrap" title={productLabel}>
+                        <span>{productLabel}</span>
+                        {order.productGrade && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200/60 dark:border-violet-700/40">
+                            {order.productGrade}
+                          </span>
+                        )}
                       </strong>
                     </div>
                   </td>

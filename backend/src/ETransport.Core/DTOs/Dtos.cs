@@ -35,7 +35,8 @@ public record MonthlyOrderDto(
     string QrGlobalId = "",
     string QrVerificationUrl = "",
     string QrCodeBase64 = "",
-    DateTime? QrRegisteredAt = null);
+    DateTime? QrRegisteredAt = null,
+    string ProductGrade = "");
 
 public record OrderAttachmentDto(
     Guid Id, string FileName, string ContentType, long SizeBytes, DateTime UploadedAt, string UploadedBy);
@@ -51,11 +52,11 @@ public record SaveAccountingReviewRequest(List<AccountingReviewSelection> Select
 
 public record CreateMonthlyOrderRequest(
     string LogisticsType, string ContractNumber, string ProductType, int Year, int Month,
-    DateTime Deadline, List<MonthlyOrderLineInput> Lines);
+    DateTime Deadline, List<MonthlyOrderLineInput> Lines, string ProductGrade = "");
 
 public record UpdateMonthlyOrderRequest(
     string ContractNumber, string ProductType, DateTime Deadline, List<MonthlyOrderLineInput> Lines,
-    string EditComment);
+    string EditComment, string ProductGrade = "");
 public record DailyPlanLineDto(
     Guid Id, Guid MonthlyOrderLineId, string Contractor, string DestinationStation, int PlannedWagons);
 

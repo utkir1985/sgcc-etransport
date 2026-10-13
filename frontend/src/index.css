@@ -6843,6 +6843,10 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
   @apply inline-flex min-w-0 max-w-[15.5rem] items-center gap-2 text-sm font-semibold text-gray-900 dark:text-slate-100;
 }
 
+
+.marketing-order-grade-field {
+  @apply sm:w-60;
+}
 .marketing-order-contract-field {
   @apply flex w-full min-w-0 flex-col gap-1 sm:w-44 shrink-0;
 }

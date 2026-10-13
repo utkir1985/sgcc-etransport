@@ -86,15 +86,35 @@ function defaultOrderDeadline(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+export const SHGKM_POLYETHYLENE_GRADES = [
+  'B-Y250',
+  'F-Y346',
+  'F-0120',
+  'F-0220',
+  'F-0320',
+  'I-0760',
+  'I-1561',
+  'J-2210',
+  'P-Y342',
+  'P-Y456',
+  'FS-500',
+] as const;
+
 function validateOrderDraft(
   logisticsType: LogisticsType,
-  header: { contractNumber: string; deadline: string; productType: string },
+  header: { contractNumber: string; deadline: string; productType: string; productGrade?: string },
   lines: MonthlyOrderLineInput[],
   lineFilter?: (line: MonthlyOrderLineInput) => boolean,
 ): string | null {
   const tableConfig = getTableConfig(logisticsType);
   if (!header.contractNumber.trim()) return 'Shartnoma raqamini kiriting';
   if (!header.productType.trim()) return 'Mahsulot turini tanlang';
+
+  const isPolyethylene = header.productType.toLowerCase().includes('polietilen')
+    || header.productType.toLowerCase().includes('полиэтилен');
+  if (isPolyethylene && !header.productGrade?.trim()) {
+    return 'Polietilen markasini kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)';
+  }
 
   const isBlankOrder = /zaxira|bo['‘ʼ`]?sh|favqulodda/i.test(header.contractNumber);
 
@@ -186,6 +206,7 @@ function MarketingOrdersPanel({
   const [header, setHeader] = useState({
     contractNumber: '',
     productType: '',
+    productGrade: '',
     year: now.getFullYear(),
     month: now.getMonth() + 1,
     deadline: '',
@@ -290,9 +311,10 @@ function MarketingOrdersPanel({
           o.orderNumber,
           o.contractNumber,
           o.productType,
+          o.productGrade,
           contractors,
           formatOrderPeriod(o.year, o.month),
-        ].join(' ').toLowerCase();
+        ].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(q);
       });
     }
@@ -427,6 +449,7 @@ function MarketingOrdersPanel({
     setHeader({
       contractNumber: `ZAXIRA-${orderStamp}`,
       productType: filterProductType || productEntries[0]?.productType || '',
+      productGrade: '',
       year: period.year,
       month: period.month,
       deadline: defaultOrderDeadline(period.year, period.month),
@@ -457,6 +480,7 @@ function MarketingOrdersPanel({
     setHeader({
       contractNumber: '',
       productType: filterProductType || productEntries[0]?.productType || '',
+      productGrade: '',
       year: period.year,
       month: period.month,
       deadline: defaultOrderDeadline(period.year, period.month),
@@ -477,6 +501,7 @@ function MarketingOrdersPanel({
     setHeader({
       contractNumber: order.contractNumber,
       productType: order.productType,
+      productGrade: order.productGrade || '',
       year: order.year,
       month: order.month,
       deadline: order.deadline.slice(0, 10),
@@ -577,6 +602,7 @@ function MarketingOrdersPanel({
   const buildOrderPayload = () => ({
     contractNumber: header.contractNumber.trim(),
     productType: header.productType,
+    productGrade: (header.productGrade || '').trim(),
     deadline: header.deadline.trim() || defaultOrderDeadline(header.year, header.month),
     lines: reindexLines(lines).map(line => ({
       ...line,
@@ -944,16 +970,17 @@ function MarketingOrdersPanel({
        'Bajarilgan, vagon', 'Bajarilgan, tonna'],
       ...sectionOrders.flatMap(order => {
         const status = ORDER_STATUS_LABELS[order.status] || order.status;
+        const prodName = order.productGrade ? `${order.productType} (${order.productGrade})` : order.productType || '—';
         const lines = order.lines ?? [];
         if (lines.length === 0) {
-          return [[order.orderNumber, order.contractNumber || '—', order.productType || '—',
+          return [[order.orderNumber, order.contractNumber || '—', prodName,
                    order.year, order.month, status, '—', '—', order.totalWagons ?? 0,
                    order.totalTons ?? 0, 0, 0]];
         }
         return lines.map(line => [
           order.orderNumber,
           order.contractNumber || '—',
-          order.productType || '—',
+          prodName,
           order.year,
           order.month,
           status,
@@ -1058,6 +1085,28 @@ function MarketingOrdersPanel({
               widthLabel={RAILWAY_PRODUCT_TYPE_WIDTH_LABEL}
               className="marketing-order-product-picker"
             />
+
+            {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (
+              <label className="marketing-order-contract-field marketing-order-grade-field">
+                <span className="marketing-order-contract-field__label">
+                  Polietilen markasi <span className="text-rose-500 font-bold">*</span>
+                </span>
+                <input
+                  list="shgkm-polyethylene-grades"
+                  required
+                  value={header.productGrade}
+                  onChange={e => setHeader(h => ({ ...h, productGrade: e.target.value }))}
+                  className="marketing-order-contract-field__input"
+                  placeholder="Markani tanlang yoki yozing (B-Y250...)"
+                  autoComplete="off"
+                />
+                <datalist id="shgkm-polyethylene-grades">
+                  {SHGKM_POLYETHYLENE_GRADES.map(grade => (
+                    <option key={grade} value={grade} />
+                  ))}
+                </datalist>
+              </label>
+            )}
 
             <label className="marketing-order-contract-field">
               <span className="marketing-order-contract-field__label">Shartnoma raqami</span>

@@ -156,6 +156,7 @@ export interface MonthlyOrder {
   logisticsType: string;
   contractNumber: string;
   productType: string;
+  productGrade?: string;
   year: number;
   month: number;
   deadline: string;

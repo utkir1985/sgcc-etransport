@@ -88,7 +88,10 @@ export function ProductOrderDocument({
   const headers = getTableHeaders(logisticsType);
   const rows = buildOrderTableRows(order.lines);
   const totals = summarizeOrderQuantities(order.lines);
-  const productLabel = getProductLabel(order.productType, logisticsType);
+  const rawProductLabel = getProductLabel(order.productType, logisticsType);
+  const productLabel = order.productGrade
+    ? `${rawProductLabel} (${order.productGrade})`
+    : rawProductLabel;
   const isFullyApproved = Boolean(order.deputyApprovedAt) || ['Active', 'Completed'].includes(order.status);
   const statusText = isFullyApproved
     ? 'Tasdiqlangan'

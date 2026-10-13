@@ -1580,6 +1580,7 @@ public static class DbSeeder
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "QrVerificationUrl" text NOT NULL DEFAULT '';
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "QrCodeBase64" text NOT NULL DEFAULT '';
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "QrRegisteredAt" timestamp with time zone NULL;
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ProductGrade" character varying(100) NOT NULL DEFAULT '';
 
             UPDATE "LoadingRegistries" SET "QrVerificationUrl" = REPLACE("QrVerificationUrl", 'https://qrlink.uz', 'https://qrlink.sgcc.uz') WHERE "QrVerificationUrl" LIKE '%qrlink.uz%';
             UPDATE "EmptyWagonArrivals" SET "EntryPermitQrVerificationUrl" = REPLACE("EntryPermitQrVerificationUrl", 'https://qrlink.uz', 'https://qrlink.sgcc.uz') WHERE "EntryPermitQrVerificationUrl" LIKE '%qrlink.uz%';

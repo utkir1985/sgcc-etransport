@@ -506,6 +506,7 @@ class ApiClient {
     logisticsType: string;
     contractNumber: string;
     productType: string;
+    productGrade?: string;
     year: number;
     month: number;
     deadline: string;
@@ -527,6 +528,7 @@ class ApiClient {
   updateOrder(id: string, data: {
     contractNumber: string;
     productType: string;
+    productGrade?: string;
     deadline: string;
     editComment: string;
     lines: {

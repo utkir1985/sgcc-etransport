@@ -70,7 +70,7 @@ public class OrderService(
 
     public async Task<MonthlyOrderDto> CreateAsync(CreateMonthlyOrderRequest request, Guid userId)
     {
-        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.ContractNumber, request.Lines, userId);
+        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.ProductGrade, request.ContractNumber, request.Lines, userId);
 
         var creator = await db.Users.FindAsync(userId);
         var order = new MonthlyOrder
@@ -79,6 +79,7 @@ public class OrderService(
             LogisticsType = request.LogisticsType,
             ContractNumber = request.ContractNumber.Trim(),
             ProductType = request.ProductType,
+            ProductGrade = request.ProductGrade?.Trim() ?? "",
             Year = request.Year,
             Month = request.Month,
             Deadline = ToUtcDate(request.Deadline),
@@ -123,7 +124,7 @@ public class OrderService(
         if (string.IsNullOrWhiteSpace(request.EditComment))
             throw new ArgumentException("Tahrirlash izohini kiriting");
 
-        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.ContractNumber, request.Lines, userId);
+        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.ProductGrade, request.ContractNumber, request.Lines, userId);
 
         var changes = new List<string>();
         if (!string.Equals(order.ProductType, request.ProductType, StringComparison.Ordinal))
@@ -148,6 +149,9 @@ public class OrderService(
             changes.Add("Buyurtma qatorlari o‘zgartirildi");
 
         order.ContractNumber = request.ContractNumber.Trim();
+        if (!string.Equals(order.ProductGrade, request.ProductGrade?.Trim() ?? "", StringComparison.Ordinal))
+            changes.Add($"Mahsulot markasi: {order.ProductGrade} → {request.ProductGrade?.Trim()}");
+        order.ProductGrade = request.ProductGrade?.Trim() ?? "";
         order.ProductType = request.ProductType;
         order.Deadline = ToUtcDate(request.Deadline);
 
@@ -781,6 +785,7 @@ public class OrderService(
     private async Task ValidateRequestAsync(
         string logisticsType,
         string productType,
+        string productGrade,
         string contractNumber,
         List<MonthlyOrderLineInput> lines,
         Guid userId)
@@ -796,6 +801,11 @@ public class OrderService(
 
         if (user?.Role == UserRoles.DispatchSupervisor && !isCondensate)
             throw new ArgumentException("IChDX boshlig‘i faqat «Tabiiy gaz kondensati» mahsulotini kiritishi mumkin. Boshqa mahsulotlar Marketing bo‘limi tomonidan kiritiladi.");
+
+        var isPe = productType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
+            || productType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
+        if (isPe && string.IsNullOrWhiteSpace(productGrade))
+            throw new ArgumentException("Polietilen mahsuloti uchun markani kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)");
 
         var productExists = await db.CatalogProducts.AnyAsync(p =>
             p.LogisticsType == logisticsType
@@ -942,7 +952,8 @@ public class OrderService(
             o.QrGlobalId ?? string.Empty,
             o.QrVerificationUrl ?? string.Empty,
             o.QrCodeBase64 ?? string.Empty,
-            o.QrRegisteredAt);
+            o.QrRegisteredAt,
+            o.ProductGrade ?? string.Empty);
     }
 
     public static MonthlyOrderPdfModel BuildMonthlyOrderPdfModel(MonthlyOrder order)
@@ -973,7 +984,7 @@ public class OrderService(
 
         return new MonthlyOrderPdfModel(
             OrderNumber: order.OrderNumber,
-            ProductType: order.ProductType,
+            ProductType: !string.IsNullOrWhiteSpace(order.ProductGrade) ? $"{order.ProductType} ({order.ProductGrade})" : order.ProductType,
             Status: order.Status.ToString(),
             ApprovedAt: approvedAt,
             DeputyApproverName: order.DeputyApproverName,

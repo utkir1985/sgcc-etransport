@@ -65,6 +65,7 @@ public class MonthlyOrder
     public string LogisticsType { get; set; } = Constants.LogisticsTypes.Railway;
     public string ContractNumber { get; set; } = string.Empty;
     public string ProductType { get; set; } = string.Empty;
+    public string ProductGrade { get; set; } = string.Empty;
     public int Year { get; set; }
     public int Month { get; set; }
     public DateTime Deadline { get; set; }

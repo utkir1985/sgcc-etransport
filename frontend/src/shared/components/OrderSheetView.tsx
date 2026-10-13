@@ -345,7 +345,14 @@ export function OrderSheetView({
           <ProductTypeIcon productType={order.productType} className="order-sheet-header__icon" />
           <div className="order-sheet-header__text">
             <div className="order-sheet-header__title-row">
-              <span className="order-sheet-header__product">{order.productType}</span>
+              <span className="order-sheet-header__product">
+                {order.productType}
+                {order.productGrade ? (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 border border-violet-200 dark:border-violet-700/50">
+                    {order.productGrade}
+                  </span>
+                ) : null}
+              </span>
               <OrderStatusBadge status={order.status} />
             </div>
             <span className="order-sheet-header__code">{order.orderNumber}</span>
