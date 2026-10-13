@@ -1628,12 +1628,50 @@ export function EmptyWagonsPage() {
   }, [processArrivals, menuGateCheck, isPermit, isSecurity]);
 
   const matchParty = useCallback((item: EmptyWagonArrival) => {
-    if (!docsDateInRange(item.createdAt, hub.from, hub.to)) return false;
-    const product = (item.productType || '').trim();
-    if (hub.product && product.toLowerCase() !== hub.product.toLowerCase()) return false;
-    const wagons = (item.wagons ?? []).map(unit => unit.wagonNumber).join(' ');
+    const primaryDate = item.entryPermitShiftApprovedAt || item.entryPermitPermitApprovedAt || item.entryPermitSecurityApprovedAt || item.arrivalDate || item.createdAt;
+    const dates = [
+      primaryDate,
+      item.arrivalDate,
+      item.createdAt,
+      item.entryPermitShiftApprovedAt,
+      item.entryPermitPermitApprovedAt,
+    ].filter(Boolean) as string[];
+    if (!docsDateInRange(primaryDate, hub.from, hub.to) && !dates.some(d => docsDateInRange(d, hub.from, hub.to))) {
+      return false;
+    }
+
+    if (hub.product) {
+      const filterVal = hub.product.trim().toLowerCase();
+      const filterLatin = toLatinProductName(hub.product).trim().toLowerCase();
+      const matchProd = (p?: string | null) => {
+        if (!p) return false;
+        const norm = p.trim().toLowerCase();
+        const lat = toLatinProductName(p).trim().toLowerCase();
+        return norm === filterVal || lat === filterLatin || norm === filterLatin || lat === filterVal;
+      };
+      const itemMatches = matchProd(item.productType);
+      const wagonsMatch = (item.wagons ?? []).some(w => matchProd(w.productType));
+      if (!itemMatches && !wagonsMatch) return false;
+    }
+
+    const wagonsList = (item.wagons ?? []).map(unit => unit.wagonNumber).filter(Boolean).join(' ');
+    const cisternsList = (item.wagons ?? []).map(unit => unit.cisternNumber).filter(Boolean).join(' ');
+    const wagonTypes = (item.wagons ?? []).map(unit => unit.wagonType).filter(Boolean).join(' ');
     return docsMatchesSearch(
-      [item.arrivalNumber, item.entryPermitNumber, item.productType, wagons].filter(Boolean).join(' '),
+      [
+        item.arrivalNumber,
+        item.entryPermitNumber,
+        item.productType,
+        toLatinProductName(item.productType),
+        item.wagonNumbers,
+        item.cisternNumbers,
+        wagonsList,
+        cisternsList,
+        wagonTypes,
+        item.trackNumber,
+        item.createdByName,
+        item.notes,
+      ].filter(Boolean).join(' '),
       hub.search,
     );
   }, [hub.from, hub.to, hub.product, hub.search]);
@@ -1646,8 +1684,8 @@ export function EmptyWagonsPage() {
   // (qaytarilmagan) vagonlari tara tekshiruvidan o‘tib yuklashga uzatilgach xat shakllanadi.
   // Yuk xati / chiqishga bog‘liq emas. Ichki fond (ZF-) va 1C yozuvlari xizmat xati emas.
   const entryProcessDone = useCallback((a: EmptyWagonArrival) => {
-    // Agar Qo'riqlash yoki Ruxsatnoma byurosi kelishgan bo'lsa, xizmat xati rasmiylashtirilgan va zavodga qabul qilingan
-    if (a.entryPermitSecurityApprovedAt || a.entryPermitPermitApprovedAt || a.entryPermitShiftApprovedAt) return true;
+    // Agar Qo'riqlash yoki Ruxsatnoma byurosi kelishgan bo'lsa yoki xizmat xati raqami berilgan bo'lsa
+    if (a.entryPermitNumber || a.entryPermitSecurityApprovedAt || a.entryPermitPermitApprovedAt || a.entryPermitShiftApprovedAt) return true;
     const s = getStage(a);
     if (['ReadyForEstakada', 'TareWeighing', 'Loading', 'SealInstallation', 'Exited'].includes(s)) return true;
     const units = (a.wagons ?? []).filter(u => u.status !== 'Returned');
@@ -2777,19 +2815,19 @@ export function EmptyWagonsPage() {
             product={hub.product}
             productOptions={kiritishProductOptions}
             onProductChange={hub.setProduct}
+            actions={
+              <button
+                type="button"
+                className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30 shrink-0"
+                onClick={() => exportKiritishExcel(filteredSent)}
+                disabled={filteredSent.length === 0}
+                title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Excel yuklash</span>
+              </button>
+            }
           />
-          <div className="flex items-center justify-end my-2">
-            <button
-              type="button"
-              className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30"
-              onClick={() => exportKiritishExcel(filteredSent)}
-              disabled={filteredSent.length === 0}
-              title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Excel yuklash</span>
-            </button>
-          </div>
           <div className="thub__board">
             {loading ? (
               <div className="thub-empty">Yuklanmoqda…</div>
@@ -2946,19 +2984,19 @@ export function EmptyWagonsPage() {
             product={hub.product}
             productOptions={kiritishProductOptions}
             onProductChange={hub.setProduct}
+            actions={
+              <button
+                type="button"
+                className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30 shrink-0"
+                onClick={() => exportKiritishExcel(ichdxTab === 'pending' ? filteredPending : filteredSent)}
+                disabled={(ichdxTab === 'pending' ? filteredPending : filteredSent).length === 0}
+                title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Excel yuklash</span>
+              </button>
+            }
           />
-          <div className="flex items-center justify-end my-2">
-            <button
-              type="button"
-              className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30"
-              onClick={() => exportKiritishExcel(ichdxTab === 'pending' ? filteredPending : filteredSent)}
-              disabled={(ichdxTab === 'pending' ? filteredPending : filteredSent).length === 0}
-              title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Excel yuklash</span>
-            </button>
-          </div>
           <div className="thub__board">
             {loading ? (
               <div className="thub-empty">Yuklanmoqda…</div>

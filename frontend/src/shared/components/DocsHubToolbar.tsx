@@ -17,6 +17,8 @@ interface DocsHubToolbarProps {
   productOptions?: ProductTypeFilterOption[];
   onProductChange?: (value: string) => void;
   meta?: string;
+  actions?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export function DocsHubToolbar({
@@ -33,6 +35,8 @@ export function DocsHubToolbar({
   productOptions,
   onProductChange,
   meta,
+  actions,
+  children,
 }: DocsHubToolbarProps) {
   return (
     <div className="thub__toolbar reestr-toolbar docs-hub-toolbar">
@@ -79,6 +83,13 @@ export function DocsHubToolbar({
         <span className="thub-date__lbl">Gacha</span>
         <DatePicker value={to} onChange={onToChange} variant="compact" placeholder="dd.mm.yyyy" />
       </div>
+
+      {actions ? (
+        <div className="docs-hub-toolbar__actions sm:ml-auto flex items-center gap-2">
+          {actions}
+        </div>
+      ) : null}
+      {children}
 
       {meta ? <span className="thub-history__meta">{meta}</span> : null}
     </div>

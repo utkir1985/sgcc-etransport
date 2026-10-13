@@ -38,10 +38,11 @@ export function docsPeriodRange(preset: Exclude<DocsPeriodPreset, 'custom'>): { 
 
 export function docsDateKey(iso?: string | null): string {
   if (!iso) return '';
-  const sliced = iso.slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(sliced)) return sliced;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
+  const trimmed = iso.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const normalized = trimmed.includes(' ') && !trimmed.includes('T') ? trimmed.replace(' ', 'T') : trimmed;
+  const d = new Date(normalized);
+  if (Number.isNaN(d.getTime())) return trimmed.slice(0, 10);
   return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Tashkent' });
 }
 
