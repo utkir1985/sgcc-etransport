@@ -1128,17 +1128,37 @@ export default function RegistryPage() {
     return [...tasks, ...regs].sort((a, b) => docsDateKey(b.date).localeCompare(docsDateKey(a.date)));
   }, [boardItems]);
 
-  const yukProductOptions = useMemo(
-    () => [...new Set(yukHubRows.map(row => row.product).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'uz'))
-      .map(value => ({ value, label: value })),
-    [yukHubRows],
-  );
+  const yukProductOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of yukHubRows) {
+      const p = row.product;
+      if (!p) continue;
+      for (const part of p.split(',')) {
+        const clean = (toLatinProductName(part.trim()) || part.trim());
+        if (clean) set.add(clean);
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'uz')).map(value => ({ value, label: value }));
+  }, [yukHubRows]);
 
   const filteredYukRows = useMemo(
     () => yukHubRows.filter(row => {
       if (!docsDateInRange(row.date, hub.from, hub.to)) return false;
-      if (hub.product && row.product.toLowerCase() !== hub.product.toLowerCase()) return false;
+      if (hub.product) {
+        const target = hub.product.trim().toLowerCase();
+        const targetLatin = toLatinProductName(hub.product).trim().toLowerCase();
+        const matches = (p?: string | null) => {
+          if (!p) return false;
+          const norm = p.trim().toLowerCase();
+          const lat = toLatinProductName(p).trim().toLowerCase();
+          return norm === target || lat === targetLatin || norm.includes(target) || lat.includes(targetLatin);
+        };
+        const rowMatch = matches(row.product);
+        const routeMatch = row.kind === 'reg'
+          ? (row.registry.wagonRoutes ?? []).some(w => matches(w.productType))
+          : wagonRowsOf(row.task).some(w => matches(w.product));
+        if (!rowMatch && !routeMatch) return false;
+      }
       return docsMatchesSearch(row.search, hub.search);
     }),
     [yukHubRows, hub.from, hub.to, hub.product, hub.search],
@@ -2736,7 +2756,7 @@ export default function RegistryPage() {
         <td className="text-center font-semibold">
           {r.wagonCount} ta
         </td>
-        <td><PartyProductsSummary rows={finalSummaryRows} /></td>
+        <td><PartyProductsSummary rows={finalSummaryRows} activeProduct={hub.product} /></td>
         <td><PartyWagonKindsSummary rows={finalSummaryRows} /></td>
         {showStatus ? (
           <td>
@@ -2871,7 +2891,7 @@ export default function RegistryPage() {
                       </td>
                       <td>{formatDateTimeDisplay(group.date)}</td>
                       <td className="text-center font-bold text-sky-700 dark:text-sky-300">{group.rows.length} ta</td>
-                      <td><PartyProductsSummary rows={draftSummaryRows} /></td>
+                      <td><PartyProductsSummary rows={draftSummaryRows} activeProduct={hub.product} /></td>
                       <td><PartyWagonKindsSummary rows={draftSummaryRows} /></td>
                       <td>
                         <b className="inline-flex max-w-full truncate rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">

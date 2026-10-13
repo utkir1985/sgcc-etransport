@@ -1,3 +1,4 @@
+import { toLatinProductName } from '../utils/cyrillicToLatin';
 import { isWagonKind, WAGON_KIND_LABEL, type WagonKind } from '../utils/wagonKinds';
 
 export type PartySummaryRow = {
@@ -23,33 +24,72 @@ function kindStatsFromRows(rows: PartySummaryRow[]) {
 }
 
 /** Vagon partiyasi jadvallari uchun yagona, kesilmaydigan qisqa ko'rinish. */
-export function PartyProductsSummary({ rows }: { rows: PartySummaryRow[] }) {
+export function PartyProductsSummary({
+  rows,
+  activeProduct,
+}: {
+  rows: PartySummaryRow[];
+  activeProduct?: string;
+}) {
   const healthyRows = rows.filter(row => !row.isDefective);
   const defectiveCount = rows.filter(row => row.isDefective).length;
 
-  const productNames = [...new Set(healthyRows.map(row => row.productType?.trim()).filter(Boolean) as string[])];
-  const noProductCount = healthyRows.filter(row => !row.productType?.trim()).length;
+  const normActive = activeProduct?.trim().toLowerCase();
+  const latinActive = activeProduct ? toLatinProductName(activeProduct).trim().toLowerCase() : '';
+  const isMatch = (name: string) => {
+    if (!normActive) return false;
+    const n = name.trim().toLowerCase();
+    const l = toLatinProductName(name).trim().toLowerCase();
+    return n === normActive || l === latinActive || n === latinActive || l === normActive;
+  };
+
+  let productNames = [...new Set(healthyRows.map(row => row.productType?.trim()).filter(Boolean) as string[])];
+  if (normActive) {
+    const matchedNames = productNames.filter(isMatch);
+    if (matchedNames.length > 0) {
+      productNames = matchedNames;
+    }
+  }
+
+  const noProductCount = normActive ? 0 : healthyRows.filter(row => !row.productType?.trim()).length;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-sm leading-5 text-slate-700 dark:text-slate-200">
-      {productNames.map((name, index) => (
-        <span key={name} className="whitespace-nowrap font-medium">
-          {name}{' '}
-          <b className="font-semibold tabular-nums text-violet-600 dark:text-violet-300">
-            ({healthyRows.filter(row => row.productType?.trim() === name).length})
-          </b>
-          {index < productNames.length - 1 || noProductCount > 0 || defectiveCount > 0 ? (
-            <span className="ml-1.5 text-slate-300 dark:text-slate-600">•</span>
-          ) : null}
-        </span>
-      ))}
-      {noProductCount > 0 ? (
+      {productNames.map((name, index) => {
+        const matched = isMatch(name);
+        const count = healthyRows.filter(row => row.productType?.trim() === name).length;
+        return (
+          <span
+            key={name}
+            className={`whitespace-nowrap transition-all ${
+              matched
+                ? 'inline-flex items-center gap-1 font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100/90 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-700 px-2 py-0.5 rounded-md shadow-2xs'
+                : 'font-medium'
+            }`}
+          >
+            {name}{' '}
+            <b
+              className={`tabular-nums ${
+                matched
+                  ? 'font-black text-emerald-700 dark:text-emerald-300'
+                  : 'font-semibold text-violet-600 dark:text-violet-300'
+              }`}
+            >
+              ({count})
+            </b>
+            {index < productNames.length - 1 || noProductCount > 0 || (defectiveCount > 0 && !normActive) ? (
+              <span className="ml-1.5 text-slate-300 dark:text-slate-600">•</span>
+            ) : null}
+          </span>
+        );
+      })}
+      {noProductCount > 0 && !normActive ? (
         <span className="whitespace-nowrap font-medium text-amber-700 dark:text-amber-300">
           Mahsulotsiz <b>({noProductCount})</b>
           {defectiveCount > 0 ? <span className="ml-1.5 text-slate-300 dark:text-slate-600">•</span> : null}
         </span>
       ) : null}
-      {defectiveCount > 0 ? (
+      {defectiveCount > 0 && !normActive ? (
         <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 shadow-xs whitespace-nowrap">
           <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
           Nomuvofiq <b>({defectiveCount})</b>

@@ -318,7 +318,7 @@ function rowsFromArrival(item: EmptyWagonArrival): WagonRowLite[] {
     wagonType: isWagonKind(u.wagonType) ? u.wagonType : '',
     ownership: u.ownership || 'tashqi',
     intakeLoadState: u.intakeLoadState || 'bosh',
-    productType: u.productType || '',
+    productType: u.productType || item.productType || '',
     status: u.status,
     loadingComment: u.loadingComment || '',
     defectActFileName: u.defectActFileName,
@@ -364,12 +364,18 @@ function PartyProductsSummary({ rows, activeProduct }: { rows: WagonRowLite[]; a
     return n === normActive || l === latinActive || n === latinActive || l === normActive;
   };
 
-  const productNames = [...new Set(rows.map(row => row.productType?.trim()).filter(Boolean) as string[])].sort((a, b) => {
+  let productNames = [...new Set(rows.map(row => row.productType?.trim()).filter(Boolean) as string[])].sort((a, b) => {
     if (isMatch(a) && !isMatch(b)) return -1;
     if (!isMatch(a) && isMatch(b)) return 1;
     return a.localeCompare(b, 'uz');
   });
-  const noProductCount = rows.filter(row => !row.productType?.trim()).length;
+  if (normActive) {
+    const matchedNames = productNames.filter(isMatch);
+    if (matchedNames.length > 0) {
+      productNames = matchedNames;
+    }
+  }
+  const noProductCount = normActive ? 0 : rows.filter(row => !row.productType?.trim()).length;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-sm leading-5 text-slate-700 dark:text-slate-200">
@@ -1235,6 +1241,21 @@ export function EmptyWagonsPage() {
     );
   };
 
+  const partyWagonCountDisplay = (item: EmptyWagonArrival, rows: WagonRowLite[]) => {
+    if (!hub.product) return `${item.wagonCount} ta`;
+    const filterVal = hub.product.trim().toLowerCase();
+    const filterLatin = toLatinProductName(hub.product).trim().toLowerCase();
+    const matchProd = (p?: string | null) => {
+      if (!p) return false;
+      const norm = p.trim().toLowerCase();
+      const lat = toLatinProductName(p).trim().toLowerCase();
+      return norm === filterVal || lat === filterLatin || norm === filterLatin || lat === filterVal;
+    };
+    const matched = rows.filter(r => matchProd(r.productType)).length;
+    if (matched === item.wagonCount || matched === 0) return `${item.wagonCount} ta`;
+    return `${matched} ta (${item.wagonCount} dan)`;
+  };
+
   const partyStatusClass = (item: EmptyWagonArrival, label: string) => {
     const stage = getStage(item);
     const normalized = label.toLocaleLowerCase('uz-UZ');
@@ -1681,7 +1702,9 @@ export function EmptyWagonsPage() {
         const lat = toLatinProductName(p).trim().toLowerCase();
         return norm === filterVal || lat === filterLatin || norm === filterLatin || lat === filterVal;
       };
-      if (!matchProd(item.productType)) return false;
+      const itemMatch = matchProd(item.productType);
+      const wagonMatch = (item.wagons ?? []).some(w => matchProd(w.productType || item.productType));
+      if (!itemMatch && !wagonMatch) return false;
     }
 
     const wagonsList = (item.wagons ?? []).map(unit => unit.wagonNumber).filter(Boolean).join(' ');
@@ -1886,7 +1909,7 @@ export function EmptyWagonsPage() {
           </div>
         </td>
         <td className="whitespace-nowrap tabular-nums">{dateLabel}</td>
-        <td>{item.wagonCount} ta</td>
+        <td>{partyWagonCountDisplay(item, rows)}</td>
         <td><PartyProductsSummary rows={rows} activeProduct={hub.product} /></td>
         <td><PartyWagonKindsSummary rows={rows} /></td>
         {showStatus ? (
@@ -1972,7 +1995,7 @@ export function EmptyWagonsPage() {
                   {dateLabel}
                 </div>
                 <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 dark:border-slate-700">
-                  <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-50">{item.wagonCount} ta</p>
+                  <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-50">{partyWagonCountDisplay(item, rows)}</p>
                 </div>
                 <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 text-center dark:border-slate-700">
                   <PartyProductsSummary rows={rows} activeProduct={hub.product} />
@@ -3465,7 +3488,7 @@ export function EmptyWagonsPage() {
                           {dateLabel}
                         </div>
                         <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 dark:border-slate-700">
-                          <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-50">{item.wagonCount} ta</p>
+                          <p className="text-sm font-semibold tabular-nums text-slate-900 dark:text-slate-50">{partyWagonCountDisplay(item, rows)}</p>
                         </div>
                         <div className="flex min-w-0 items-center justify-center border-r border-slate-200 px-3 py-3 text-center dark:border-slate-700">
                           <PartyProductsSummary rows={rows} activeProduct={hub.product} />
