@@ -164,7 +164,8 @@ export function saveVoiceSettings(enabled: boolean, role: string, volume: number
 
 /** Rol mosligini tekshirish */
 export function isRoleMatching(selectedRole: string, alertRole: string): boolean {
-  if (selectedRole === 'ALL') return true;
+  if (!selectedRole || selectedRole === 'ALL' || selectedRole === 'Admin') return true;
+  if (alertRole === 'ALL' || alertRole === 'Admin') return true;
   if (selectedRole === alertRole) return true;
   // DispatchSupervisor va Dispatching ikkalasi ham ICHDX
   if ((selectedRole === 'DispatchSupervisor' || selectedRole === 'Dispatching') &&
@@ -195,11 +196,12 @@ export async function checkAndAnnouncePendingAlerts(customRole?: string): Promis
       const alertKey = `${alert.flow}:${alert.stageKey}:${alert.role}`;
       const lastTime = lastAnnouncedTimes[alertKey] || 0;
 
-      // Agar oldin e'lon qilinmagan bo'lsa yoki 3 daqiqa o'tgan bo'lsa
-      if (now - lastTime > ANNOUNCE_COOLDOWN_MS) {
+      // Test xabari bo'lsa yoki 3 daqiqa o'tgan bo'lsa darhol aytadi
+      const isTest = alert.stageKey.includes('test');
+      if (isTest || now - lastTime > ANNOUNCE_COOLDOWN_MS) {
         lastAnnouncedTimes[alertKey] = now;
         await announceAlert(alert.voiceText, settings.volume);
-        break; // Bir vaqtda bir nechta ovoz aralashib ketmasligi uchun navbat bilan bittasini aytadi
+        break;
       }
     }
 
