@@ -11,6 +11,9 @@ namespace ETransport.Modules.Dashboard.Controllers;
 [AllowAnonymous]
 public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
 {
+    private static DateTime _broadcastTestUntil = DateTime.MinValue;
+    private static string _broadcastMessage = "";
+
     public record WorkflowStageAlertDto(
         string Flow,             // "Kirish" yoki "Chiqish"
         string Role,             // "Dispatching", "Permit", "Security", "Scale", "Railway", "Warehouse"
@@ -21,10 +24,38 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
         string VoiceText         // "Diqqat! Kirish jarayoni: Qo‘riqlash xizmati, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
     );
 
+    public record BroadcastRequest(string? Message, int? DurationSeconds);
+
+    [HttpPost("broadcast-test")]
+    public ActionResult<ApiResponse<bool>> BroadcastTest([FromBody] BroadcastRequest? request)
+    {
+        var duration = request?.DurationSeconds ?? 120;
+        _broadcastTestUntil = DateTime.UtcNow.AddSeconds(duration);
+        _broadcastMessage = !string.IsNullOrWhiteSpace(request?.Message)
+            ? request.Message
+            : "Diqqat! Bu sinov xabari: E-Transport tizimida ovozli ogohlantirish sinovi o‘tkazilmoqda. Barcha xizmatlar o‘z bosqichlarini tekshirib ko‘rsin!";
+
+        return Ok(new ApiResponse<bool>(true, true, $"Sinov ovozli xabari {duration} soniya davomida barcha foydalanuvchilarga yuborildi"));
+    }
+
     [HttpGet]
     public async Task<ActionResult<ApiResponse<List<WorkflowStageAlertDto>>>> GetPendingAlerts()
     {
         var alerts = new List<WorkflowStageAlertDto>();
+
+        // 0. Barcha kompyuterlarga umumiy sinov xabari (agar aktiv bo'lsa)
+        if (DateTime.UtcNow < _broadcastTestUntil)
+        {
+            alerts.Add(new WorkflowStageAlertDto(
+                Flow: "Umumiy",
+                Role: "ALL",
+                Department: "Barcha xizmatlar",
+                StageKey: "test-broadcast",
+                StageTitle: "Tizim sinov ogohlantirishi",
+                PendingCount: 1,
+                VoiceText: _broadcastMessage
+            ));
+        }
 
         // 1. Kirish jarayoni (Bo'sh vagonlar)
         var activeArrivals = await db.EmptyWagonArrivals
