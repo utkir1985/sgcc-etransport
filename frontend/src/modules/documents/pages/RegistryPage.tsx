@@ -632,8 +632,8 @@ export default function RegistryPage() {
       const [registryResult, arrivalResult, taskResult, orderResult, queueResult] = await Promise.all([
         api.getLoadingRegistries(),
         api.getEmptyWagonArrivals(),
-        canCreate ? api.getEconomistNotifications() : Promise.resolve(null),
-        canCreate ? api.getOrders(LOGISTICS_TYPES.Railway) : Promise.resolve(null),
+        canCreate ? api.getEconomistNotifications().catch(() => ({ success: false, data: [] as any })) : Promise.resolve(null),
+        canCreate ? api.getOrders(LOGISTICS_TYPES.Railway).catch(() => ({ success: false, data: [] as any })) : Promise.resolve(null),
         api.getGateWeighingQueue().catch(() => ({ data: null })),
       ]);
       if (!registryResult.success || !registryResult.data) {

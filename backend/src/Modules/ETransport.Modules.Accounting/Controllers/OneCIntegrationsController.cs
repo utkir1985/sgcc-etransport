@@ -63,7 +63,7 @@ public record OneCManualSealRequest(
 
 [ApiController]
 [Route("api/integrations/1c")]
-[Authorize(Roles = "Admin,Scale,Economist,Security")]
+[Authorize(Roles = "Admin,Scale,Economist,Security,Dispatching,DispatchSupervisor")]
 public class OneCIntegrationsController(
     AppDbContext db,
     IOneCEmptyWagonSyncService syncService,
