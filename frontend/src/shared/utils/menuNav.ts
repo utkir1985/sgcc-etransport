@@ -301,7 +301,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
     ];
   }
 
-  if (role === 'Dispatching') {
+  if (role === 'Dispatching' || role === 'DispatchSupervisor') {
     const approvePanel = fromMap(
       byKey,
       'registry-approve',

@@ -1,6 +1,6 @@
 import type { EmptyWagonArrival, EmptyWagonUnit, LoadingRegistry } from '../types';
 import { isOneCArrival } from './oneCSources';
-import { buildRegistryAlert, isRegistryReturned, needsPermitAgreement, needsSecurityAgreement } from './registryWorkflow';
+import { buildRegistryAlert, isRegistryReturned, needsPermitAgreement, needsSecurityAgreement, usesSequentialWorkflow } from './registryWorkflow';
 import { hasMeasuredNet } from './wagonQueueState';
 
 export interface WagonFlowTileInput {
@@ -408,14 +408,16 @@ export function buildWagonFlowMetrics(
     && r.isApprovedBySecurity;
 
 
-  /** 9-bosqich: iqtisodchi shakllantiradi, ICHDX boshlig‘i tasdiqlaydi. */
+  /** 9-bosqich: iqtisodchi shakllantiradi, ICHDX smena boshlig‘i tasdiqlaydi. */
   const hasShiftApprovalOrLegacyDownstream = (r: LoadingRegistry) =>
     r.isApprovedByShiftSupervisor
-    || r.isApprovedByPermit
-    || r.isApprovedBySecurity
-    || r.isSentToOneC
-    || r.isSentToENakl
-    || Boolean(r.handoverToMachinistAt);
+    || (!usesSequentialWorkflow(r) && (
+      r.isApprovedByPermit
+      || r.isApprovedBySecurity
+      || r.isSentToOneC
+      || r.isSentToENakl
+      || Boolean(r.handoverToMachinistAt)
+    ));
   const regShiftPending = registries.filter(r =>
     !hasShiftApprovalOrLegacyDownstream(r) && !isRegistryReturned(r),
   );

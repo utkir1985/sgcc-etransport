@@ -347,7 +347,7 @@ export const ROLE_MENUS: Record<string, string[]> = {
   ),
   Marketing: withCore(),
   Dispatching: withCore('registry-approve'),
-  DispatchSupervisor: withCore('order-dispatch-approvals'),
+  DispatchSupervisor: withCore('order-dispatch-approvals', 'registry-approve'),
   Accounting: withCore('order-approvals'),
   DeputyDirector: withCore('order-deputy-approvals'),
   Railway: withCore('railway-intake'),

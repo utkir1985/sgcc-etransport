@@ -916,7 +916,7 @@ export default function RegistryPage() {
 
   useEffect(() => {
     if (!canApproveShift || isApproveHub || loading) return;
-    if (role !== 'Dispatching') return;
+    if (role !== 'Dispatching' && role !== 'DispatchSupervisor') return;
 
     const zone = searchParams.get('zone');
     if (zone === 'agree') {
@@ -1090,7 +1090,7 @@ export default function RegistryPage() {
                 : zoneFromQuery === 'docs'
                   ? byZone.docs.regs
                   : byZone.done.regs),
-            ].filter(r => !(role === 'Dispatching' && needsShiftApproval(r))),
+            ].filter(r => !((role === 'Dispatching' || role === 'DispatchSupervisor') && needsShiftApproval(r))),
   }), [
     byZone,
     canApprovePermit,

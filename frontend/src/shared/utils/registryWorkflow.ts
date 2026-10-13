@@ -46,21 +46,15 @@ export function buildRegistryAlert(registry: LoadingRegistry): {
 
 /** 9-bosqich: iqtisodchi shakllantirgan, smena boshlig‘i tasdig‘i kutilmoqda. */
 export function needsShiftApproval(registry: LoadingRegistry): boolean {
-  const hasShiftApprovalOrLegacyDownstream =
-    registry.isApprovedByShiftSupervisor
-    || registry.isApprovedByPermit
-    || registry.isApprovedBySecurity
-    || registry.isSentToOneC
-    || registry.isSentToENakl
-    || Boolean(registry.handoverToMachinistAt);
-  return !hasShiftApprovalOrLegacyDownstream && !isRegistryReturned(registry);
+  return !registry.isApprovedByShiftSupervisor && !isRegistryReturned(registry);
 }
 
 /** 10-bosqich (Ruxsatnoma): Ruxsatnoma byurosi tasdig‘i kutilmoqda. */
 export function needsPermitAgreement(registry: LoadingRegistry): boolean {
   const ecoPermitOk = registry.isEconomistApprovedWithPermit || Boolean(registry.preparedAt) || registry.isApprovedByEconomist;
   return Boolean(
-    ecoPermitOk
+    registry.isApprovedByShiftSupervisor
+    && ecoPermitOk
     && !registry.isApprovedByPermit
     && !isRegistryReturned(registry),
   );
@@ -70,7 +64,8 @@ export function needsPermitAgreement(registry: LoadingRegistry): boolean {
 export function needsSecurityAgreement(registry: LoadingRegistry): boolean {
   const ecoSecurityOk = registry.isEconomistApprovedWithSecurity || Boolean(registry.preparedAt) || registry.isApprovedByEconomist;
   return Boolean(
-    registry.isApprovedByPermit
+    registry.isApprovedByShiftSupervisor
+    && registry.isApprovedByPermit
     && ecoSecurityOk
     && !registry.isApprovedBySecurity
     && !isRegistryReturned(registry),

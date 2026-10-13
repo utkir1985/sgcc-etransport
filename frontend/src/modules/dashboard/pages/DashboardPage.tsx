@@ -561,6 +561,20 @@ function loadingTiles(
       stepNumber: 3,
     },
     {
+      ...makeTile(role, 'registry-approve', 'Yuk xatini tasdiqlash', "ICHDX smena boshlig'i",
+        'ICHDX smena boshlig‘i shakllantirilgan yuk xatini ko‘rib chiqib, tasdiqlaydi',
+        completedReg
+          ? `/registry?expanded=reg:${completedReg.id}`
+          : (partyArrivalId ? `/registry/approve?arrivalId=${partyArrivalId}` : '/registry/approve'),
+        ClipboardCheck,
+        scope.kind === 'registry'
+          ? (completedReg?.isApprovedByShiftSupervisor ? 0 : 1)
+          : (m.regShiftPending?.length ?? 0),
+        ['DispatchSupervisor', 'Dispatching', 'Admin'],
+        scope.kind === 'registry' ? completedReg?.shiftSupervisorApprovedAt : (m.regShiftPending?.length === 0 ? m.approvedAt.w9 : null)),
+      stepNumber: 4,
+    },
+    {
       ...makeTile(role, 'w10', 'Yuk xatini kelishish', 'Ruxsatnoma byurosi',
         'Ruxsatnoma byurosi yuk xatini kelishadi',
         partyFinished && completedReg
@@ -568,11 +582,11 @@ function loadingTiles(
           : (partyArrivalId ? `/registry/agree/permit?arrivalId=${partyArrivalId}` : '/registry/agree/permit'),
         Handshake,
         scope.kind === 'registry'
-          ? (completedReg?.isApprovedByPermit ? 0 : 1)
-          : 0,
+          ? (completedReg?.isApprovedByPermit ? 0 : (completedReg?.isApprovedByShiftSupervisor ? 1 : 0))
+          : (m.regPermit?.length ?? 0),
         ['Permit'],
         scope.kind === 'registry' ? completedReg?.permitApprovedAt : null),
-      stepNumber: 4,
+      stepNumber: 5,
     },
     {
       ...makeTile(role, 'exit-security', 'Vagonlarni tekshirib chiqarish', 'Qo‘riqlash xizmati',
@@ -581,10 +595,10 @@ function loadingTiles(
         ShieldCheck,
         scope.kind === 'registry'
           ? (completedReg?.isApprovedBySecurity ? 0 : (completedReg?.isApprovedByPermit ? 1 : 0))
-          : 0,
+          : (m.regSecurity?.length ?? 0),
         ['Security'],
         scope.kind === 'registry' ? completedReg?.securityApprovedAt : null),
-      stepNumber: 5,
+      stepNumber: 6,
     },
     {
       ...makeTile(role, 'exit-railway', 'Vagonlarni chiqarish', 'Temir yo‘l',
@@ -593,10 +607,10 @@ function loadingTiles(
         LogOut,
         scope.kind === 'registry'
           ? (completedReg?.exitedToKengsoyAt ? 0 : (completedReg?.isApprovedBySecurity ? 1 : 0))
-          : 0,
+          : (m.toKengsoy?.length ?? 0),
         ['Railway'],
         scope.kind === 'registry' ? completedReg?.exitedToKengsoyAt : null),
-      stepNumber: 6,
+      stepNumber: 7,
     },
     {
       ...makeTile(
@@ -609,13 +623,13 @@ function loadingTiles(
           ? `/registry?expanded=reg:${completedReg.id}`
           : '/registry',
         BadgeCheck,
-        scope.kind === 'registry' ? (completedReg?.exitedToKengsoyAt && (!completedReg.isSentToOneC || !completedReg.isSentToENakl) ? 1 : 0) : 0,
+        scope.kind === 'registry' ? (completedReg?.exitedToKengsoyAt && (!completedReg.isSentToOneC || !completedReg.isSentToENakl) ? 1 : 0) : (m.regComparePending?.length ?? 0),
         ['Economist'],
         scope.kind === 'registry' && completedReg?.exitedToKengsoyAt && completedReg.isSentToOneC && completedReg.isSentToENakl
           ? (completedReg.sentToENaklAt || completedReg.sentToOneCAt || completedReg.exitedToKengsoyAt)
           : null,
       ),
-      stepNumber: 7,
+      stepNumber: 8,
     },
   ];
 
@@ -627,6 +641,7 @@ function loadingTiles(
       w6: maxIso(...units.map(u => u.loadingCompletedAt)),
       'w-1c-integration': maxIso(...units.map(u => u.sealedAt)),
       'registry-create': completedReg?.preparedAt,
+      'registry-approve': completedReg?.shiftSupervisorApprovedAt,
       w10: completedReg?.permitApprovedAt,
       'exit-security': completedReg?.securityApprovedAt,
       'exit-railway': completedReg?.exitedToKengsoyAt,
@@ -980,7 +995,7 @@ const WAGON_PHASES = [
   {
     key: 'yuklash', title: 'Vagonlarni yuklash va chiqarish', start: 6, end: 13,
     icon: LogOut, reverse: false,
-    hint: '1 → 7 · Mahsulot yuklash va 1C integratsiyasidan ro‘yxatdan o‘tkazishgacha · Chapdan o‘ngga',
+    hint: '1 → 8 · Mahsulot yuklash va 1C integratsiyasidan ro‘yxatdan o‘tkazishgacha · Chapdan o‘ngga',
   },
 ];
 

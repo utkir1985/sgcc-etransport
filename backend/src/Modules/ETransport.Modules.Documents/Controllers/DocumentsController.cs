@@ -919,8 +919,8 @@ public class DocumentsController(
                 WagonCount: requestedRoutes.Count,
                 WagonNumbers: requestedNumbers,
                 ProductType: registry.ContractorName,
-                NextStage: "4. Yuk xatini kelishish",
-                NextDepartment: "Ruxsatnoma byurosi",
+                NextStage: "4. Yuk xatini tasdiqlash",
+                NextDepartment: "ICHDX smena boshlig'i",
                 Details: $"Stansiya: {registry.DestinationStation}"
             ));
 
@@ -975,6 +975,20 @@ public class DocumentsController(
             category: "Documents"
         );
 
+        TryNotifyTelegram(new TelegramStageEvent(
+            FlowTitle: "YUKLASH VA CHIQARISH",
+            StageTitle: "4. Yuk xatini tasdiqlash",
+            DepartmentOrRole: "ICHDX smena boshlig'i",
+            OperatorName: userName,
+            Identifier: registry.RegistryNumber,
+            WagonCount: registry.OrderDeductedWagons > 0 ? registry.OrderDeductedWagons : ParseWagonRoutes(registry.WagonRoutesJson).Count,
+            WagonNumbers: ParseWagonRoutes(registry.WagonRoutesJson).Select(w => w.WagonNumber).ToList(),
+            ProductType: registry.ContractorName,
+            NextStage: "5. Yuk xatini kelishish",
+            NextDepartment: "Ruxsatnoma byurosi",
+            Details: $"Stansiya: {registry.DestinationStation}"
+        ));
+
         return Ok(new ApiResponse<LoadingRegistryDto>(true, existingToDto(registry), "Yuk xati ICHDX tomonidan tasdiqlandi"));
     }
 
@@ -995,8 +1009,9 @@ public class DocumentsController(
         if (registry.PreparedAt >= SequentialWorkflowStartsAt && registry.IsApprovedBySecurity)
             return Conflict(new ApiResponse<LoadingRegistryDto>(false, null,
                 "Qo‘riqlash tasdiqlagan yuk xatining ruxsatnoma kelishuvini o‘zgartirib bo‘lmaydi."));
-        registry.IsApprovedByShiftSupervisor = true;
-        registry.ShiftSupervisorApprovedAt ??= registry.PreparedAt;
+        if (registry.PreparedAt >= SequentialWorkflowStartsAt && !registry.IsApprovedByShiftSupervisor)
+            return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
+                "Yuk xati avval ICHDX smena boshlig‘i tomonidan tasdiqlanishi kerak."));
         // Legacy reyestrlarda yuborish bayrog‘i bo‘lmasligi mumkin. Reyestrning
         // mavjudligi uning shakllantirilib kelishuvga chiqarilganini bildiradi.
         registry.IsEconomistApprovedWithPermit = true;
@@ -1038,12 +1053,12 @@ public class DocumentsController(
         {
             TryNotifyTelegram(new TelegramStageEvent(
                 FlowTitle: "YUKLASH VA CHIQARISH",
-                StageTitle: "4. Yuk xatini kelishish",
+                StageTitle: "5. Yuk xatini kelishish",
                 DepartmentOrRole: "Ruxsatnoma byurosi",
                 OperatorName: registry.PermitApprovedByName,
                 Identifier: registry.RegistryNumber,
                 WagonCount: registry.OrderDeductedWagons > 0 ? registry.OrderDeductedWagons : ParseWagonRoutes(registry.WagonRoutesJson).Count,
-                NextStage: "5. Vagonlarni tekshirib chiqarish",
+                NextStage: "6. Vagonlarni tekshirib chiqarish",
                 NextDepartment: "Qo'riqlash xizmati"
             ));
         }
@@ -1060,9 +1075,6 @@ public class DocumentsController(
         if (IsWorkflowLocked(registry))
             return Conflict(new ApiResponse<LoadingRegistryDto>(false, null,
                 "Vagonlar chiqarilgan yoki ro‘yxatdan o‘tgan yuk xatini o‘zgartirib bo‘lmaydi."));
-        registry.IsApprovedByShiftSupervisor = true;
-        registry.ShiftSupervisorApprovedAt ??= registry.PreparedAt;
-
         registry.IsEconomistApprovedWithPermit = true;
         registry.EconomistApprovedWithPermitAt ??= DateTime.UtcNow;
         registry.IsApprovedByEconomist = registry.IsEconomistApprovedWithPermit && registry.IsEconomistApprovedWithSecurity;
@@ -1085,9 +1097,6 @@ public class DocumentsController(
         if (IsWorkflowLocked(registry))
             return Conflict(new ApiResponse<LoadingRegistryDto>(false, null,
                 "Vagonlar chiqarilgan yoki ro‘yxatdan o‘tgan yuk xatini o‘zgartirib bo‘lmaydi."));
-        registry.IsApprovedByShiftSupervisor = true;
-        registry.ShiftSupervisorApprovedAt ??= registry.PreparedAt;
-
         registry.IsEconomistApprovedWithSecurity = true;
         registry.EconomistApprovedWithSecurityAt ??= DateTime.UtcNow;
         registry.IsApprovedByEconomist = registry.IsEconomistApprovedWithPermit && registry.IsEconomistApprovedWithSecurity;
@@ -1113,8 +1122,9 @@ public class DocumentsController(
         if (IsWorkflowLocked(registry))
             return Conflict(new ApiResponse<LoadingRegistryDto>(false, null,
                 "Vagonlar chiqarilgan yoki ro‘yxatdan o‘tgan yuk xatini o‘zgartirib bo‘lmaydi."));
-        registry.IsApprovedByShiftSupervisor = true;
-        registry.ShiftSupervisorApprovedAt ??= registry.PreparedAt;
+        if (registry.PreparedAt >= SequentialWorkflowStartsAt && !registry.IsApprovedByShiftSupervisor)
+            return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
+                "Yuk xati avval ICHDX smena boshlig‘i tomonidan tasdiqlanishi kerak."));
         if (!registry.IsApprovedByPermit)
             return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
                 "Avval Ruxsatnoma byurosi yuk xatini kelishishi kerak"));
@@ -1160,12 +1170,12 @@ public class DocumentsController(
         {
             TryNotifyTelegram(new TelegramStageEvent(
                 FlowTitle: "YUKLASH VA CHIQARISH",
-                StageTitle: "5. Vagonlarni tekshirib chiqarish",
+                StageTitle: "6. Vagonlarni tekshirib chiqarish",
                 DepartmentOrRole: "Qo'riqlash xizmati",
                 OperatorName: registry.SecurityApprovedByName,
                 Identifier: registry.RegistryNumber,
                 WagonCount: registry.OrderDeductedWagons > 0 ? registry.OrderDeductedWagons : ParseWagonRoutes(registry.WagonRoutesJson).Count,
-                NextStage: "6. Vagonlarni chiqarish",
+                NextStage: "7. Vagonlarni chiqarish",
                 NextDepartment: "Temir yo'l"
             ));
         }
