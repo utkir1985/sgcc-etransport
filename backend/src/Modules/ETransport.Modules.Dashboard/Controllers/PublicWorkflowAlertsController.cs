@@ -23,7 +23,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
         string StageKey,         // "w2", "registry-approve", ...
         string StageTitle,       // "Yuk xatini tasdiqlash", ...
         int PendingCount,        // 1, 2, ...
-        string VoiceText         // "Diqqat! Kirish jarayoni: Qo‘riqlash xizmati, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+        string VoiceText         // "Внимание! Входной контроль: Служба охраны, подтвердите досмотр и въезд вагонов в системе E-Transport!"
     );
 
         public record VoiceDeliveryLogRequest(
@@ -65,7 +65,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
         _broadcastTestUntil = DateTime.UtcNow.AddSeconds(duration);
         _broadcastMessage = !string.IsNullOrWhiteSpace(request?.Message)
             ? request.Message
-            : "Diqqat! Bu sinov xabari: E-Transport tizimida ovozli ogohlantirish sinovi o‘tkazilmoqda. Barcha xizmatlar o‘z bosqichlarini tekshirib ko‘rsin!";
+            : "Внимание! Проверка системы: Голосовое оповещение в системе E-Transport работает успешно!";
 
         return Ok(new ApiResponse<bool>(true, true, $"Sinov ovozli xabari {duration} soniya davomida barcha foydalanuvchilarga yuborildi"));
     }
@@ -110,7 +110,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "w2",
                 StageTitle: "Tasdiqlash va ijroga yo‘naltirish",
                 PendingCount: w2Pending.Count,
-                VoiceText: "Diqqat! Kirish jarayoni: ICHDX smena boshlig‘i, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Входной контроль: Начальник смены, подтвердите служебную записку в системе E-Transport!"
             ));
         }
 
@@ -127,7 +127,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "entry-permit",
                 StageTitle: "Vagonlarni kiritishni kelishish",
                 PendingCount: permitPending.Count,
-                VoiceText: "Diqqat! Kirish jarayoni: Ruxsatnoma byurosi, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Входной контроль: Бюро пропусков, оформите разрешение на въезд в системе E-Transport!"
             ));
         }
 
@@ -144,7 +144,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "entry-security",
                 StageTitle: "Vagonlarni tekshirish va kiritish",
                 PendingCount: securityPending.Count,
-                VoiceText: "Diqqat! Kirish jarayoni: Qo‘riqlash xizmati, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Входной контроль: Служба охраны, подтвердите досмотр и въезд вагонов в системе E-Transport!"
             ));
         }
 
@@ -162,7 +162,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "w5",
                 StageTitle: "Bo‘sh vagon tarasini tortish",
                 PendingCount: scalePending.Count,
-                VoiceText: "Diqqat! Kirish jarayoni: Tarozi operatori, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Входной контроль: Весовщик, взвесьте тару порожних вагонов в системе E-Transport!"
             ));
         }
 
@@ -185,7 +185,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "registry-approve",
                 StageTitle: "Yuk xatini tasdiqlash",
                 PendingCount: regShiftPending.Count,
-                VoiceText: "Diqqat! Chiqish jarayoni: ICHDX smena boshlig‘i, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Выходной контроль: Начальник смены, утвердите накладную в системе E-Transport!"
             ));
         }
 
@@ -202,7 +202,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "w10",
                 StageTitle: "Yuk xatini kelishish",
                 PendingCount: regPermitPending.Count,
-                VoiceText: "Diqqat! Chiqish jarayoni: Ruxsatnoma byurosi, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Выходной контроль: Бюро пропусков, согласуйте выезд вагонов в системе E-Transport!"
             ));
         }
 
@@ -219,7 +219,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "exit-security",
                 StageTitle: "Vagonlarni tekshirib chiqarish",
                 PendingCount: regSecurityPending.Count,
-                VoiceText: "Diqqat! Chiqish jarayoni: Qo‘riqlash xizmati, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Выходной контроль: Служба охраны, подтвердите досмотр и выезд вагонов в системе E-Transport!"
             ));
         }
 
@@ -236,7 +236,7 @@ public class PublicWorkflowAlertsController(AppDbContext db) : ControllerBase
                 StageKey: "exit-railway",
                 StageTitle: "Vagonlarni chiqarish",
                 PendingCount: regRailwayPending.Count,
-                VoiceText: "Diqqat! Chiqish jarayoni: Temir yo‘l sexi, siz E-Transport tizimiga kirib o‘z bosqichingizni tugating!"
+                VoiceText: "Внимание! Выходной контроль: Железнодорожный цех, оформите вывод вагонов на станцию Кенгсой!"
             ));
         }
 

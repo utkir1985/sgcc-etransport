@@ -25,7 +25,7 @@ const CHIME_B64 = "UklGRrh4AABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YZR4AAAAA
 let audioCtx: AudioContext | null = null;
 let lastAnnouncedTimes: Record<string, number> = {};
 let pendingQueuedAlert: string | null = null;
-const ANNOUNCE_COOLDOWN_MS = 3 * 60 * 1000; // 3 daqiqa qayta takrorlanish oralig'i
+const ANNOUNCE_COOLDOWN_MS = 5 * 60 * 1000; // 3 daqiqa qayta takrorlanish oralig'i
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -149,24 +149,21 @@ export async function speakText(text: string, volume = 1.0): Promise<void> {
     utterance.volume = Math.min(1.0, Math.max(0.1, volume));
 
     const voices = await getVoicesAsync();
-    
-    // Ovoz tanlash ustuvorligi:
-    // 1. O'zbek tili (uz-UZ)
-    // 2. Turk tili (tr-TR - lotin alifbosidagi o'zbekcha so'zlarni ravon va xatosiz o'qiydi)
-    // 3. Rus tili (ru-RU)
-    // 4. Standart tizim ovozi
-    const uzVoice = voices.find(v => v.lang.toLowerCase().startsWith('uz'));
-    const trVoice = voices.find(v => v.lang.toLowerCase().startsWith('tr'));
-    const ruVoice = voices.find(v => v.lang.toLowerCase().startsWith('ru'));
-    const defVoice = voices.find(v => v.default) || (voices.length > 0 ? voices[0] : null);
 
-    const chosenVoice = uzVoice || trVoice || ruVoice || defVoice;
-    if (chosenVoice) {
-      utterance.voice = chosenVoice;
-      utterance.lang = chosenVoice.lang;
+    // Rus tili uchun eng ravon, sof va rasmiy diktor ovozini tanlash
+    const ruVoice = voices.find(v => v.lang.toLowerCase().startsWith('ru')) ||
+                    voices.find(v => v.name.toLowerCase().includes('russian') || v.name.toLowerCase().includes('русск')) ||
+                    voices.find(v => v.lang.toLowerCase().startsWith('uz')) ||
+                    voices.find(v => v.default) ||
+                    (voices.length > 0 ? voices[0] : null);
+
+    if (ruVoice) {
+      utterance.voice = ruVoice;
+      utterance.lang = ruVoice.lang.toLowerCase().startsWith('ru') ? ruVoice.lang : 'ru-RU';
     } else {
-      utterance.lang = 'uz-UZ';
+      utterance.lang = 'ru-RU';
     }
+    utterance.rate = 0.92; // Rasmiy diktor tempida juda ravon va tushunarli
 
     return new Promise((resolve) => {
       let hasFinished = false;
@@ -304,13 +301,24 @@ export async function checkAndAnnouncePendingAlerts(customRole?: string): Promis
       const alertKey = `${alert.flow}:${alert.stageKey}:${alert.role}`;
       const lastTime = lastAnnouncedTimes[alertKey] || 0;
 
-      // Test xabari bo'lsa har safar darhol aytadi, normal bosqichlar esa har 3 daqiqada takrorlanadi
       const isTest = alert.stageKey.includes('test');
-      if (isTest || now - lastTime > ANNOUNCE_COOLDOWN_MS) {
+      // 1. Agar sinov xabari bo'lsa - faqat BIR MARTA aytiladi, qayta-qayta takrorlanmaydi!
+      if (isTest) {
+        if (lastTime > 0) {
+          continue; // Allaqaqachon aytilgan, boshqa aytmasin
+        }
         lastAnnouncedTimes[alertKey] = now;
         await announceAlert(alert.voiceText, settings.volume);
         void reportVoiceAlertDelivery(alert, targetRole);
-        break; // Bir vaqtda xabarlar aralashib ketmasligi uchun bittadan aytadi
+        break;
+      }
+
+      // 2. Oddiy ish bosqichlari - har 5 daqiqada bir martadan ortiq takrorlanmaydi
+      if (now - lastTime > ANNOUNCE_COOLDOWN_MS) {
+        lastAnnouncedTimes[alertKey] = now;
+        await announceAlert(alert.voiceText, settings.volume);
+        void reportVoiceAlertDelivery(alert, targetRole);
+        break;
       }
     }
 
