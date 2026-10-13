@@ -68,7 +68,7 @@ public class OrdersController(
     }
 
     [HttpPost]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.create")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> Create([FromBody] CreateMonthlyOrderRequest request)
     {
         try
@@ -96,7 +96,7 @@ public class OrdersController(
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.update")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> Update(Guid id, [FromBody] UpdateMonthlyOrderRequest request)
     {
         try
@@ -437,7 +437,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/submit-for-approval")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.submit-approval")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> SubmitForApproval(Guid id)
     {
         try
@@ -458,7 +458,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/resubmit-rejected")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.resubmit")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> ResubmitRejected(Guid id)
     {
         try
@@ -479,7 +479,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/save-accounting-review")]
-    [Authorize(Roles = $"{UserRoles.Accounting},{UserRoles.Admin}")]
+    [RequirePermission("orders.accounting-save")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> SaveAccountingReview(
         Guid id, [FromBody] SaveAccountingReviewRequest request)
     {
@@ -496,7 +496,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/finalize-accounting-review")]
-    [Authorize(Roles = $"{UserRoles.Accounting},{UserRoles.Admin}")]
+    [RequirePermission("orders.accounting-finalize")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> FinalizeAccountingReview(
         Guid id, [FromBody] SaveAccountingReviewRequest? request)
     {
@@ -531,7 +531,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/approve-deputy")]
-    [Authorize(Roles = $"{UserRoles.DeputyDirector},{UserRoles.Admin}")]
+    [RequirePermission("orders.approve-deputy")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> ApproveDeputy(Guid id)
     {
         try
@@ -548,7 +548,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/approve-dispatch")]
-    [Authorize(Roles = $"{UserRoles.DispatchSupervisor},{UserRoles.Admin}")]
+    [RequirePermission("orders.approve-dispatch")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> ApproveDispatch(Guid id)
     {
         try

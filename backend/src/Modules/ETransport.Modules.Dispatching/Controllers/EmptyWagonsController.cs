@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Infrastructure.Notifications;
 using System.Security.Claims;
 using System.Globalization;
@@ -176,7 +177,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost]
-    [Authorize(Roles = "Dispatching,Admin")]
+    [RequirePermission("empty-wagons.create")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> Create([FromBody] CreateEmptyWagonArrivalRequest request)
     {
         // Temir yo'l xabarnoma olmaydi — bo'sh vagonlarni o'zi kiritadi
@@ -261,7 +262,7 @@ public class EmptyWagonsController(
     /// RailwayInspected partiyasi ochiq bo‘lsa — yangi vagonlar shu partiyaga qo‘shiladi.
     /// </summary>
     [HttpPost("railway-intake")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("empty-wagons.create")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> CreateRailwayIntake([FromBody] RecordInspectionRequest request)
     {
         if (request.WagonCount <= 0)
@@ -817,7 +818,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/record-tare")]
-    [Authorize(Roles = "Scale,Admin")]
+    [RequirePermission("flow.tare-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> RecordTare(Guid id, [FromBody] RecordTareRequest request)
     {
         var arrival = await db.EmptyWagonArrivals
@@ -887,7 +888,7 @@ public class EmptyWagonsController(
     /// Tara tekshiruvi: vagon bo‘sh / mos — og‘irliksiz o‘tkazish (tara 1C dan chiqishda).
     /// </summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/clear-tare-check")]
-    [Authorize(Roles = "Scale,Admin")]
+    [RequirePermission("flow.tare-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ClearWagonTareCheck(
         Guid id, string wagonNumber, [FromBody] ClearWagonTareCheckRequest? request = null)
     {
@@ -932,7 +933,7 @@ public class EmptyWagonsController(
     /// Tara tekshiruvi: tanlangan (yoki barcha kutilayotgan) vagonlarni birga o‘tkazish.
     /// </summary>
     [HttpPost("{id:guid}/clear-tare-check")]
-    [Authorize(Roles = "Scale,Admin")]
+    [RequirePermission("flow.tare-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ClearWagonTareCheckBulk(
         Guid id, [FromBody] ClearWagonTareCheckBulkRequest? request = null)
     {
@@ -988,7 +989,7 @@ public class EmptyWagonsController(
     /// Brutto tekshiruvi: bitta vagonni plomba o'rnatish bosqichiga o'tkazish.
     /// </summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/clear-gross-check")]
-    [Authorize(Roles = "Scale,Railway,Admin,Warehouse,Dispatching,DispatchSupervisor")]
+    [RequirePermission("flow.gross-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ClearWagonGrossCheck(
         Guid id, string wagonNumber)
     {
@@ -1029,7 +1030,7 @@ public class EmptyWagonsController(
     /// Brutto tekshiruvi: tanlangan yoki barcha kutilayotgan vagonlarni birga plomba o'rnatish bosqichiga o'tkazish.
     /// </summary>
     [HttpPost("{id:guid}/clear-gross-check")]
-    [Authorize(Roles = "Scale,Railway,Admin,Warehouse,Dispatching,DispatchSupervisor")]
+    [RequirePermission("flow.gross-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ClearWagonGrossCheckBulk(
         Guid id, [FromBody] ClearWagonTareCheckBulkRequest? request = null)
     {
@@ -1082,7 +1083,7 @@ public class EmptyWagonsController(
 
     /// <summary>Bitta vagon tara og‘irligi — faqat tarozi operatori (ixtiyoriy / legacy; asosan 1C).</summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/tare")]
-    [Authorize(Roles = "Scale,Admin")]
+    [RequirePermission("flow.tare-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> RecordWagonTare(
         Guid id, string wagonNumber, [FromBody] RecordWagonTareRequest request)
     {
@@ -1153,7 +1154,7 @@ public class EmptyWagonsController(
     /// Qolgan vagonlar tara tekshiruvi/estakada davom etishi mumkin.
     /// </summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/return-from-tare")]
-    [Authorize(Roles = "Scale,Railway,Admin,Dispatching")]
+    [RequirePermission("flow.tare-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ReturnWagonFromTare(
         Guid id, string wagonNumber, [FromBody] ReturnWagonFromTareRequest request)
     {
@@ -1236,7 +1237,7 @@ public class EmptyWagonsController(
     /// Bu nomuvofiqlik emas: vagon yuklash oqimiga qaytadi va qayta brutto tortiladi.
     /// </summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/return-from-gross")]
-    [Authorize(Roles = "Scale,Admin")]
+    [RequirePermission("flow.gross-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ReturnWagonFromGross(
         Guid id, string wagonNumber, [FromBody] ReturnWagonFromTareRequest request)
     {
@@ -1301,7 +1302,7 @@ public class EmptyWagonsController(
     /// Yuklangan vagonlar brutto og‘irligi (Temir yo‘l tarozisi). Netto = brutto − tara.
     /// </summary>
     [HttpPost("{id:guid}/record-gross")]
-    [Authorize(Roles = "Scale,Railway,Admin")]
+    [RequirePermission("flow.gross-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> RecordGross(Guid id, [FromBody] RecordGrossRequest request)
     {
         var arrival = await db.EmptyWagonArrivals
@@ -1357,7 +1358,7 @@ public class EmptyWagonsController(
 
     /// <summary>Bitta vagon brutto og‘irligi (netto = brutto − tara).</summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/gross")]
-    [Authorize(Roles = "Scale,Railway,Admin")]
+    [RequirePermission("flow.gross-weigh")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> RecordWagonGross(
         Guid id, string wagonNumber, [FromBody] RecordWagonGrossRequest request)
     {
@@ -1414,7 +1415,7 @@ public class EmptyWagonsController(
     /// Temir yo‘l taroziboni: plomba raqamini qayd etadi va UNG tizimiga kiritadi.
     /// </summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/seal")]
-    [Authorize(Roles = "Scale,Admin")]
+    [RequirePermission("flow.seal-scale", "flow.seal-warehouse", "flow.seal-security")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> RecordWagonSeal(
         Guid id, string wagonNumber, [FromBody] RecordWagonSealRequest request)
     {
@@ -2045,7 +2046,7 @@ public class EmptyWagonsController(
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Railway,Dispatching,Admin")]
+    [RequirePermission("empty-wagons.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         var arrival = await db.EmptyWagonArrivals

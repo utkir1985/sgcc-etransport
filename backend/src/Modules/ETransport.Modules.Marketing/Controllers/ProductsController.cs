@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
 using ETransport.Modules.Marketing.Services;
@@ -23,7 +24,7 @@ public class ProductsController(ICatalogProductService productService) : Control
     }
 
     [HttpPost]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("products.create")]
     public async Task<ActionResult<ApiResponse<CatalogProductDto>>> Create([FromBody] CreateCatalogProductRequest request)
     {
         try
@@ -38,7 +39,7 @@ public class ProductsController(ICatalogProductService productService) : Control
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("products.update")]
     public async Task<ActionResult<ApiResponse<CatalogProductDto>>> Update(
         Guid id, [FromBody] UpdateCatalogProductRequest request)
     {
@@ -56,7 +57,7 @@ public class ProductsController(ICatalogProductService productService) : Control
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("products.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         var deleted = await productService.DeleteAsync(id);

@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Infrastructure.Notifications;
 using System.Data;
 using System.Security.Claims;
@@ -155,6 +156,7 @@ public class DocumentsController(
     // =========================
 
     [HttpGet("loading-registry")]
+    [RequirePermission("documents.registry.read")]
     public async Task<ActionResult<ApiResponse<List<LoadingRegistryDto>>>> GetLoadingRegistries()
     {
         var entities = await db.LoadingRegistries
@@ -441,7 +443,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.create")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> CreateLoadingRegistry([FromBody] CreateLoadingRegistryRequest request)
     {
         try
@@ -935,7 +937,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry/{id:guid}/approve-shift")]
-    [Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.Admin},{UserRoles.Economist}")]
+    [RequirePermission("documents.registry.approve-shift")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> ApproveShift(Guid id)
     {
         var registry = await db.LoadingRegistries
@@ -977,7 +979,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry/{id:guid}/approve-permit")]
-    [Authorize(Roles = $"{UserRoles.Permit},{UserRoles.Admin},{UserRoles.Economist},{UserRoles.Dispatching}")]
+    [RequirePermission("documents.registry.approve-permit")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> ApprovePermit(Guid id, [FromBody] ApprovePermitRequest request)
     {
         var registry = await db.LoadingRegistries
@@ -1050,7 +1052,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry/{id:guid}/approve-economist-permit")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.approve-economist")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> ApproveEconomistWithPermit(Guid id, [FromBody] ApproveEconomistWithPermitRequest request)
     {
         var registry = await db.LoadingRegistries.Include(r => r.EmptyWagonArrival).FirstOrDefaultAsync(r => r.Id == id);
@@ -1075,7 +1077,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry/{id:guid}/approve-economist-security")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.approve-economist")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> ApproveEconomistWithSecurity(Guid id, [FromBody] ApproveEconomistWithSecurityRequest request)
     {
         var registry = await db.LoadingRegistries.Include(r => r.EmptyWagonArrival).FirstOrDefaultAsync(r => r.Id == id);
@@ -1100,7 +1102,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry/{id:guid}/approve-security")]
-    [Authorize(Roles = $"{UserRoles.Security},{UserRoles.Admin},{UserRoles.Economist},{UserRoles.Dispatching}")]
+    [RequirePermission("documents.registry.approve-security")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> ApproveSecurity(Guid id, [FromBody] ApproveSecurityRequest request)
     {
         var registry = await db.LoadingRegistries.Include(r => r.EmptyWagonArrival).FirstOrDefaultAsync(r => r.Id == id);
@@ -1172,7 +1174,7 @@ public class DocumentsController(
     }
 
     [HttpPut("loading-registry/{id:guid}")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.update")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> UpdateLoadingRegistry(
         Guid id,
         [FromBody] UpdateLoadingRegistryRequest request)
@@ -1622,7 +1624,7 @@ public class DocumentsController(
     }
 
     [HttpDelete("loading-registry/{id:guid}")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.delete")]
     public async Task<ActionResult<ApiResponse<bool>>> DeleteLoadingRegistry(Guid id)
     {
         var registry = await db.LoadingRegistries.Include(r => r.EmptyWagonArrival).FirstOrDefaultAsync(r => r.Id == id);
@@ -1752,7 +1754,7 @@ public class DocumentsController(
     }
 
     [HttpPost("loading-registry/{id:guid}/send-to-external")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.send-external")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> SendToExternal(Guid id, [FromBody] SendToExternalSystemsRequest request)
     {
         var registry = await db.LoadingRegistries.Include(r => r.EmptyWagonArrival).FirstOrDefaultAsync(r => r.Id == id);
@@ -1821,7 +1823,7 @@ public class DocumentsController(
     /// ICHDX iqtisodchisi: kelishilgan yuk xatini Temir yo‘lga topshiradi.
     /// </summary>
     [HttpPost("loading-registry/{id:guid}/handover")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.handover")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> HandoverToMachinist(Guid id, [FromBody] HandoverToMachinistRequest request)
     {
         var registry = await db.LoadingRegistries
@@ -1846,7 +1848,7 @@ public class DocumentsController(
     /// Temir yo‘l: iqtisodchi topshirgan yuk xati bo‘yicha vagonlarni Kengsoygacha olib chiqadi.
     /// </summary>
     [HttpPost("loading-registry/{id:guid}/exit-to-kengsoy")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("documents.registry.handover")]
     public async Task<ActionResult<ApiResponse<LoadingRegistryDto>>> ExitToKengsoy(Guid id, [FromBody] HandoverToMachinistRequest request)
     {
         var registry = await db.LoadingRegistries

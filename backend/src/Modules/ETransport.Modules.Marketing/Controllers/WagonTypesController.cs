@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
 using ETransport.Modules.Marketing.Services;
@@ -20,7 +21,7 @@ public class WagonTypesController(ICatalogWagonTypeService wagonTypeService) : C
     }
 
     [HttpPost]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("wagon-types.create")]
     public async Task<ActionResult<ApiResponse<CatalogWagonTypeDto>>> Create([FromBody] CreateCatalogWagonTypeRequest request)
     {
         try
@@ -35,7 +36,7 @@ public class WagonTypesController(ICatalogWagonTypeService wagonTypeService) : C
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("wagon-types.update")]
     public async Task<ActionResult<ApiResponse<CatalogWagonTypeDto>>> Update(Guid id, [FromBody] UpdateCatalogWagonTypeRequest request)
     {
         try
@@ -51,7 +52,7 @@ public class WagonTypesController(ICatalogWagonTypeService wagonTypeService) : C
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("wagon-types.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         var success = await wagonTypeService.DeleteAsync(id);

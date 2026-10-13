@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
 using ETransport.Modules.Marketing.Services;
@@ -16,7 +17,7 @@ public class ContractorsController(IContractorService contractorService) : Contr
         Ok(new ApiResponse<List<ContractorDto>>(true, await contractorService.GetAllAsync(logisticsType)));
 
     [HttpPost]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [RequirePermission("contractors.create")]
     public async Task<ActionResult<ApiResponse<ContractorDto>>> Create([FromBody] CreateContractorRequest request)
     {
         try
@@ -31,7 +32,7 @@ public class ContractorsController(IContractorService contractorService) : Contr
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [RequirePermission("contractors.update")]
     public async Task<ActionResult<ApiResponse<ContractorDto>>> Update(Guid id, [FromBody] UpdateContractorRequest request)
     {
         try
@@ -46,7 +47,7 @@ public class ContractorsController(IContractorService contractorService) : Contr
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [RequirePermission("contractors.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         try

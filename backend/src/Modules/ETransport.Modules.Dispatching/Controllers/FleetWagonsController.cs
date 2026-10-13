@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
 using ETransport.Core.Entities;
@@ -81,7 +82,7 @@ public class FleetWagonsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("fleet-wagons.create")]
     public async Task<ActionResult<ApiResponse<CatalogFleetWagonDto>>> Create([FromBody] CreateCatalogFleetWagonRequest request)
     {
         try
@@ -126,7 +127,7 @@ public class FleetWagonsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("fleet-wagons.update")]
     public async Task<ActionResult<ApiResponse<CatalogFleetWagonDto>>> Update(
         Guid id,
         [FromBody] UpdateCatalogFleetWagonRequest request)
@@ -153,7 +154,7 @@ public class FleetWagonsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("import")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("fleet-wagons.create")]
     public async Task<ActionResult<ApiResponse<FleetWagonImportResultDto>>> Import([FromBody] FleetWagonImportRequest request)
     {
         if (request.Rows is null || request.Rows.Count == 0)
@@ -228,7 +229,7 @@ public class FleetWagonsController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("fleet-wagons.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         var item = await db.CatalogFleetWagons.FirstOrDefaultAsync(w => w.Id == id);

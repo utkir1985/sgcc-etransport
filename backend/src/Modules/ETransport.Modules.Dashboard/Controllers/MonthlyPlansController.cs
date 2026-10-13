@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using System.Security.Claims;
 using ETransport.Core.DTOs;
 using ETransport.Core.Entities;
@@ -260,7 +261,7 @@ public class MonthlyPlansController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [RequirePermission("plans.create")]
     public async Task<ActionResult<ApiResponse<MonthlyPlan>>> CreatePlan([FromBody] CreateMonthlyPlanDto dto)
     {
         if (dto.Year < 2020 || dto.Year > 2050) return BadRequest(new ApiResponse<MonthlyPlan>(false, null, "Yil noto'g'ri"));
@@ -289,7 +290,7 @@ public class MonthlyPlansController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [RequirePermission("plans.update")]
     public async Task<ActionResult<ApiResponse<MonthlyPlan>>> UpdatePlan(Guid id, [FromBody] UpdateMonthlyPlanDto dto)
     {
         var plan = await db.MonthlyPlans.FindAsync(id);
@@ -307,7 +308,7 @@ public class MonthlyPlansController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [RequirePermission("plans.delete")]
     public async Task<ActionResult<ApiResponse<bool>>> DeletePlan(Guid id)
     {
         var plan = await db.MonthlyPlans.FindAsync(id);

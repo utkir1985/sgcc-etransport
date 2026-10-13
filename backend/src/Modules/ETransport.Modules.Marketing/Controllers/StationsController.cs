@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
 using ETransport.Modules.Marketing.Services;
@@ -22,7 +23,7 @@ public class StationsController(ICatalogStationService stationService) : Control
     }
 
     [HttpPost]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("stations.create")]
     public async Task<ActionResult<ApiResponse<CatalogStationDto>>> Create([FromBody] CreateCatalogStationRequest request)
     {
         try
@@ -37,7 +38,7 @@ public class StationsController(ICatalogStationService stationService) : Control
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("stations.update")]
     public async Task<ActionResult<ApiResponse<CatalogStationDto>>> Update(Guid id, [FromBody] UpdateCatalogStationRequest request)
     {
         try
@@ -53,7 +54,7 @@ public class StationsController(ICatalogStationService stationService) : Control
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = UserRoles.Admin)]
+    [RequirePermission("stations.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         var success = await stationService.DeleteAsync(id);

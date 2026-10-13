@@ -219,7 +219,8 @@ function useRbacStoreState() {
 
   // Admin o'zgarishlarini serverga darhol yozish
   const saveStateToServer = useCallback((nextState: RbacState) => {
-    if (user?.role !== 'Admin') return;
+    const isAdmin = user?.role === 'Admin' || user?.role?.toLowerCase() === 'admin' || user?.role === 'Administrator';
+    if (!isAdmin) return;
     setSyncing(true);
     setSyncError('');
     api.saveRbac(nextState)

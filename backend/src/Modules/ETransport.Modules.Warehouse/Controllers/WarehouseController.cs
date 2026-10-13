@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Infrastructure.Notifications;
 using System.Security.Claims;
 using System.Text.Json;
@@ -726,12 +727,12 @@ public class WarehouseController(
         });
     }
     [HttpGet("loading")]
-    [Authorize(Roles = "Warehouse,Admin,Dispatching")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<List<LoadingTaskDto>>>> GetLoadingTasks() =>
         Ok(new ApiResponse<List<LoadingTaskDto>>(true, await loadingService.GetLoadingQueueAsync()));
 
     [HttpPost("loading/internal-wagons")]
-    [Authorize(Roles = "Warehouse,Admin,Dispatching")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> AddInternalWagons([FromBody] AddInternalWagonsRequest request)
     {
         try
@@ -747,7 +748,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/bulk/start")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<string>>> StartBulk([FromBody] BulkLoadingRequest request)
     {
         var ids = (request.UnitIds ?? []).Distinct().ToList();
@@ -798,7 +799,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/bulk/complete")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<string>>> CompleteBulk([FromBody] BulkLoadingRequest request)
     {
         var ids = (request.UnitIds ?? []).Distinct().ToList();
@@ -874,7 +875,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/bulk/send-to-scale")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<string>>> SendToScaleBulk([FromBody] BulkLoadingRequest request)
     {
         var ids = (request.UnitIds ?? []).Distinct().ToList();
@@ -926,7 +927,7 @@ public class WarehouseController(
         Ok(new ApiResponse<List<LoadingTaskDto>>(true, await loadingService.GetEconomistNotificationsAsync()));
 
     [HttpPost("loading/{id:guid}/start")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> StartLoading(Guid id, [FromBody] LoadingStartRequest? request)
     {
         try
@@ -943,7 +944,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/{id:guid}/wagons/{wagonNumber}/start")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> StartWagonLoading(
         Guid id, string wagonNumber, [FromBody] LoadingStartRequest? request)
     {
@@ -961,7 +962,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/{id:guid}/complete")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> CompleteLoading(Guid id, [FromBody] LoadingCompleteRequest request)
     {
         try
@@ -991,7 +992,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/{id:guid}/wagons/{wagonNumber}/complete")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> CompleteWagonLoading(
         Guid id, string wagonNumber, [FromBody] LoadingCompleteRequest request)
     {
@@ -1022,7 +1023,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/{id:guid}/wagons/{wagonNumber}/send-to-scale")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> SendWagonToScale(
         Guid id, string wagonNumber, [FromBody] LoadingCompleteRequest? request)
     {
@@ -1040,7 +1041,7 @@ public class WarehouseController(
     }
 
     [HttpPost("loading/{id:guid}/wagons/{wagonNumber}/return")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> ReturnWagonLoading(
         Guid id, string wagonNumber, [FromBody] LoadingReturnRequest request)
     {
