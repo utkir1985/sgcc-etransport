@@ -6,6 +6,7 @@ import {
   Minus,
   Pencil,
   Plus,
+  FileSpreadsheet,
   RotateCcw,
   Search,
   Shield,
@@ -13,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { exportSheet, todayStamp, type SheetCell } from '../../../shared/utils/excelExport';
 import {
   buildObjectModel,
   RESOURCE_EXPLANATIONS,
@@ -1147,6 +1149,46 @@ export function RolesCrudPanel() {
 
   const roleMeta = state.roles.find(r => r.key === role) ?? state.roles[0];
   const deletingAction = state.actions.find(a => a.key === deleteKey);
+  const exportToExcel = () => {
+    const headers: SheetCell[] = [
+      '№',
+      'Jarayon / Obyekt',
+      'Nima uchun kerak? (Vazifasi)',
+      'Yaratish (C)',
+      'Ko‘rish (R)',
+      'Tahrirlash (U)',
+      'O‘chirish (D)',
+      'Tasdiqlash zanjiri',
+      'Hammasi',
+    ];
+    const rows: SheetCell[][] = [headers];
+    tableObjects.forEach((o, idx) => {
+      const purpose = RESOURCE_EXPLANATIONS[o.key] ?? '';
+      const c = Array.isArray(o.ops.C?.roles) && o.ops.C.roles.includes(role) ? 'Ha' : 'Yo‘q';
+      const r = Array.isArray(o.ops.R?.roles) && o.ops.R.roles.includes(role) ? 'Ha' : 'Yo‘q';
+      const u = Array.isArray(o.ops.U?.roles) && o.ops.U.roles.includes(role) ? 'Ha' : 'Yo‘q';
+      const d = Array.isArray(o.ops.D?.roles) && o.ops.D.roles.includes(role) ? 'Ha' : 'Yo‘q';
+      const validOps = Object.values(o.ops ?? {}).filter(Boolean);
+      const total = validOps.length + (o.actions ?? []).length;
+      const granted = validOps.filter(b => Array.isArray(b?.roles) && b.roles.includes(role)).length + (o.actions ?? []).filter(a => Array.isArray(a?.roles) && a.roles.includes(role)).length;
+      const allOn = total > 0 && granted === total ? 'Ha' : 'Yo‘q';
+      const wf = o.actions.map(a => `${a.label}: ${Array.isArray(a.roles) && a.roles.includes(role) ? 'Faol' : 'O‘chiq'}`).join('; ');
+      rows.push([
+        idx + 1,
+        o.label,
+        purpose,
+        c,
+        r,
+        u,
+        d,
+        wf || '-',
+        allOn,
+      ]);
+    });
+    exportSheet(`Huquqlar_${role}_${todayStamp()}`, `${role.slice(0, 25)} huquqlari`, rows);
+    flash(`"${roleMeta.label}" huquqlari Excel fayliga yuklab olindi`);
+  };
+
 
   const flash = (text: string) => { setMessage(text); setTimeout(() => setMessage(''), 3000); };
 
@@ -1249,6 +1291,14 @@ export function RolesCrudPanel() {
         <div className="flex items-center gap-2.5">
           <button
             type="button"
+            className="btn-secondary !h-10 !py-0 !px-4 !text-xs !font-bold !rounded-xl flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30"
+            onClick={exportToExcel}
+            title="Ushbu jadvalni Excel (.xlsx) faylida yuklab olish"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Excel yuklash
+          </button>
+          <button
+            type="button"
             className="btn-secondary !h-10 !py-0 !px-4 !text-xs !font-semibold !rounded-xl flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all"
             onClick={() => setResetConfirmOpen(true)}
           >
@@ -1285,24 +1335,25 @@ export function RolesCrudPanel() {
         )}
       </div>
 
-      {/* Asosiy Jarayonlar va CRUD Jadvali */}
-      <div className="ui-card overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-2xl">
+      {/* Asosiy Jarayonlar va CRUD Jadvali — Excel uslubidagi to‘liq setkali jadval */}
+      <div className="ui-card overflow-hidden border border-slate-300 dark:border-slate-700 shadow-sm rounded-xl">
         <div className="admin-table-scroll">
-          <table className="admin-table">
+          <table className="w-full border-collapse border border-slate-300 dark:border-slate-700 text-xs">
             <thead>
-              <tr className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                <th style={{ minWidth: 260 }} className="py-3.5 px-4 text-left text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Jarayon / Obyekt</th>
-                <th style={{ minWidth: 280 }} className="py-3.5 px-4 text-left text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Nima uchun kerak? (Vazifasi)</th>
+              <tr className="bg-slate-200/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700">
+                <th className="py-2.5 px-2 text-center text-xs font-bold uppercase w-12 border-r border-slate-300 dark:border-slate-700">№</th>
+                <th style={{ minWidth: 240 }} className="py-2.5 px-3.5 text-left text-xs font-bold uppercase tracking-wider border-r border-slate-300 dark:border-slate-700">Jarayon / Obyekt</th>
+                <th style={{ minWidth: 280 }} className="py-2.5 px-3.5 text-left text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 border-r border-slate-300 dark:border-slate-700">Nima uchun kerak? (Vazifasi)</th>
                 {TABLE_OPS.map(op => (
-                  <th key={op} className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ width: 92 }}>{CRUD_OP_LABEL[op]}</th>
+                  <th key={op} className="text-center py-2.5 px-2 text-xs font-bold uppercase border-r border-slate-300 dark:border-slate-700 w-20">{CRUD_OP_LABEL[op]}</th>
                 ))}
-                <th className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ minWidth: 150 }}>Tasdiqlash zanjiri</th>
-                <th className="text-center py-3.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300" style={{ width: 85 }}>Hammasi</th>
+                <th className="text-center py-2.5 px-2 text-xs font-bold uppercase border-r border-slate-300 dark:border-slate-700 w-36">Tasdiqlash zanjiri</th>
+                <th className="text-center py-2.5 px-2 text-xs font-bold uppercase w-24">Hammasi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+            <tbody>
               {tableObjects.length === 0 ? (
-                <tr><td colSpan={TABLE_OPS.length + 4} className="text-center py-12 text-sm text-slate-400">Mos jarayon topilmadi</td></tr>
+                <tr><td colSpan={TABLE_OPS.length + 5} className="text-center py-12 text-sm text-slate-400">Mos jarayon topilmadi</td></tr>
               ) : tableObjects.map((o, idx) => {
                 const Icon = o.icon;
                 const iconStyle = MODULE_ICON_STYLE[o.key] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
@@ -1315,58 +1366,61 @@ export function RolesCrudPanel() {
                 const isOpen = expanded.has(o.key);
                 const zebraBg = idx % 2 === 0
                   ? 'bg-white dark:bg-slate-900'
-                  : 'bg-slate-100/90 dark:bg-slate-800/60 border-y border-slate-200/50 dark:border-slate-700/50';
+                  : 'bg-slate-100/80 dark:bg-slate-800/50';
                 const purpose = RESOURCE_EXPLANATIONS[o.key] ?? '';
                 return (
                   <Fragment key={o.key}>
-                    <tr className={`${zebraBg} hover:bg-blue-50/70 dark:hover:bg-slate-800/90 transition-colors group`}>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${iconStyle}`}>
-                            <Icon className="w-4.5 h-4.5" strokeWidth={2} />
+                    <tr className={`${zebraBg} hover:bg-blue-50/70 dark:hover:bg-slate-800/90 transition-colors border-b border-slate-300 dark:border-slate-700 group`}>
+                      <td className="py-2 px-2 text-center font-bold text-xs text-slate-500 dark:text-slate-400 border-r border-slate-300 dark:border-slate-700">
+                        {idx + 1}
+                      </td>
+                      <td className="py-2 px-3 border-r border-slate-300 dark:border-slate-700">
+                        <div className="flex items-center gap-2.5">
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-2xs ${iconStyle}`}>
+                            <Icon className="w-4 h-4" strokeWidth={2} />
                           </span>
-                          <span className="min-w-0">
-                            <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{o.label}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{o.label}</span>
                             <ApiNote description={firstDesc} />
                           </span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-left">
-                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
+                      <td className="py-2 px-3.5 text-left border-r border-slate-300 dark:border-slate-700">
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-snug">
                           {purpose || 'Korxonaning asosiy operativ biznes jarayoni'}
                         </p>
                       </td>
                       {TABLE_OPS.map(op => (
-                        <td key={op} className="text-center py-3.5">
+                        <td key={op} className="text-center py-2 px-1 border-r border-slate-300 dark:border-slate-700">
                           <CrudToggle binding={o.ops[op]} role={role} onToggle={k => toggleActionRole(k, role)} />
                         </td>
                       ))}
-                      <td className="text-center py-3.5">
+                      <td className="text-center py-2 px-2 border-r border-slate-300 dark:border-slate-700">
                         {o.actions.length === 0 ? (
-                          <span className="text-slate-300 dark:text-slate-600 font-bold select-none text-sm">–</span>
+                          <span className="text-slate-300 dark:text-slate-600 font-bold select-none text-xs">–</span>
                         ) : (
                           <button
                             type="button"
-                            className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold transition-all ${
                               baGranted > 0
-                                ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 dark:border-blue-800 dark:from-blue-950/60 dark:to-indigo-950/60 dark:text-blue-300 shadow-2xs'
-                                : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-100'
+                                ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/60 dark:text-blue-300 shadow-2xs'
+                                : 'border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-100'
                             }`}
                             onClick={() => toggleExpand(o.key)}
                           >
-                            <span className={`w-2 h-2 rounded-full ${baGranted > 0 ? 'bg-blue-600 animate-pulse' : 'bg-slate-400'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${baGranted > 0 ? 'bg-blue-600' : 'bg-slate-400'}`} />
                             <span>{baGranted}/{o.actions.length} bosqich</span>
-                            {isOpen ? <ChevronDown className="w-4 h-4 text-blue-600" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                            {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-blue-600" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
                           </button>
                         )}
                       </td>
-                      <td className="text-center py-3.5">
+                      <td className="text-center py-2 px-2">
                         <button
                           type="button"
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all shadow-2xs ${
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all shadow-2xs ${
                             allOn
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:border-emerald-800 dark:text-emerald-300'
-                              : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:bg-slate-50 hover:border-slate-300'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:border-emerald-700 dark:text-emerald-300'
+                              : 'bg-white text-slate-600 border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:bg-slate-50 hover:border-slate-400'
                           }`}
                           onClick={() => setObjectAll(o, !allOn)}
                           title={allOn ? 'Barchasini o‘chirish' : 'Barchasini yoqish'}
@@ -1376,8 +1430,8 @@ export function RolesCrudPanel() {
                       </td>
                     </tr>
                     {isOpen && o.actions.length > 0 && (
-                      <tr className="bg-slate-50/80 dark:bg-slate-900/60">
-                        <td colSpan={TABLE_OPS.length + 4} className="px-5 py-4.5 border-y border-slate-200/80 dark:border-slate-800/80 shadow-inner">
+                      <tr className="bg-blue-50/30 dark:bg-slate-900/60 border-b border-slate-300 dark:border-slate-700">
+                        <td colSpan={TABLE_OPS.length + 5} className="px-5 py-4 border-t border-slate-300 dark:border-slate-700 shadow-inner">
                           <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3.5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-xs" />
