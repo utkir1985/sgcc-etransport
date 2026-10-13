@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.DTOs;
 using ETransport.Core.Entities;
 using ETransport.Infrastructure.Data;
@@ -13,7 +14,7 @@ namespace ETransport.Modules.GateScales.Controllers;
 public class GateScalesController(AppDbContext db) : ControllerBase
 {
     [HttpGet("weighing")]
-    [Authorize(Roles = "Scale,Railway,Security,Economist,Admin,Dispatching,DispatchSupervisor")]
+    [RequirePermission("gate.weighing.read", "flow.tare-weigh", "flow.gross-weigh", "documents.registry.read")]
     public async Task<ActionResult<ApiResponse<object>>> WeighingQueue()
     {
         var arrivals = await db.EmptyWagonArrivals
@@ -133,7 +134,7 @@ public class GateScalesController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("gate/status")]
-    [Authorize(Roles = "Security,Admin")]
+    [RequirePermission("gate.status.read")]
     public ActionResult<ApiResponse<object>> GateStatus() =>
         Ok(new ApiResponse<object>(true, new { gate = "Chiqish nazorati", status = "Ochiq", message = "ANPR/RFID — faol" }));
 }

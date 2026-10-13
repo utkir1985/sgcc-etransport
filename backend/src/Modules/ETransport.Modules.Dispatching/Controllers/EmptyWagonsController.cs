@@ -489,7 +489,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/entry-permit/approve")]
-    [Authorize(Roles = "Permit,Security,Admin")]
+    [RequirePermission("empty-wagons.permit-agree", "empty-wagons.security-inspect")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ApproveEntryPermit(
         Guid id, [FromBody] ApproveEntryPermitRequest request)
     {
@@ -666,7 +666,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/confirm-preparation")]
-    [Authorize(Roles = "Marketing,Warehouse,Security,Railway,Dispatching,Admin")]
+    [RequirePermission("empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ConfirmPreparation(Guid id, [FromBody] ConfirmPreparationRequest request)
     {
         var arrival = await db.EmptyWagonArrivals
@@ -694,7 +694,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/update-stage")]
-    [Authorize(Roles = "Railway,Security,Scale,Admin")]
+    [RequirePermission("empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> UpdateStage(Guid id, [FromBody] UpdateStageRequest request)
     {
         var arrival = await db.EmptyWagonArrivals
@@ -1547,7 +1547,7 @@ public class EmptyWagonsController(
     /// Plomba o‘rnatish tasdiqlari: Tarozibon (1), ICHDX iqtisodchisi (2), Qo‘riqlash xizmati (3).
     /// </summary>
     [HttpPost("{id:guid}/wagons/{wagonNumber}/seal/confirm")]
-    [Authorize(Roles = "Scale,Economist,Security,Admin")]
+    [RequirePermission("flow.seal-warehouse", "flow.seal-scale", "flow.seal-security")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> ConfirmWagonSeal(
         Guid id, string wagonNumber, [FromBody] ConfirmWagonSealRequest? request)
     {
@@ -1694,7 +1694,7 @@ public class EmptyWagonsController(
     }
 
     [HttpPost("{id:guid}/record-inspection")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> RecordInspection(Guid id, [FromBody] RecordInspectionRequest request)
     {
         if (request.WagonCount <= 0)
@@ -1775,7 +1775,7 @@ public class EmptyWagonsController(
     /// Temir yo‘l: vagon ma’lumotini tahrirlash (ICHDX oldidan yoki qo‘riqlashdan qaytganda).
     /// </summary>
     [HttpPut("{arrivalId:guid}/units/{unitId:guid}")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> UpdateUnit(
         Guid arrivalId,
         Guid unitId,
@@ -1854,7 +1854,7 @@ public class EmptyWagonsController(
     /// Temir yo‘l: mavjud partiyaga yangi vagon qo‘shish.
     /// </summary>
     [HttpPost("{arrivalId:guid}/units")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("empty-wagons.create", "empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<EmptyWagonArrivalDto>>> CreateUnit(
         Guid arrivalId,
         [FromBody] UpdateEmptyWagonUnitRequest request)
@@ -1934,7 +1934,7 @@ public class EmptyWagonsController(
     /// Oxirgi vagon o‘chirilsa — partiya ham o‘chiriladi.
     /// </summary>
     [HttpDelete("{arrivalId:guid}/units/{unitId:guid}")]
-    [Authorize(Roles = "Railway,Admin,Dispatching")]
+    [RequirePermission("empty-wagons.delete")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteUnit(Guid arrivalId, Guid unitId)
     {
         var arrival = await db.EmptyWagonArrivals

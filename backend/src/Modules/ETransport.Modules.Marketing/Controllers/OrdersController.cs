@@ -270,7 +270,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/attachments")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.update")]
     [RequestSizeLimit(MaxAttachmentBytes + 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxAttachmentBytes + 1024 * 1024)]
     public async Task<ActionResult<ApiResponse<OrderAttachmentDto>>> UploadAttachment(Guid id, IFormFile? file)
@@ -379,7 +379,7 @@ public class OrdersController(
     }
 
     [HttpDelete("{id:guid}/attachments/{attachmentId:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.update")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteAttachment(Guid id, Guid attachmentId)
     {
         var attachment = await db.OrderAttachments
@@ -514,7 +514,7 @@ public class OrdersController(
     }
 
     [HttpPost("{id:guid}/submit-to-dispatch")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin},{UserRoles.DispatchSupervisor}")]
+    [RequirePermission("orders.submit-dispatch")]
     public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> SubmitToDispatch(Guid id)
     {
         try

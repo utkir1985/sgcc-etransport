@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.DTOs;
 using ETransport.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,8 @@ namespace ETransport.Modules.Railway.Controllers;
 
 [ApiController]
 [Route("api/railway")]
-[Authorize(Roles = "Railway,Admin")]
+[Authorize]
+[RequirePermission("empty-wagons.read", "empty-wagons.update")]
 public class RailwayController(AppDbContext db) : ControllerBase
 {
     [HttpGet("wagons")]

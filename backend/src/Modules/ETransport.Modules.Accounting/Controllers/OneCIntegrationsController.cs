@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using ETransport.Core.DTOs;
@@ -63,7 +64,8 @@ public record OneCManualSealRequest(
 
 [ApiController]
 [Route("api/integrations/1c")]
-[Authorize(Roles = "Admin,Scale,Economist,Security,Dispatching,DispatchSupervisor")]
+[Authorize]
+[RequirePermission("integrations.1c.sync")]
 public class OneCIntegrationsController(
     AppDbContext db,
     IOneCEmptyWagonSyncService syncService,
@@ -157,7 +159,7 @@ public class OneCIntegrationsController(
     /// </summary>
     [HttpPost("weighings/manual-seal")]
     [HttpPost("/api/1c/weighings/manual-seal")]
-    [Authorize(Roles = "Admin,Scale")]
+    [RequirePermission("integrations.1c.manual-seal")]
     public async Task<ActionResult<ApiResponse<object>>> SetManualSeal(
         [FromBody] OneCManualSealRequest request,
         CancellationToken cancellationToken)

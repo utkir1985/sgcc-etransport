@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.DTOs;
 using ETransport.Core.Entities;
 using ETransport.Infrastructure.Data;
@@ -48,7 +49,7 @@ public class ContainersController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("lookup")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("containers.read")]
     public async Task<ActionResult<ApiResponse<object>>> Lookup([FromQuery] string number)
     {
         var normalized = NormalizeContainerNumber(number);
@@ -67,7 +68,7 @@ public class ContainersController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("containers.create")]
     public async Task<ActionResult<ApiResponse<CatalogContainerDto>>> Create([FromBody] CreateCatalogContainerRequest request)
     {
         try
@@ -106,7 +107,7 @@ public class ContainersController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("containers.update")]
     public async Task<ActionResult<ApiResponse<CatalogContainerDto>>> Update(
         Guid id,
         [FromBody] UpdateCatalogContainerRequest request)
@@ -139,7 +140,7 @@ public class ContainersController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("import")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("containers.create")]
     public async Task<ActionResult<ApiResponse<ContainerImportResultDto>>> Import([FromBody] ContainerImportRequest request)
     {
         if (request.Rows is null || request.Rows.Count == 0)
@@ -203,7 +204,7 @@ public class ContainersController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("containers.delete")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         var item = await db.CatalogContainers.FirstOrDefaultAsync(c => c.Id == id);

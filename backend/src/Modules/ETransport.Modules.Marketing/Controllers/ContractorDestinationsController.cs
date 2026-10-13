@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
 using ETransport.Modules.Marketing.Services;
@@ -19,7 +20,7 @@ public class ContractorDestinationsController(IContractorDestinationService dest
             await destinationService.GetByContractorAsync(logisticsType, contractorName)));
 
     [HttpPost]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [RequirePermission("contractors.update")]
     public async Task<ActionResult<ApiResponse<ContractorDestinationDto>>> Create(
         [FromBody] CreateContractorDestinationRequest request)
     {
@@ -35,7 +36,7 @@ public class ContractorDestinationsController(IContractorDestinationService dest
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Marketing},{UserRoles.Admin}")]
+    [RequirePermission("contractors.update")]
     public async Task<ActionResult<ApiResponse<object>>> Delete(Guid id)
     {
         try

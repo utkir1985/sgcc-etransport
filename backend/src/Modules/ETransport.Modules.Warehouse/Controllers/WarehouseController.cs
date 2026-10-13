@@ -922,7 +922,7 @@ public class WarehouseController(
     }
 
     [HttpGet("economist-notifications")]
-    [Authorize(Roles = "Economist,Admin,Dispatching,DispatchSupervisor")]
+    [RequirePermission("warehouse.notifications.read", "documents.registry.read", "flow.loading")]
     public async Task<ActionResult<ApiResponse<List<LoadingTaskDto>>>> GetEconomistNotifications() =>
         Ok(new ApiResponse<List<LoadingTaskDto>>(true, await loadingService.GetEconomistNotificationsAsync()));
 
@@ -1061,7 +1061,7 @@ public class WarehouseController(
 
 
     [HttpPost("loading/{id:guid}/wagons/{wagonNumber}/rollback")]
-    [Authorize(Roles = "Admin")]
+    [RequirePermission("warehouse.loading.rollback")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> RollbackWagonLoading(
         Guid id, string wagonNumber, [FromBody] LoadingRollbackRequest request)
     {
@@ -1080,7 +1080,7 @@ public class WarehouseController(
     }
 
     [HttpPut("loading/{id:guid}/wagons/{wagonNumber}")]
-    [Authorize(Roles = "Warehouse,Admin")]
+    [RequirePermission("flow.seal-edit", "flow.loading")]
     public async Task<ActionResult<ApiResponse<LoadingTaskDto>>> EditWagonLoading(
         Guid id, string wagonNumber, [FromBody] LoadingWagonEditRequest request)
     {
@@ -1099,7 +1099,7 @@ public class WarehouseController(
     }
 
     [HttpGet("loading/units/{unitId:guid}/edit-history")]
-    [Authorize(Roles = "Warehouse,Admin,Dispatching,DispatchSupervisor")]
+    [RequirePermission("warehouse.history.read", "flow.loading")]
     public async Task<ActionResult<ApiResponse<object>>> GetWagonEditHistory(Guid unitId)
     {
         var rows = await db.AuditLogs.AsNoTracking()

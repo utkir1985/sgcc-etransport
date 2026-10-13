@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using ETransport.Core.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,8 @@ namespace ETransport.Modules.Accounting.Controllers;
 
 [ApiController]
 [Route("api/accounting")]
-[Authorize(Roles = "Accounting,Admin")]
+[Authorize]
+[RequirePermission("orders.accounting-save", "orders.read")]
 public class AccountingController : ControllerBase
 {
     [HttpGet("invoices")]

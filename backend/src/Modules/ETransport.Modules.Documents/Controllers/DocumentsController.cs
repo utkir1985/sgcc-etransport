@@ -135,7 +135,7 @@ public class DocumentsController(
         ?? "Foydalanuvchi";
 
     [HttpGet("registry")]
-    [Authorize(Roles = "Permit,Security,Economist,Admin")]
+    [RequirePermission("documents.registry.read")]
     public async Task<ActionResult<ApiResponse<List<ShippingRegistryDto>>>> GetRegistries()
     {
         var list = await db.ShippingRegistries.OrderByDescending(r => r.PreparedAt)
@@ -146,7 +146,7 @@ public class DocumentsController(
     }
 
     [HttpPost("registry")]
-    [Authorize(Roles = "Economist,Admin")]
+    [RequirePermission("documents.registry.create")]
     public ActionResult<ApiResponse<object>> CreateRegistry([FromBody] object request) =>
         Ok(new ApiResponse<object>(true, new { message = "Yuk xati yaratish — e-nakl integratsiyasi keyingi bosqichda" }));
 
@@ -187,7 +187,7 @@ public class DocumentsController(
     }
 
     [HttpPost("defect-act/{unitId:guid}")]
-    [Authorize(Roles = $"{UserRoles.Railway},{UserRoles.Warehouse},{UserRoles.Admin}")]
+    [RequirePermission("empty-wagons.defect-act", "flow.seal-edit")]
     [RequestSizeLimit(MaxDefectActBytes + 1024 * 1024)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxDefectActBytes + 1024 * 1024)]
     public async Task<ActionResult<ApiResponse<object>>> UploadDefectAct(Guid unitId, IFormFile? file)
@@ -278,7 +278,7 @@ public class DocumentsController(
     }
 
     [HttpPost("defect-act/{unitId:guid}/issue")]
-    [Authorize(Roles = $"{UserRoles.Railway},{UserRoles.Warehouse},{UserRoles.Dispatching},{UserRoles.DispatchSupervisor},{UserRoles.Economist},{UserRoles.Admin}")]
+    [RequirePermission("empty-wagons.defect-act", "flow.seal-edit")]
     public async Task<ActionResult<ApiResponse<object>>> IssueDefectAct(Guid unitId, [FromBody] IssueDefectActRequest request)
     {
         var actType = request.ActType?.Trim() ?? string.Empty;

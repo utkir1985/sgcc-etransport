@@ -1,3 +1,4 @@
+using ETransport.Infrastructure.Identity;
 using System.Security.Claims;
 using ETransport.Core.Constants;
 using ETransport.Core.DTOs;
@@ -32,7 +33,7 @@ public class PlansController(IPlanService planService) : ControllerBase
             await planService.GetWagonAvailabilityAsync(productType, excludePlanId)));
 
     [HttpPost]
-    [Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.Admin}")]
+    [RequirePermission("plans.create", "empty-wagons.create")]
     public async Task<ActionResult<ApiResponse<DailyPlanDto>>> Create([FromBody] CreateDailyPlanRequest request)
     {
         try
@@ -47,7 +48,7 @@ public class PlansController(IPlanService planService) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.Admin}")]
+    [RequirePermission("plans.update", "empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<DailyPlanDto>>> Update(Guid id, [FromBody] CreateDailyPlanRequest request)
     {
         try
@@ -64,7 +65,7 @@ public class PlansController(IPlanService planService) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.Admin}")]
+    [RequirePermission("plans.delete")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
     {
         try
@@ -81,7 +82,7 @@ public class PlansController(IPlanService planService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/approve-msmx")]
-    [Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.Management},{UserRoles.Marketing},{UserRoles.Admin}")]
+    [RequirePermission("plans.approve", "empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<DailyPlanDto>>> ApproveMsMx(Guid id)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -91,7 +92,7 @@ public class PlansController(IPlanService planService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/approve-railway")]
-    [Authorize(Roles = $"{UserRoles.Railway},{UserRoles.Admin}")]
+    [RequirePermission("plans.approve", "empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<DailyPlanDto>>> ApproveRailway(Guid id)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -101,7 +102,7 @@ public class PlansController(IPlanService planService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/approve-warehouse")]
-    [Authorize(Roles = $"{UserRoles.Warehouse},{UserRoles.Admin}")]
+    [RequirePermission("plans.approve", "empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<DailyPlanDto>>> ApproveWarehouse(Guid id)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -111,7 +112,7 @@ public class PlansController(IPlanService planService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/approve-security")]
-    [Authorize(Roles = $"{UserRoles.Security},{UserRoles.Admin}")]
+    [RequirePermission("plans.approve", "empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<DailyPlanDto>>> ApproveSecurity(Guid id)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -139,12 +140,12 @@ public class ShipmentsController(IShipmentService shipmentService) : ControllerB
     }
 
     [HttpPost("from-plan/{planId:guid}")]
-    [Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.Admin}")]
+    [RequirePermission("plans.create", "empty-wagons.create")]
     public async Task<ActionResult<ApiResponse<ShipmentDto>>> CreateFromPlan(Guid planId) =>
         Ok(new ApiResponse<ShipmentDto>(true, await shipmentService.CreateFromPlanAsync(planId)));
 
     [HttpPost("{id:guid}/status/{status}")]
-    [Authorize(Roles = "Dispatching,Railway,Admin")]
+    [RequirePermission("empty-wagons.update", "documents.registry.update")]
     public async Task<ActionResult<ApiResponse<ShipmentDetailDto>>> UpdateStatus(
         Guid id, string status, [FromBody] StatusUpdateRequest request)
     {
@@ -157,7 +158,7 @@ public class ShipmentsController(IShipmentService shipmentService) : ControllerB
     }
 
     [HttpPost("{id:guid}/wagons")]
-    [Authorize(Roles = $"{UserRoles.Railway},{UserRoles.Scale},{UserRoles.Admin}")]
+    [RequirePermission("empty-wagons.update")]
     public async Task<ActionResult<ApiResponse<WagonDto>>> AddWagon(Guid id, [FromBody] CreateWagonRequest request)
     {
         var wagon = await shipmentService.AddWagonAsync(id, request);
@@ -166,7 +167,7 @@ public class ShipmentsController(IShipmentService shipmentService) : ControllerB
     }
 
     [HttpPost("wagons/{wagonId:guid}/weigh")]
-    [Authorize(Roles = $"{UserRoles.Scale},{UserRoles.Admin}")]
+    [RequirePermission("flow.tare-weigh", "flow.gross-weigh")]
     public async Task<ActionResult<ApiResponse<WagonDto>>> Weigh(Guid wagonId, [FromBody] WeighingRequest request)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -176,7 +177,7 @@ public class ShipmentsController(IShipmentService shipmentService) : ControllerB
     }
 
     [HttpPost("wagons/{wagonId:guid}/seal")]
-    [Authorize(Roles = $"{UserRoles.Scale},{UserRoles.Admin}")]
+    [RequirePermission("flow.seal-warehouse", "flow.seal-scale")]
     public async Task<ActionResult<ApiResponse<WagonDto>>> Seal(Guid wagonId, [FromBody] SealRequest request)
     {
         var wagon = await shipmentService.SealWagonAsync(wagonId, request);
@@ -185,7 +186,7 @@ public class ShipmentsController(IShipmentService shipmentService) : ControllerB
     }
 
     [HttpPost("{id:guid}/security-check")]
-    [Authorize(Roles = $"{UserRoles.Security},{UserRoles.Permit},{UserRoles.Admin}")]
+    [RequirePermission("empty-wagons.security-inspect", "empty-wagons.permit-agree")]
     public async Task<ActionResult<ApiResponse<ShipmentDetailDto>>> SecurityCheck(
         Guid id, [FromBody] SecurityCheckRequest request)
     {
@@ -198,7 +199,8 @@ public class ShipmentsController(IShipmentService shipmentService) : ControllerB
 
 [ApiController]
 [Route("api/dispatch/journal")]
-[Authorize(Roles = $"{UserRoles.Dispatching},{UserRoles.DispatchSupervisor},{UserRoles.Management},{UserRoles.DeputyDirector},{UserRoles.Admin}")]
+[Authorize]
+[RequirePermission("dispatching.journals.read", "empty-wagons.read")]
 public class DispatchJournalController(IDispatchJournalService journalService) : ControllerBase
 {
     [HttpGet]

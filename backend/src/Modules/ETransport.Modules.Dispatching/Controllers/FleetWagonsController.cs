@@ -59,7 +59,7 @@ public class FleetWagonsController(AppDbContext db) : ControllerBase
     }
 
     [HttpGet("lookup")]
-    [Authorize(Roles = "Railway,Admin")]
+    [RequirePermission("fleet-wagons.read")]
     public async Task<ActionResult<ApiResponse<FleetWagonLookupDto>>> Lookup([FromQuery] string number)
     {
         var normalized = NormalizeWagonNumber(number);
