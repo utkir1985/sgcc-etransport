@@ -22,6 +22,7 @@ import {
   Trash2,
   Warehouse,
   FileCheck,
+  FileSpreadsheet,
   FileText,
   X,
 } from 'lucide-react';
@@ -65,6 +66,7 @@ import { getArrivalEntryPendingActionInfo } from '../../../shared/utils/entryWor
 import { YukXatiView } from '../../../shared/components/YukXatiView';
 import { DocumentChipButton } from '../../../shared/components/DocumentPackChip';
 import { DocsHubToolbar } from '../../../shared/components/DocsHubToolbar';
+import { exportSheet, todayStamp, type SheetCell } from '../../../shared/utils/excelExport';
 import { DocsHubPagination } from '../../../shared/components/DocsHubPagination';
 import { useDocsHubQuery } from '../../../shared/hooks/useDocsHubQuery';
 import {
@@ -1114,6 +1116,91 @@ export function EmptyWagonsPage() {
     if (intakeStatus) return intakeStatus;
     const stage = getStage(item);
     return STAGE_LABEL[stage] ?? stage;
+  };
+
+  const exportKiritishExcel = (itemsToExport: EmptyWagonArrival[]) => {
+    const rows: SheetCell[][] = [
+      [
+        '№',
+        'Xizmat xati №',
+        'Partiya №',
+        'Sana / vaqt',
+        'Vagon soni',
+        'Mahsulot turi',
+        'Vagon turi',
+        'Bosqich / Holat',
+        'Vagon №',
+        'Sisterna / Konteyner №',
+        'Mulkdorlik',
+        'Yuklanganlik holati',
+        'Yo‘l №',
+        'Tuzuvchi',
+        'Izoh',
+      ],
+    ];
+
+    let rowIdx = 1;
+    for (const arrival of itemsToExport) {
+      const rowsList = rowsFromArrival(arrival);
+      const docNo = arrival.entryPermitNumber || arrival.arrivalNumber || '—';
+      const partyNo = arrival.arrivalNumber || '—';
+      const dateStr = formatDateTimeDisplay(
+        arrival.entryPermitShiftApprovedAt ||
+        arrival.entryPermitPermitApprovedAt ||
+        arrival.arrivalDate ||
+        arrival.createdAt
+      );
+      const stageStr = partyDisplayStatus(arrival);
+      const trackNo = arrival.trackNumber || '—';
+      const createdBy = arrival.createdByName || '—';
+      const notes = arrival.notes || '—';
+
+      if (rowsList.length === 0) {
+        rows.push([
+          rowIdx++,
+          docNo,
+          partyNo,
+          dateStr,
+          arrival.wagonCount,
+          arrival.productType || '—',
+          '—',
+          stageStr,
+          arrival.wagonNumbers || '—',
+          arrival.cisternNumbers || '—',
+          '—',
+          '—',
+          trackNo,
+          createdBy,
+          notes,
+        ]);
+      } else {
+        for (const u of rowsList) {
+          rows.push([
+            rowIdx++,
+            docNo,
+            partyNo,
+            dateStr,
+            arrival.wagonCount,
+            u.productType || arrival.productType || '—',
+            u.wagonType || '—',
+            stageStr,
+            u.wagonNumber || '—',
+            u.cisternNumber || '—',
+            wagonOwnershipLabel(u.ownership),
+            intakeLoadStateLabel(u.intakeLoadState),
+            trackNo,
+            createdBy,
+            notes,
+          ]);
+        }
+      }
+    }
+
+    exportSheet(
+      `Kirish_xizmat_xatlari_${todayStamp()}`,
+      'Kirish xizmat xatlari',
+      rows
+    );
   };
 
   const partyStatusClass = (item: EmptyWagonArrival, label: string) => {
@@ -2691,6 +2778,18 @@ export function EmptyWagonsPage() {
             productOptions={kiritishProductOptions}
             onProductChange={hub.setProduct}
           />
+          <div className="flex items-center justify-end my-2">
+            <button
+              type="button"
+              className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30"
+              onClick={() => exportKiritishExcel(filteredSent)}
+              disabled={filteredSent.length === 0}
+              title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Excel yuklash</span>
+            </button>
+          </div>
           <div className="thub__board">
             {loading ? (
               <div className="thub-empty">Yuklanmoqda…</div>
@@ -2848,7 +2947,18 @@ export function EmptyWagonsPage() {
             productOptions={kiritishProductOptions}
             onProductChange={hub.setProduct}
           />
-
+          <div className="flex items-center justify-end my-2">
+            <button
+              type="button"
+              className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30"
+              onClick={() => exportKiritishExcel(ichdxTab === 'pending' ? filteredPending : filteredSent)}
+              disabled={(ichdxTab === 'pending' ? filteredPending : filteredSent).length === 0}
+              title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Excel yuklash</span>
+            </button>
+          </div>
           <div className="thub__board">
             {loading ? (
               <div className="thub-empty">Yuklanmoqda…</div>
