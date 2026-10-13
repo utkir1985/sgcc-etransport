@@ -1867,3 +1867,28 @@ export function buildObjectModel(actions: RbacActionDef[]): ObjectPermView[] {
     .map(o => ({ ...o, actions: o.actions.slice().sort((x, y) => (x.order ?? 0) - (y.order ?? 0)) }))
     .sort((a, b) => a.order - b.order);
 }
+
+export const RESOURCE_EXPLANATIONS: Record<string, string> = {
+  orders: 'Xaridorlar buyurtmalari, limitlar va buxgalteriya-ijro kelishuvlari',
+  'documents.registry': 'Muhrlangan vagonlar uchun temir yo‘l yuk xatlarini rasmiylashtirish va kelishuv zanjiri',
+  'empty-wagons': 'Kengsoydan kelgan bo‘sh vagonlarni ro‘yxatga olish, texnik ko‘rik va hududga kiritish ruxsatnomasi',
+  flow: 'Estakadada yuklash, bo‘sh/to‘la (Tara/Brutto) tortish va rasmiy plombalash',
+  road: 'Avtosisternalar navbati, tarozida tortish va nazorat punktidan chiqish',
+  plans: 'Oylik va sutkalik rejalarning bajarilish monitoringi va tasdiqlash zanjiri',
+  products: 'Yuklanadigan mahsulotlar (Polietilen, Polipropilen va b.) turlari va zichlik standartlari',
+  contractors: 'Mahsulot oluvchi mijozlar, yuk oluvchilar va shartnoma parametrlari',
+  stations: 'Temir yo‘l stansiyalari kodlari va yo‘nalishlari katalogi',
+  'wagon-types': 'Vagon turlari (sisterna, yarim ochiq, platforma) me’yorlari',
+  'fleet-wagons': '8 xonali vagonlar parki, texnik holati va ko‘rik muddatlari',
+  containers: 'Konteynerlar va sisternalar hisobi, platformalarga biriktirish va qidiruv',
+  transport: 'Hozirda majmua hududida turgan vagonlar soni, yo‘llari va joylashuvi',
+  history: 'Barcha yakunlangan vagonlar, partiyalar va jo‘natmalar arxivi',
+  reports: 'Sutkalik va oylik tahliliy hisobotlar hamda Excel eksporti',
+  users: 'Foydalanuvchilar hisob yozuvlari, xodimlar va lavozimlar tuzilmasi',
+  roles: 'Tizim rollari va vakolatlarni boshqarish markazi',
+  telegram: 'Telegram bot orqali xabarnomalar va ogohlantirishlar zanjiri',
+  'admin.integrations': '1C, Didox va E-Nakl tashqi tizimlari bilan integratsiyalar',
+  'admin.audit': 'Barcha foydalanuvchilar harakatlari va xavfsizlik audit jurnali',
+  'admin.trash': 'O‘chirilgan ma’lumotlarni ko‘rish va qayta tiklash (Korzina)',
+  'admin.server-status': 'Server resurslari, ma’lumotlar bazasi va xotira holati',
+};

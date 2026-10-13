@@ -15,6 +15,7 @@ import {
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import {
   buildObjectModel,
+  RESOURCE_EXPLANATIONS,
   CRUD_OP_LABEL,
   type CrudOp,
   type CrudOpBinding,
@@ -1137,7 +1138,7 @@ export function RolesCrudPanel() {
   const [role, setRole] = useState(state.roles[0]?.key ?? 'Admin');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
   const [dialog, setDialog] = useState<'create' | 'edit' | null>(null);
   const [selectedAction, setSelectedAction] = useState<RbacActionDef | null>(null);
   const [deleteKey, setDeleteKey] = useState<string | null>(null);
@@ -1301,7 +1302,7 @@ export function RolesCrudPanel() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {tableObjects.length === 0 ? (
                 <tr><td colSpan={TABLE_OPS.length + 3} className="text-center py-12 text-sm text-slate-400">Mos jarayon topilmadi</td></tr>
-              ) : tableObjects.map(o => {
+              ) : tableObjects.map((o, idx) => {
                 const Icon = o.icon;
                 const iconStyle = MODULE_ICON_STYLE[o.key] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
                 const firstDesc = (o.ops?.R ?? o.ops?.C ?? o.ops?.U ?? o.ops?.D)?.description ?? o.actions?.[0]?.description ?? '';
@@ -1311,16 +1312,25 @@ export function RolesCrudPanel() {
                 const allOn = total > 0 && granted === total;
                 const baGranted = (o.actions ?? []).filter(a => Array.isArray(a.roles) && a.roles.includes(role)).length;
                 const isOpen = expanded.has(o.key);
+                const zebraBg = idx % 2 === 0
+                  ? 'bg-white dark:bg-slate-900'
+                  : 'bg-slate-50/80 dark:bg-slate-800/40';
+                const purpose = RESOURCE_EXPLANATIONS[o.key] ?? '';
                 return (
                   <Fragment key={o.key}>
-                    <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors group">
+                    <tr className={`${zebraBg} hover:bg-blue-50/60 dark:hover:bg-slate-800/80 transition-colors group`}>
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 ${iconStyle}`}>
+                        <div className="flex items-start gap-3">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border shadow-2xs transition-transform group-hover:scale-105 mt-0.5 ${iconStyle}`}>
                             <Icon className="w-4.5 h-4.5" strokeWidth={2} />
                           </span>
-                          <span className="min-w-0">
-                            <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{o.label}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">{o.label}</span>
+                            {purpose && (
+                              <span className="block text-xs font-normal text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                {purpose}
+                              </span>
+                            )}
                             <ApiNote description={firstDesc} />
                           </span>
                         </div>
