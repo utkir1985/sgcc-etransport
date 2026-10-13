@@ -1261,6 +1261,56 @@ export function EmptyWagonsPage() {
     );
   };
 
+  const exportDefectActsExcel = (itemsToExport: Array<{ arrival: EmptyWagonArrival; unit: EmptyWagonUnit }>) => {
+    const rows: SheetCell[][] = [
+      [
+        '№',
+        'Vagon №',
+        'Partiya №',
+        'Dalolatnoma №',
+        'Sana / vaqt',
+        'Vagon turi',
+        'Mahsulot',
+        'Nomuvofiqlik sababi',
+        'Sisterna / Konteyner №',
+        'Mulkdorlik',
+        'Holat',
+      ],
+    ];
+
+    let rowIdx = 1;
+    for (const item of itemsToExport) {
+      const u = item.unit;
+      const a = item.arrival;
+      const dateStr = formatDateTimeDisplay(u.defectActUploadedAt || a.createdAt);
+      const kind = isWagonKind(u.wagonType) ? WAGON_KIND_LABEL[u.wagonType] : (u.wagonType || '—');
+      const productLabel = toLatinProductName(u.productType?.trim() || a.productType?.trim()) || u.productType?.trim() || a.productType?.trim() || '—';
+      const comment = u.loadingComment?.trim() || 'Nomuvofiqlik aniqlangan';
+      const actNo = u.defectActNumber?.trim() || '—';
+
+      rows.push([
+        rowIdx++,
+        u.wagonNumber || '—',
+        a.arrivalNumber || '—',
+        actNo,
+        dateStr,
+        kind,
+        productLabel,
+        comment,
+        u.cisternNumber || '—',
+        wagonOwnershipLabel(u.ownership),
+        u.defectActFileName ? 'Dalolatnoma yuklangan' : 'Nomuvofiq',
+      ]);
+    }
+
+    exportSheet(
+      `Dalolatnomalar_${todayStamp()}`,
+      'Dalolatnomalar',
+      rows
+    );
+  };
+
+
   const partyWagonCountDisplay = (item: EmptyWagonArrival, rows: WagonRowLite[]) => {
     if (!hub.product) return `${item.wagonCount} ta`;
     const filterVal = hub.product.trim().toLowerCase();
@@ -2942,6 +2992,18 @@ export function EmptyWagonsPage() {
             product={hub.product}
             productOptions={defectProductOptions}
             onProductChange={hub.setProduct}
+            actions={
+              <button
+                type="button"
+                className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30 shrink-0"
+                onClick={() => exportDefectActsExcel(visibleDefectRows)}
+                disabled={visibleDefectRows.length === 0}
+                title="Dalolatnomalarni Excel (.xlsx) fayliga yuklash"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Excel yuklash</span>
+              </button>
+            }
           />
           <div className="thub__board">
             {loading ? (
