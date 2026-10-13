@@ -114,7 +114,7 @@ function displayNetto(unit: EmptyWagonUnit): string {
   if (unit.nettoWeight && String(unit.nettoWeight).trim() && String(unit.nettoWeight).trim() !== '—') return String(unit.nettoWeight).trim();
   const tare = parseTons(unit.tareWeight);
   const gross = parseTons(unit.grossWeight);
-  if (tare != null && gross != null && gross > tare) return (gross - tare).toFixed(2);
+  if (tare != null && gross != null && gross > tare) return String(Math.round((gross - tare) * 1000) / 1000);
   if (unit.status === 'GrossWeighed' || unit.status === 'Sealed' || unit.status === 'SealPending') {
     return unit.wagonType === 'platform' ? '49.30' : '31.80';
   }

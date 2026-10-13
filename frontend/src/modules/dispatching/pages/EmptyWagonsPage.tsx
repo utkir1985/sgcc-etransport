@@ -448,6 +448,17 @@ const ENTRY_STAGE_AHEAD_NOTES: Record<string, string> = {
   'exit-railway': 'Vagonlar hali olib chiqilmagan',
 };
 
+function formatNettoDisplay(val?: string | number | null): string {
+  if (val == null) return '';
+  const str = String(val).trim().replace(',', '.');
+  if (!str || str === '—') return '';
+  const num = Number(str);
+  if (!Number.isFinite(num)) return str;
+  const tons = num > 1000 ? num / 1000 : num;
+  const formatted = Math.round(tons * 1000) / 1000;
+  return `${formatted} t`;
+}
+
 export function EmptyWagonsPage() {
   const { user } = useAuth();
   const { can } = useRbacPermission();
@@ -2332,7 +2343,7 @@ export function EmptyWagonsPage() {
                         const product = toLatinProductName(route.productType || matchingUnit?.productType || r.productType) || 'Suyultirilgan gaz';
                         const wagonType = isWagonKind(matchingUnit?.wagonType) ? WAGON_KIND_LABEL[matchingUnit.wagonType] : 'Vagon-sisterna';
                         const rawNetto = matchingUnit?.nettoWeight;
-                        const nettoDisplay = rawNetto ? (Number(rawNetto) > 1000 ? `${(Number(rawNetto) / 1000).toFixed(1)} t` : `${rawNetto} t`) : '—';
+                        const nettoDisplay = rawNetto ? formatNettoDisplay(rawNetto) : '—';
                         const orderNo = defective ? 'Buyurtmasiz' : (route.orderNumber || r.orderNumber || '—');
                         const routeText = defective
                           ? 'Nomuvofiqlik dalolatnomasi'
@@ -2371,7 +2382,7 @@ export function EmptyWagonsPage() {
                         const product = toLatinProductName(unit.productType || r.productType) || 'Suyultirilgan gaz';
                         const wagonType = isWagonKind(unit.wagonType) ? WAGON_KIND_LABEL[unit.wagonType] : 'Vagon-sisterna';
                         const rawNetto = unit.nettoWeight;
-                        const nettoDisplay = rawNetto ? (Number(rawNetto) > 1000 ? `${(Number(rawNetto) / 1000).toFixed(1)} t` : `${rawNetto} t`) : '—';
+                        const nettoDisplay = rawNetto ? formatNettoDisplay(rawNetto) : '—';
                         const orderNo = defective ? 'Buyurtmasiz' : (r.orderNumber || '—');
                         const routeText = defective
                           ? 'Nomuvofiqlik dalolatnomasi'

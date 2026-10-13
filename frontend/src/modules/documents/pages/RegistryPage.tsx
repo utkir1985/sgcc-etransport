@@ -160,6 +160,17 @@ function nettoWeightOf(netto?: string | number | null, tare?: string | number | 
   return String(Math.max(0, Math.round((bruttoValue - tareValue) * 1000) / 1000));
 }
 
+function formatNettoDisplay(val?: string | number | null): string {
+  if (val == null) return '';
+  const str = String(val).trim().replace(',', '.');
+  if (!str || str === '—') return '';
+  const num = Number(str);
+  if (!Number.isFinite(num)) return str;
+  const tons = num > 1000 ? num / 1000 : num;
+  const formatted = Math.round(tons * 1000) / 1000;
+  return `${formatted} t`;
+}
+
 
 function parseCsvList(value?: string | null): string[] {
   return (value || '')
@@ -3425,7 +3436,7 @@ export default function RegistryPage() {
                             </span>
                             {row.netto && (
                               <span className="text-xs font-semibold text-sky-700 dark:text-sky-300 font-mono">
-                                {parseFloat(row.netto).toFixed(1)} t
+                                {formatNettoDisplay(row.netto)}
                               </span>
                             )}
                           </div>
@@ -3533,7 +3544,7 @@ export default function RegistryPage() {
                     {selectedDraftRows.length} ta vagon
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-mono">
-                    {totalDraftNetto.toFixed(1)} t
+                    {formatNettoDisplay(totalDraftNetto)}
                   </span>
                 </div>
               </div>
@@ -3697,7 +3708,7 @@ export default function RegistryPage() {
                           </span>
                           {row.netto && (
                             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 font-mono">
-                              {parseFloat(row.netto).toFixed(1)} t
+                              {formatNettoDisplay(row.netto)}
                             </span>
                           )}
                           {row.sealNumber && (
@@ -4791,7 +4802,7 @@ export default function RegistryPage() {
                       Tarkib: <strong className="text-slate-900 dark:text-white font-bold">{selectedDraftRows.length}</strong> ta vagon
                       {totalDraftNetto > 0 && (
                         <span className="ml-1 text-sky-700 dark:text-sky-300 font-bold font-mono">
-                          ({totalDraftNetto.toFixed(1)} t netto)
+                          ({formatNettoDisplay(totalDraftNetto)} netto)
                         </span>
                       )}
                     </span>

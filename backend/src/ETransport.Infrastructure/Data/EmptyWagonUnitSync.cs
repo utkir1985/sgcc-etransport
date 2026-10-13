@@ -47,7 +47,7 @@ public static class EmptyWagonUnitSync
     {
         if (!TryParseWeight(tare, out var t) || !TryParseWeight(gross, out var g))
             return null;
-        return (g - t).ToString("0.##", CultureInfo.InvariantCulture);
+        return (g - t).ToString("0.###", CultureInfo.InvariantCulture);
     }
 
     public static bool TryParseWeight(string? raw, out decimal value)
