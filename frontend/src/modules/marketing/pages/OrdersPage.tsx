@@ -50,7 +50,6 @@ import { MarketingOrdersHome, type OrderStatusCard } from '../../../shared/compo
 import { ProductTypeFilter } from '../../../shared/components/ProductTypeFilter';
 import { ProductDetailBackButton } from '../../../shared/components/ProductDetailBackButton';
 import { OrderList, type OrderListVariant } from '../../../shared/components/OrderListRow';
-import { ORDER_STATUS_LABELS } from '../../../shared/constants/orderStatuses';
 import { filterAgreedOrderLines } from '../../../shared/utils/orderApprovals';
 import { listMarketingOrdersForPeriod } from '../../../shared/utils/marketingOrderSelection';
 import { OrderFilterPlaceholder } from '../../../shared/components/OrderFilterPlaceholder';
