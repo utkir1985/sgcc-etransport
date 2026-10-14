@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Clock3, FileDown, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck } from 'lucide-react';
+import { Clock3, FileDown, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck, FileText, LifeBuoy } from 'lucide-react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
@@ -1351,7 +1351,8 @@ function MarketingOrdersPanel({
                   className={`order-kind-toggle__btn${!isBlankOrder ? ' is-active' : ''}`}
                   onClick={() => { if (isBlankOrder) startNew(); }}
                 >
-                  Oddiy
+                  <FileText className="order-kind-toggle__icon" aria-hidden />
+                  Oddiy buyurtma
                 </button>
                 <button
                   type="button"
@@ -1361,11 +1362,21 @@ function MarketingOrdersPanel({
                   onClick={() => { if (!isBlankOrder) startBlankEmergencyOrder(); }}
                   title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
                 >
+                  <LifeBuoy className="order-kind-toggle__icon" aria-hidden />
                   Zaxira (bo‘sh)
                 </button>
               </div>
             ) : null}
           </div>
+          {isNew && isBlankOrder ? (
+            <div className="order-kind-notice" role="status">
+              <LifeBuoy className="order-kind-notice__icon" aria-hidden />
+              <div>
+                <strong>Zaxira (bo‘sh) buyurtma</strong>
+                <span>Oy boshi yoki favqulodda holatlar uchun. Tonna, shartnoma va Buyurtma № majburiy emas.</span>
+              </div>
+            </div>
+          ) : null}
           {editForm}
           {!isNew ? (
             <label className="ui-card block p-4">
