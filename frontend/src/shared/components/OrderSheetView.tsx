@@ -111,14 +111,9 @@ export function OrderSheetView({
                     <td className="order-sheet-center order-sheet-qty">
                       <div className="font-semibold">{wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}</div>
                       {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
-                        <div className="text-[10px] whitespace-nowrap mt-0.5">
-                          {line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
-                          ) : (
-                            <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                              Qoldiq: {Math.max(0, line.wagonCount - (line.fulfilledWagonCount ?? 0))} ta
-                            </span>
-                          )}
+                        // Vagonlar soni yuk xatlaridan shakllanadi — qoldiq vagon ko‘rsatilmaydi
+                        <div className="text-[11px] whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400 font-semibold">
+                          Jo‘natildi: {line.fulfilledWagonCount ?? 0} ta
                         </div>
                       )}
                     </td>
@@ -192,7 +187,7 @@ export function OrderSheetView({
                   {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
                       {wagonPlan
-                        ? `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} · Qoldiq: ${Math.max(0, totals.wagonTotal - lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0))} ta`
+                        ? `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`
                         : `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} vagon`}
                     </div>
                   )}
@@ -289,14 +284,9 @@ export function OrderSheetView({
                     <td className="order-sheet-center order-sheet-qty">
                       <div className="font-semibold">{wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}</div>
                       {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
-                        <div className="text-[10px] whitespace-nowrap mt-0.5">
-                          {line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
-                          ) : (
-                            <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                              Qoldiq: {Math.max(0, line.wagonCount - (line.fulfilledWagonCount ?? 0))} ta
-                            </span>
-                          )}
+                        // Vagonlar soni yuk xatlaridan shakllanadi — qoldiq vagon ko‘rsatilmaydi
+                        <div className="text-[11px] whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400 font-semibold">
+                          Jo‘natildi: {line.fulfilledWagonCount ?? 0} ta
                         </div>
                       )}
                     </td>
@@ -370,7 +360,7 @@ export function OrderSheetView({
                   {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
                       {wagonPlan
-                        ? `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} · Qoldiq: ${Math.max(0, totals.wagonTotal - lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0))} ta`
+                        ? `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`
                         : `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} vagon`}
                     </div>
                   )}
