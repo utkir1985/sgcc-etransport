@@ -51,6 +51,15 @@ const SEGMENTS: Array<{
   },
 ];
 
+export interface OrderStatusCard {
+  id: string;
+  label: string;
+  hint: string;
+  count: number;
+  icon: typeof ClipboardList;
+  tone: 'blue' | 'amber' | 'green';
+}
+
 interface MarketingOrdersHomeProps {
   title: string;
   productEntries: ProductCatalogEntry[];
@@ -70,6 +79,10 @@ interface MarketingOrdersHomeProps {
   createLabel?: string;
   toolbarActions?: ReactNode;
   hideHeader?: boolean;
+  /** KPI andozasidagi holat kartochkalari (bo‘limlar) — oddiy ro‘yxat ko‘rinishi uchun. */
+  statusCards?: OrderStatusCard[];
+  activeStatus?: string;
+  onStatusChange?: (id: string) => void;
   children: ReactNode;
 }
 
@@ -92,6 +105,9 @@ export function MarketingOrdersHome({
   createLabel = 'Yangi buyurtma',
   toolbarActions,
   hideHeader = false,
+  statusCards,
+  activeStatus,
+  onStatusChange,
   children,
 }: MarketingOrdersHomeProps) {
   const isHubPanel = !!listView && !!onListViewChange && !!segmentCounts;
@@ -120,9 +136,56 @@ export function MarketingOrdersHome({
             <h1 className="marketing-orders-home__title">{panelTitle || title}</h1>
           </header>
         ) : null}
+        {statusCards && statusCards.length > 0 ? (
+          <div className="order-status-cards" role="tablist" aria-label="Buyurtma holati">
+            {statusCards.map(card => {
+              const Icon = card.icon;
+              const active = card.id === activeStatus;
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`order-status-card order-status-card--${card.tone}${active ? ' is-active' : ''}`}
+                  onClick={() => onStatusChange?.(card.id)}
+                >
+                  <span className="order-status-card__icon"><Icon strokeWidth={1.9} aria-hidden /></span>
+                  <span className="order-status-card__text">
+                    <strong>{card.label}</strong>
+                    <small>{card.hint}</small>
+                  </span>
+                  <span className="order-status-card__count">{card.count} ta</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <div className="docs-panel">
           <div className="marketing-orders-toolbar docs-panel__toolbar">
             <div className="marketing-orders-toolbar__filters">
+              {onSearchQueryChange ? (
+                <label className="thub-search marketing-orders-search">
+                  <Search className="thub-search__ico" strokeWidth={1.75} aria-hidden />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={e => onSearchQueryChange(e.target.value)}
+                    placeholder="Buyurtma, shartnoma yoki korxona…"
+                    autoComplete="off"
+                  />
+                  {searchQuery ? (
+                    <button
+                      type="button"
+                      className="thub-search__x"
+                      onClick={() => onSearchQueryChange('')}
+                      aria-label="Tozalash"
+                    >
+                      <X className="w-3.5 h-3.5" strokeWidth={2} />
+                    </button>
+                  ) : null}
+                </label>
+              ) : null}
               {productFilter}
               {showPeriodField ? (
                 <div className="marketing-orders-toolbar__field marketing-orders-toolbar__field--period">

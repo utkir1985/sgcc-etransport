@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ChevronRight, X, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
 import { ProductTypeIcon } from './ProductTypeIcon';
 import { OrderStatusBadge, orderStatusModifier } from './OrderStatusBadge';
@@ -118,7 +118,48 @@ interface OrderListProps {
   onDelete?: (order: MonthlyOrder) => void;
   canEditOrder?: (order: MonthlyOrder) => boolean;
   canDeleteOrder?: (order: MonthlyOrder) => boolean;
+  /**
+   * Bo‘lim ko‘rinishi: `faol` — ijrodagi (holat ustunisiz), `tasdiq` — kelishuvdagi
+   * («Kimda turibdi» ustuni), `yakun` — yakunlangan («Jo‘natildi»). `all` — barcha ustunlar.
+   */
+  variant?: OrderListVariant;
 }
+
+export type OrderListVariant = 'all' | 'faol' | 'tasdiq' | 'yakun';
+
+type OrderColumnKey =
+  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'fulfil' | 'shipped' | 'stage'
+  | 'contract' | 'created' | 'approved' | 'status' | 'doc' | 'actions';
+
+/** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
+const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
+  num: 3, order: 10, product: 15, wagons: 5.5, tons: 6, fulfil: 13, shipped: 12, stage: 15,
+  contract: 9, created: 9, approved: 9, status: 11, doc: 8, actions: 8,
+};
+
+function orderColumns(variant: OrderListVariant, showActions: boolean): OrderColumnKey[] {
+  switch (variant) {
+    case 'faol':
+      return ['num', 'order', 'product', 'wagons', 'tons', 'fulfil', 'contract', 'created', 'approved', 'doc'];
+    case 'tasdiq':
+      return ['num', 'order', 'product', 'tons', 'stage', 'contract', 'created', 'doc'];
+    case 'yakun':
+      return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'contract', 'created', 'approved', 'doc'];
+    default:
+      return ['num', 'order', 'product', 'wagons', 'tons', 'fulfil', 'contract', 'created', 'approved', 'status', 'doc',
+        ...(showActions ? ['actions' as const] : [])];
+  }
+}
+
+/** Kelishuvdagi buyurtma hozir kimda turgani (mavjud holat belgisi ranglari bilan). */
+const ORDER_STAGE: Record<string, { label: string; mod: string }> = {
+  Draft: { label: 'Qoralama', mod: 'draft' },
+  PendingAccounting: { label: 'Buxgalteriyada', mod: 'accounting' },
+  ReturnedToMarketing: { label: 'Marketingga qaytarilgan', mod: 'returned' },
+  ReadyForDispatch: { label: 'Marketingda — o‘rinbosarga yuborish', mod: 'marketing' },
+  PendingDeputyDirector: { label: 'Bosh direktor o‘rinbosarida', mod: 'deputy' },
+  PendingDispatching: { label: 'ICHDX — ijroga qabul', mod: 'ichdx' },
+};
 
 export function OrderList({
   orders,
@@ -129,6 +170,7 @@ export function OrderList({
   onDelete,
   canEditOrder,
   canDeleteOrder,
+  variant = 'all',
 }: OrderListProps) {
   const [documentOrder, setDocumentOrder] = useState<MonthlyOrder | null>(null);
   const [page, setPage] = useState(1);
@@ -147,55 +189,40 @@ export function OrderList({
   const pageOrders = orders.slice(startIndex, startIndex + pageSize);
 
   const showActions = !!(onEdit || onDelete);
+  const columns = orderColumns(variant, showActions);
+  const has = (key: OrderColumnKey) => columns.includes(key);
+  const weightTotal = columns.reduce((sum, key) => sum + COLUMN_WEIGHT[key], 0);
+  const COLUMN_HEADER: Record<OrderColumnKey, { label: ReactNode; className: string }> = {
+    num: { label: '№', className: 'text-center' },
+    order: { label: 'Buyurtma', className: 'text-center' },
+    product: { label: 'Mahsulot', className: 'text-left' },
+    wagons: { label: <>Yuklangan<br />vagon</>, className: 'text-center leading-tight' },
+    tons: { label: <>Og‘irligi<br />(t)</>, className: 'text-center leading-tight' },
+    fulfil: { label: <>Bajarilish /<br />Qoldiq</>, className: 'text-center leading-tight' },
+    shipped: { label: 'Jo‘natildi', className: 'text-center' },
+    stage: { label: 'Kimda turibdi', className: 'text-center' },
+    contract: { label: 'Shartnoma', className: 'text-center' },
+    created: { label: <>Yaratilgan<br />vaqti</>, className: 'text-center leading-tight' },
+    approved: { label: <>Tasdiqlangan<br />vaqti</>, className: 'text-center leading-tight' },
+    status: { label: 'Holat', className: 'text-center' },
+    doc: { label: 'Hujjat', className: 'text-center' },
+    actions: { label: 'Amallar', className: 'text-center' },
+  };
 
   return (
     <>
       <div className="thub-table-wrap reestr-table-wrap hidden md:block">
         <table className="thub-table reestr-table marketing-orders-table w-full">
-                    {showActions ? (
-            <colgroup>
-              <col style={{ width: '2.5%' }} />
-              <col style={{ width: '10.0%' }} />
-              <col style={{ width: '14.0%' }} />
-              <col style={{ width: '4.5%' }} />
-              <col style={{ width: '5.0%' }} />
-              <col style={{ width: '12.0%' }} />
-              <col style={{ width: '8.0%' }} />
-              <col style={{ width: '8.0%' }} />
-              <col style={{ width: '8.0%' }} />
-              <col style={{ width: '12.0%' }} />
-              <col style={{ width: '8.0%' }} />
-              <col style={{ width: '8.0%' }} />
-            </colgroup>
-          ) : (
-            <colgroup>
-              <col style={{ width: '2.5%' }} />
-              <col style={{ width: '11.0%' }} />
-              <col style={{ width: '15.0%' }} />
-              <col style={{ width: '5.0%' }} />
-              <col style={{ width: '5.5%' }} />
-              <col style={{ width: '13.0%' }} />
-              <col style={{ width: '9.0%' }} />
-              <col style={{ width: '9.0%' }} />
-              <col style={{ width: '9.0%' }} />
-              <col style={{ width: '12.0%' }} />
-              <col style={{ width: '9.0%' }} />
-            </colgroup>
-          )}
+          <colgroup>
+            {columns.map(key => (
+              <col key={key} style={{ width: `${((COLUMN_WEIGHT[key] / weightTotal) * 100).toFixed(2)}%` }} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
-              <th className="text-center">№</th>
-              <th className="text-center">Buyurtma</th>
-              <th className="text-left">Mahsulot</th>
-              <th className="text-center leading-tight">Yuklangan<br />vagon</th>
-              <th className="text-center leading-tight">Og‘irligi<br />(t)</th>
-              <th className="text-center leading-tight">Bajarilish /<br />Qoldiq</th>
-              <th className="text-center">Shartnoma</th>
-              <th className="text-center leading-tight">Yaratilgan<br />vaqti</th>
-              <th className="text-center leading-tight">Tasdiqlangan<br />vaqti</th>
-              <th className="text-center">Holat</th>
-              <th className="text-center">Hujjat</th>
-              {showActions && <th className="text-center">Amallar</th>}
+              {columns.map(key => (
+                <th key={key} className={COLUMN_HEADER[key].className}>{COLUMN_HEADER[key].label}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -247,10 +274,29 @@ export function OrderList({
                       </strong>
                     </div>
                   </td>
-                  <td className="text-center font-semibold tabular-nums text-xs">{fulfillment.fulfilledWagons}</td>
+                  {has('wagons') && <td className="text-center font-semibold tabular-nums text-xs">{fulfillment.fulfilledWagons}</td>}
                   <td className="text-center font-semibold tabular-nums text-xs">{tonTotal}</td>
 
+                  {has('stage') && (
+                    <td className="text-center text-xs">
+                      <div className="marketing-orders-table__status">
+                        <span className={`order-status-badge order-status-badge--${ORDER_STAGE[order.status]?.mod ?? 'draft'}`}>
+                          {ORDER_STAGE[order.status]?.label ?? order.status}
+                        </span>
+                      </div>
+                    </td>
+                  )}
+
+                  {has('shipped') && (
+                    <td className="text-center text-xs">
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        {formatTons(fulfillment.fulfilledTons)} t
+                      </span>
+                    </td>
+                  )}
+
                   {/* Bajarilish / Qoldiq */}
+                  {has('fulfil') && (
                   <td className="whitespace-nowrap text-[11px] text-center px-1.5">
                     {isCompleted ? (
                       <div className="flex items-center justify-center">
@@ -279,7 +325,13 @@ export function OrderList({
                         </div>
                       </div>
                     )}
+                    {!has('status') && isOrderLoadingOverdue(order) ? (
+                      <div className="mt-1">
+                        <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
+                      </div>
+                    ) : null}
                   </td>
+                  )}
 
                   <td className="text-xs text-center leading-snug break-words whitespace-normal px-1" title={order.contractNumber || '—'}>
                     <span className="line-clamp-2">{order.contractNumber || '—'}</span>
@@ -287,24 +339,28 @@ export function OrderList({
                   <td className="whitespace-nowrap text-center text-xs">
                     {renderDateTimeCell(order.createdAt)}
                   </td>
-                  <td className="whitespace-nowrap text-center text-xs">
-                    {renderDateTimeCell(approvedAt)}
-                  </td>
-                  <td className="text-center text-xs">
-                    <div className="marketing-orders-table__status">
-                      <OrderStatusBadge status={order.status} />
-                      {isOrderLoadingOverdue(order) ? (
-                        <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
-                      ) : null}
-                    </div>
-                  </td>
+                  {has('approved') && (
+                    <td className="whitespace-nowrap text-center text-xs">
+                      {renderDateTimeCell(approvedAt)}
+                    </td>
+                  )}
+                  {has('status') && (
+                    <td className="text-center text-xs">
+                      <div className="marketing-orders-table__status">
+                        <OrderStatusBadge status={order.status} />
+                        {isOrderLoadingOverdue(order) ? (
+                          <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
+                        ) : null}
+                      </div>
+                    </td>
+                  )}
                   <td onClick={event => event.stopPropagation()} className="text-center px-1">
                     <DocumentChipButton
                       onClick={() => setDocumentOrder(order)}
                       title={`${order.orderNumber} buyurtma hujjatini ko‘rish`}
                     />
                   </td>
-                  {showActions && (
+                  {has('actions') && (
                     <td onClick={event => event.stopPropagation()} className="whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-1">
                         {canEditOrder?.(order) && onEdit && (

@@ -17724,3 +17724,106 @@ html.dark .order-progress-track,
 .dark .thub-table.reestr-table tbody tr:hover td {
   background: #17243a;
 }
+
+/* Buyurtma holati kartochkalari — KPI andozasi (bo‘limlar) */
+.order-status-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .order-status-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.order-status-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px;
+  border: 1px solid #e6edf5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 0.05);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.order-status-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgb(15 23 42 / 0.08);
+}
+
+.order-status-card__icon {
+  display: inline-flex;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.order-status-card__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.order-status-card__text {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-status-card__text strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.order-status-card__text small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-status-card__count {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-status-card--blue .order-status-card__icon { background: #3b82f6; }
+.order-status-card--blue .order-status-card__count { background: #e8f0fe; color: #2563eb; }
+.order-status-card--blue.is-active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15); }
+
+.order-status-card--amber .order-status-card__icon { background: #f59e0b; }
+.order-status-card--amber .order-status-card__count { background: #fef3c7; color: #b45309; }
+.order-status-card--amber.is-active { border-color: #f59e0b; box-shadow: 0 0 0 3px rgb(245 158 11 / 0.18); }
+
+.order-status-card--green .order-status-card__icon { background: #22c55e; }
+.order-status-card--green .order-status-card__count { background: #dcfce7; color: #15803d; }
+.order-status-card--green.is-active { border-color: #22c55e; box-shadow: 0 0 0 3px rgb(34 197 94 / 0.18); }
+
+.dark .order-status-card { background: #0f172a; border-color: #1e293b; box-shadow: none; }
+.dark .order-status-card__text strong { color: #f1f5f9; }
+.dark .order-status-card__text small { color: #94a3b8; }
+.dark .order-status-card--blue .order-status-card__count { background: rgb(59 130 246 / 0.18); color: #93c5fd; }
+.dark .order-status-card--amber .order-status-card__count { background: rgb(245 158 11 / 0.18); color: #fcd34d; }
+.dark .order-status-card--green .order-status-card__count { background: rgb(34 197 94 / 0.18); color: #86efac; }
+
+.marketing-orders-search {
+  min-width: 16rem;
+}

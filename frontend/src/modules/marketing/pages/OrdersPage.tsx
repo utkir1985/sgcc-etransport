@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Clock3, FileDown, History, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2 } from 'lucide-react';
+import { Clock3, FileDown, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck } from 'lucide-react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
@@ -50,7 +50,7 @@ import { PRINT_LOCKED_TITLE } from '../../../shared/utils/documentPrintGuard';
 import { MarketingOrdersHome } from '../../../shared/components/MarketingOrdersHome';
 import { ProductTypeFilter } from '../../../shared/components/ProductTypeFilter';
 import { ProductDetailBackButton } from '../../../shared/components/ProductDetailBackButton';
-import { OrderList } from '../../../shared/components/OrderListRow';
+import { OrderList, type OrderListVariant } from '../../../shared/components/OrderListRow';
 import { ORDER_STATUS_LABELS } from '../../../shared/constants/orderStatuses';
 import { exportSheet, todayStamp } from '../../../shared/utils/excelExport';
 import { FileSpreadsheet } from 'lucide-react';
@@ -139,6 +139,15 @@ function validateOrderDraft(
   return null;
 }
 
+type StatusTab = 'faol' | 'tasdiq' | 'yakun';
+
+/** Buyurtma qaysi holat kartochkasiga tushadi: ijroda / kelishuvda / yakunlangan. */
+function orderStatusTab(status: string): StatusTab {
+  if (status === 'Active') return 'faol';
+  if (status === 'Completed' || status === 'Cancelled' || status === 'Rejected') return 'yakun';
+  return 'tasdiq';
+}
+
 function MarketingOrdersPanel({
   logisticsType,
   canCreate,
@@ -170,6 +179,7 @@ function MarketingOrdersPanel({
   const listView: OrderListView = parseOrderListView(searchParams.get('view')) ?? defaultListView;
   const now = new Date();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusTab, setStatusTab] = useState<StatusTab>('faol');
   const [orders, setOrders] = useState<MonthlyOrder[]>([]);
   const [periodFrom, setPeriodFrom] = useState('');
   const [periodTo, setPeriodTo] = useState('');
@@ -275,10 +285,30 @@ function MarketingOrdersPanel({
     return { all: orders.length, faol, tasdiq, yakun } as Record<OrderListView, number>;
   }, [orders]);
 
+  // Oddiy ro‘yxat ko‘rinishi: davr/mahsulot/qidiruv bo‘yicha, so‘ng holat kartochkasi bo‘yicha ajratiladi.
+  const plainListOrders = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const list = listMarketingOrdersForPeriod(orders, periodFrom, periodTo, filterProductType);
+    if (!q) return list;
+    return list.filter(o => [
+      o.orderNumber,
+      o.contractNumber,
+      o.productType,
+      o.productGrade,
+      ...(o.lines ?? []).map(l => `${l.contractor} ${l.contractNumber ?? ''}`),
+    ].filter(Boolean).join(' ').toLowerCase().includes(q));
+  }, [orders, periodFrom, periodTo, filterProductType, searchQuery]);
+
+  const statusTabCounts = useMemo(() => {
+    const counts: Record<StatusTab, number> = { faol: 0, tasdiq: 0, yakun: 0 };
+    for (const o of plainListOrders) counts[orderStatusTab(o.status)] += 1;
+    return counts;
+  }, [plainListOrders]);
+
   const matchingOrders = useMemo(() => {
     const hasViewFilter = Boolean(searchParams.get('view'));
     if (!hubMode && !hasViewFilter) {
-      return listMarketingOrdersForPeriod(orders, periodFrom, periodTo, filterProductType);
+      return plainListOrders.filter(o => orderStatusTab(o.status) === statusTab);
     }
 
     const q = searchQuery.trim().toLowerCase();
@@ -329,7 +359,7 @@ function MarketingOrdersPanel({
       if (a.month !== b.month) return b.month - a.month;
       return b.createdAt.localeCompare(a.createdAt);
     });
-  }, [orders, periodFrom, periodTo, filterProductType, hubMode, listView, searchQuery]);
+  }, [orders, periodFrom, periodTo, filterProductType, hubMode, listView, searchQuery, plainListOrders, statusTab]);
 
   const listViewTitle =
     listView === 'all' ? 'Barcha buyurtmalar'
@@ -1017,13 +1047,14 @@ function MarketingOrdersPanel({
     </button>
   );
 
-  const renderOrderList = (sectionOrders: MonthlyOrder[]) => (
+  const renderOrderList = (sectionOrders: MonthlyOrder[], variant: OrderListVariant = 'all') => (
     <>
       <OrderList
         orders={sectionOrders}
         logisticsType={logisticsType}
         activeOrderId={viewOrderId}
         onSelect={openOrderView}
+        variant={variant}
       />
     </>
   );
@@ -1512,7 +1543,7 @@ function MarketingOrdersPanel({
               </p>
             </div>
           ) : (
-            renderOrderList(matchingOrders)
+            renderOrderList(matchingOrders, listView)
           )}
         </MarketingOrdersHome>
       ) : (
@@ -1525,6 +1556,36 @@ function MarketingOrdersPanel({
           periodControl={renderPeriodPicker()}
           canCreate={canCreateOrder}
           onCreate={startNew}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          statusCards={[
+            {
+              id: 'faol',
+              label: 'Ijroda',
+              hint: 'Tasdiqlangan, yuklanayotgan buyurtmalar',
+              count: statusTabCounts.faol,
+              icon: Truck,
+              tone: 'blue',
+            },
+            {
+              id: 'tasdiq',
+              label: 'Kelishuvda',
+              hint: 'Buxgalteriya, o‘rinbosar va ICHDX kelishuvida',
+              count: statusTabCounts.tasdiq,
+              icon: Hourglass,
+              tone: 'amber',
+            },
+            {
+              id: 'yakun',
+              label: 'Yakunlangan',
+              hint: 'To‘liq bajarilgan buyurtmalar',
+              count: statusTabCounts.yakun,
+              icon: CheckCircle2,
+              tone: 'green',
+            },
+          ]}
+          activeStatus={statusTab}
+          onStatusChange={id => setStatusTab(id as StatusTab)}
           toolbarActions={
             <div className="flex items-center gap-2">
               {canCreateOrder && (
@@ -1542,15 +1603,24 @@ function MarketingOrdersPanel({
             </div>
           }
         >
-          {matchingOrders.length === 0 ? (
+          {plainListOrders.length === 0 && !searchQuery.trim() ? (
             <OrderFilterPlaceholder
               periodFrom={periodFrom}
               periodTo={periodTo}
               filterProductType={filterProductType}
               mode={filterProductType ? 'product' : 'period'}
             />
+          ) : matchingOrders.length === 0 ? (
+            <div className="thub-empty">
+              <p className="thub-empty__title">
+                {statusTab === 'faol' ? 'Ijrodagi buyurtma yo‘q' : statusTab === 'tasdiq' ? 'Kelishuvdagi buyurtma yo‘q' : 'Yakunlangan buyurtma yo‘q'}
+              </p>
+              <p className="thub-empty__text">
+                {searchQuery.trim() ? 'Qidiruv bo‘yicha mos buyurtma topilmadi.' : 'Boshqa bo‘limni tanlang yoki davrni o‘zgartiring.'}
+              </p>
+            </div>
           ) : (
-            renderOrderList(matchingOrders)
+            renderOrderList(matchingOrders, statusTab)
           )}
         </MarketingOrdersHome>
       )}
