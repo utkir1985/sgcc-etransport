@@ -718,14 +718,14 @@ function orderTiles(role: string, orders: MonthlyOrder[], orderId?: string | nul
   const o3At = maxIso(...pastDeputy.map(o => o.deputyApprovedAt));
   const o4At = maxIso(...pastDispatch.map(o => o.dispatchApprovedAt));
 
-  // Tanlangan buyurtma bo‘lsa — har bir bosqich faqat shu buyurtmani uning holat bo‘limida ochadi
+  // Tanlangan buyurtma bo‘lsa — har bir bosqich shu buyurtmaning o‘zini ochadi («Orqaga» — boshqaruv paneliga)
   const focus = scoped[0];
   const focusLink = focus
     ? `/orders/${focus.logisticsType === 'Road' ? 'road' : 'railway'}?view=${
       focus.status === 'Active' ? 'faol'
         : ['Completed', 'Cancelled', 'Rejected'].includes(focus.status) ? 'yakun'
           : 'tasdiq'
-    }&order=${focus.id}`
+    }&open=${focus.id}`
     : null;
 
   return [

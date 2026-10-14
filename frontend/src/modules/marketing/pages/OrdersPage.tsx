@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Clock3, FileDown, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck, FileText, LifeBuoy, X } from 'lucide-react';
+import { Clock3, FileDown, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck, FileText, LifeBuoy } from 'lucide-react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
@@ -185,8 +185,6 @@ function MarketingOrdersPanel({
   const listView: OrderListView = parseOrderListView(searchParams.get('view')) ?? defaultListView;
   // «Barchasi» bo‘limi yo‘q — aralash ro‘yxat o‘rniga «Ijroda» ochiladi
   const hubView: StatusTab = listView === 'all' ? 'faol' : listView;
-  // Jarayon (bosh sahifa) orqali kelinganda: faqat shu buyurtma ko‘rsatiladi
-  const focusOrderId = searchParams.get('order');
   const now = new Date();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusTab, setStatusTab] = useState<StatusTab>('faol');
@@ -316,7 +314,6 @@ function MarketingOrdersPanel({
   }, [plainListOrders]);
 
   const matchingOrders = useMemo(() => {
-    if (focusOrderId) return orders.filter(o => o.id === focusOrderId);
     const hasViewFilter = Boolean(searchParams.get('view'));
     if (!hubMode && !hasViewFilter) {
       return plainListOrders.filter(o => orderStatusTab(o.status) === statusTab);
@@ -365,7 +362,7 @@ function MarketingOrdersPanel({
       if (a.month !== b.month) return b.month - a.month;
       return b.createdAt.localeCompare(a.createdAt);
     });
-  }, [orders, periodFrom, periodTo, filterProductType, hubMode, hubView, searchQuery, plainListOrders, statusTab, focusOrderId, searchParams]);
+  }, [orders, periodFrom, periodTo, filterProductType, hubMode, hubView, searchQuery, plainListOrders, statusTab]);
 
   const hubStatusCounts = useMemo(() => {
     const counts: Record<StatusTab, number> = { faol: 0, tasdiq: 0, yakun: 0 };
@@ -382,26 +379,9 @@ function MarketingOrdersPanel({
   const setListView = (view: OrderListView) => {
     const next = new URLSearchParams(searchParams);
     next.set('view', view);
-    next.delete('order');
     setSearchParams(next, { replace: true });
     setSearchQuery('');
   };
-
-  const clearFocusOrder = () => {
-    const next = new URLSearchParams(searchParams);
-    next.delete('order');
-    setSearchParams(next, { replace: true });
-  };
-
-  const focusOrder = focusOrderId ? orders.find(o => o.id === focusOrderId) ?? null : null;
-  const focusChip = focusOrderId ? (
-    <div className="order-focus-chip" role="status">
-      <span>Faqat <strong>{focusOrder?.orderNumber || 'tanlangan buyurtma'}</strong> ko‘rsatilmoqda</span>
-      <button type="button" onClick={clearFocusOrder} className="order-focus-chip__clear">
-        <X className="w-3.5 h-3.5" aria-hidden /> Barchasini ko‘rsatish
-      </button>
-    </div>
-  ) : null;
 
   const editingOrder = useMemo(() => {
     if (editingOrderId) {
@@ -1526,7 +1506,6 @@ function MarketingOrdersPanel({
           canCreate={canCreateOrder}
           onCreate={startNew}
         >
-          {focusChip}
           {matchingOrders.length === 0 ? (
             <div className="thub-empty">
               <p className="thub-empty__title">
