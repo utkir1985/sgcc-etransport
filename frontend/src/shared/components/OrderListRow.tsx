@@ -34,9 +34,9 @@ function renderDateTimeCell(iso?: string | null) {
   }
   const [d, t] = formatted.split(" ");
   return (
-    <span className="whitespace-nowrap tabular-nums">
-      <span className="text-xs text-slate-700 dark:text-slate-300">{d}</span>{' '}
-      <span className="text-[11px] text-slate-400 dark:text-slate-500">{t}</span>
+    <span className="order-date-cell tabular-nums">
+      <span className="whitespace-nowrap text-xs text-slate-700 dark:text-slate-300">{d}</span>{' '}
+      <span className="whitespace-nowrap text-[11px] text-slate-400 dark:text-slate-500">{t}</span>
     </span>
   );
 }

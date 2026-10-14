@@ -19177,3 +19177,14 @@ html.dark .order-progress-track,
     min-width: 9rem;
   }
 }
+
+/* Sana va vaqt: joy yetmasa vaqt sana ostiga tushadi (qo‘shni ustunga tegmaydi) */
+.order-date-cell {
+  display: inline-block;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.marketing-orders-table td:has(> .order-date-cell) {
+  white-space: normal !important;
+}
