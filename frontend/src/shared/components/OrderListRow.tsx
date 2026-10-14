@@ -261,9 +261,9 @@ export function OrderList({
                   }}
                 >
                   <td className="thub-mono reestr-num text-xs text-center">{startIndex + index + 1}</td>
-                  <td className="whitespace-nowrap font-mono font-bold text-xs text-center">
+                  <td className="whitespace-nowrap text-xs text-center">
                     <div className="party-cell-with-indicator">
-                      <span className="thub-mono text-xs">{order.orderNumber}</span>
+                      <span className="marketing-orders-table__number">{order.orderNumber}</span>
                       <span className="party-row-open-indicator" aria-hidden="true">
                         <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.25} />
                       </span>
