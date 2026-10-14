@@ -62,9 +62,11 @@ function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][nu
       {shipments.map(item => (
         <li key={item.station || '—'}>
           <span className="order-sheet-station-shipments__name">{item.station || '—'}</span>
-          <span className="order-sheet-station-shipments__meta">
-            — {item.wagons} ta{item.netTons > 0 ? ` · ${formatTons(item.netTons)} t` : ''}
-          </span>
+          <span className="order-sheet-station-shipments__sep" aria-hidden>—</span>
+          <span className="order-sheet-station-shipments__count">{item.wagons} ta</span>
+          {item.netTons > 0 ? (
+            <span className="order-sheet-station-shipments__tons">{formatTons(item.netTons)} t</span>
+          ) : null}
         </li>
       ))}
     </ul>
@@ -154,7 +156,7 @@ export function OrderSheetView({
                       )}
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
-                      <div className="font-semibold">{lineTonCount(line)}</div>
+                      <div className="font-semibold">{lineTonCount(line)}{!wagonPlan ? ' t' : ''}</div>
                       {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
                         const linePlanT = lineTonCount(line);
                         const lineDoneT = getLineFulfilledTons(line);
@@ -359,7 +361,7 @@ export function OrderSheetView({
                       )}
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
-                      <div className="font-semibold">{lineTonCount(line)}</div>
+                      <div className="font-semibold">{lineTonCount(line)}{!wagonPlan ? ' t' : ''}</div>
                       {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
                         const linePlanT = lineTonCount(line);
                         const lineDoneT = getLineFulfilledTons(line);

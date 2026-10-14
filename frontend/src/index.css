@@ -18221,3 +18221,77 @@ html.dark .order-progress-track,
 .dark .order-sheet-station-shipments__meta {
   color: #94a3b8;
 }
+
+/* Buyurtma varag‘i — chiziqlar bir xil tusda (sarlavha ham), eski dekorativ chiziqlar olib tashlandi */
+.order-sheet-scroll::before,
+.order-sheet-scroll::after {
+  display: none;
+}
+
+.order-sheet-table th,
+.order-sheet-table td {
+  border-right-color: #dbe3ee;
+  border-bottom-color: #dbe3ee;
+}
+
+.order-sheet-table thead th {
+  border-right-color: #cfdbea;
+  border-bottom-color: #cfdbea;
+}
+
+.dark .order-sheet-table th,
+.dark .order-sheet-table td {
+  border-right-color: #243247;
+  border-bottom-color: #243247;
+}
+
+.dark .order-sheet-table thead th {
+  border-right-color: #334155;
+  border-bottom-color: #334155;
+}
+
+/* Stansiya: vagonlar soni va tonna — ajralib turadigan belgilar */
+.order-sheet-station-shipments li {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.order-sheet-station-shipments__sep {
+  color: #94a3b8;
+}
+
+.order-sheet-station-shipments__count,
+.order-sheet-station-shipments__tons {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.order-sheet-station-shipments__count {
+  border: 1px solid #bfd4f6;
+  background: #eef4fe;
+  color: #1d4ed8;
+}
+
+.order-sheet-station-shipments__tons {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.dark .order-sheet-station-shipments__count {
+  border-color: rgb(59 130 246 / 0.35);
+  background: rgb(59 130 246 / 0.1);
+  color: #93c5fd;
+}
+
+.dark .order-sheet-station-shipments__tons {
+  border-color: rgb(34 197 94 / 0.3);
+  background: rgb(34 197 94 / 0.08);
+  color: #86efac;
+}
