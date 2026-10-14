@@ -1,5 +1,4 @@
 import { AutoVersionUpdater } from '../shared/components/AutoVersionUpdater';
-import { GlobalVoiceAlertListener } from '../shared/components/GlobalVoiceAlertListener';
 import { processRedirectTo } from '../shared/utils/dashboardReturn';
 import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/contexts/AuthContext';
@@ -96,7 +95,6 @@ export default function App() {
   return (
     <>
       <AutoVersionUpdater />
-      <GlobalVoiceAlertListener />
       <Routes>
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
