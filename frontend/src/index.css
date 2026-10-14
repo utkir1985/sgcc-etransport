@@ -18538,3 +18538,38 @@ html.dark .order-progress-track,
 .reestr-table.marketing-orders-table {
   min-width: 82rem !important;
 }
+
+/* Telefon: filtrlar paneli — davr maydonlari panel chetidan chiqmaydi, maydonlar to‘liq kenglikda */
+@media (max-width: 640px) {
+  .thub-date,
+  .rhub-date {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    height: auto;
+    row-gap: 8px;
+    column-gap: 10px;
+  }
+
+  .thub-date .date-picker,
+  .thub-date .date-picker--compact,
+  .rhub-date .date-picker,
+  .rhub-date .date-picker--compact,
+  .thub-date .date-picker-trigger,
+  .rhub-date .date-picker-trigger {
+    width: 100%;
+  }
+
+  .thub__toolbar .product-type-filter,
+  .docs-hub-toolbar .product-type-filter,
+  .marketing-orders-toolbar .product-type-filter {
+    width: 100%;
+  }
+
+  .docs-hub-toolbar__actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
