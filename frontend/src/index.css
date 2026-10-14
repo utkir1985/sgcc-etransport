@@ -11040,15 +11040,16 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .kpi-pagination .admin-pagination {
-  gap: 10px;
+  gap: 6px;
 }
 
 .kpi-pagination .admin-pagination__btn {
-  height: 40px;
-  min-width: 40px;
+  height: 32px;
+  min-width: 32px;
   border-color: #e2e8f0;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 14px;
   color: #334155;
 }
 
@@ -11056,7 +11057,7 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
   border-color: #2563eb;
   background: #2563eb;
   color: #fff;
-  box-shadow: 0 4px 10px rgb(37 99 235 / 0.25);
+  box-shadow: 0 2px 6px rgb(37 99 235 / 0.25);
 }
 
 .kpi-pagination__size {
@@ -11074,15 +11075,15 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 
 .kpi-pagination__size-btn {
   display: inline-flex;
-  min-width: 72px;
-  height: 40px;
+  min-width: 64px;
+  height: 32px;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
-  padding: 0 10px 0 14px;
+  padding: 0 8px 0 12px;
   color: #0f172a;
   font-size: 14px;
   transition: border-color 140ms ease, box-shadow 140ms ease;
