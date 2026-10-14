@@ -17980,3 +17980,38 @@ html.dark .order-progress-track,
 .dark .marketing-orders-table .order-sheet-annex-chip__trigger:hover {
   background: rgb(59 130 246 / 0.22) !important;
 }
+
+/* Qoldiq — fonsiz, jadvalning boshqa raqamlari kabi; birlik kulrang, yopilgani yashil matn */
+.order-remain {
+  gap: 4px;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.marketing-orders-table .order-remain small {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.order-remain--done {
+  background: transparent;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.dark .order-remain {
+  background: transparent;
+  color: #f1f5f9;
+}
+
+.dark .marketing-orders-table .order-remain small {
+  color: #64748b;
+}
+
+.dark .order-remain--done {
+  background: transparent;
+  color: #4ade80;
+}
