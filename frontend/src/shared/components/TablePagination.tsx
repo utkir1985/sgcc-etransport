@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { buildPageItems } from '../utils/docsHubFilter';
 
 export interface TablePaginationProps {
@@ -13,6 +14,70 @@ export interface TablePaginationProps {
   className?: string;
   /** `kpi` — KPI tizimi andozasi: chapda soni, markazda sahifalar, o‘ngda «Sahifada». */
   variant?: 'default' | 'kpi';
+}
+
+/** KPI andozasidagi «Sahifada» tanlovi — brauzer select'i o‘rniga yuqoriga ochiladigan menyu. */
+function PageSizeMenu({
+  value,
+  options,
+  onChange,
+}: {
+  value: number;
+  options: number[];
+  onChange: (size: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleDown);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleDown);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="kpi-pagination__size-menu" ref={ref}>
+      <button
+        type="button"
+        className={`kpi-pagination__size-btn${open ? ' kpi-pagination__size-btn--open' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span>{value}</span>
+        <ChevronDown className="w-4 h-4" strokeWidth={1.75} />
+      </button>
+      {open && (
+        <div className="kpi-select-menu kpi-select-menu--up" role="listbox">
+          {options.map(opt => (
+            <button
+              key={opt}
+              type="button"
+              role="option"
+              aria-selected={opt === value}
+              className={`kpi-select-menu__item${opt === value ? ' kpi-select-menu__item--active' : ''}`}
+              onClick={() => {
+                onChange(opt);
+                setOpen(false);
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -89,16 +154,10 @@ export function TablePagination({
           <strong>{total}</strong> ta {unitLabel}
         </p>
         {pagination}
-        <label className="kpi-pagination__size">
+        <div className="kpi-pagination__size">
           <span>Sahifada:</span>
-          <select value={pageSize} onChange={e => changePageSize(Number(e.target.value))}>
-            {pageSizeOptions.map(opt => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
+          <PageSizeMenu value={pageSize} options={pageSizeOptions} onChange={changePageSize} />
+        </div>
       </div>
     );
   }

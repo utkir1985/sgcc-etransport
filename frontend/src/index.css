@@ -11068,15 +11068,92 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
   font-size: 14px;
 }
 
-.kpi-pagination__size select {
+.kpi-pagination__size-menu {
+  position: relative;
+}
+
+.kpi-pagination__size-btn {
+  display: inline-flex;
+  min-width: 72px;
   height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #fff;
-  padding: 0 28px 0 12px;
+  padding: 0 10px 0 14px;
   color: #0f172a;
   font-size: 14px;
-  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.kpi-pagination__size-btn svg {
+  color: #94a3b8;
+  transition: transform 160ms ease;
+}
+
+.kpi-pagination__size-btn:hover {
+  border-color: #cbd5e1;
+}
+
+.kpi-pagination__size-btn--open {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.15);
+}
+
+.kpi-pagination__size-btn--open svg {
+  color: #3b82f6;
+  transform: rotate(180deg);
+}
+
+/* KPI andozasidagi ochiladigan ro‘yxat: trigger kengligida, yumshoq soya */
+.kpi-select-menu {
+  position: absolute;
+  left: 0;
+  z-index: 60;
+  width: 100%;
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 0.12);
+}
+
+.kpi-select-menu--down {
+  top: calc(100% + 6px);
+}
+
+.kpi-select-menu--up {
+  bottom: calc(100% + 6px);
+}
+
+.kpi-select-menu__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: anywhere;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.kpi-select-menu__item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.kpi-select-menu__item--active,
+.kpi-select-menu__item--active:hover {
+  background: #eaf2fe;
+  color: #1d4ed8;
+  font-weight: 600;
 }
 
 @media (max-width: 767px) {
@@ -11141,7 +11218,12 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 .dark .users-role-pill--cyan { color: #67e8f9; border-color: rgb(6 182 212 / 0.5); }
 .dark .users-action-btn { background: #0f172a; }
 .dark .kpi-pagination__count strong { color: #f1f5f9; }
-.dark .kpi-pagination__size select { background: #020617; border-color: #334155; color: #f1f5f9; }
+.dark .kpi-pagination__size-btn { background: #020617; border-color: #334155; color: #f1f5f9; }
+.dark .kpi-select-menu { background: #0f172a; border-color: #334155; box-shadow: 0 12px 32px rgb(0 0 0 / 0.4); }
+.dark .kpi-select-menu__item { color: #cbd5e1; }
+.dark .kpi-select-menu__item:hover { background: #1e293b; color: #f1f5f9; }
+.dark .kpi-select-menu__item--active,
+.dark .kpi-select-menu__item--active:hover { background: rgb(59 130 246 / 0.18); color: #93c5fd; }
 .dark .kpi-pagination .admin-pagination__btn { border-color: #334155; color: #cbd5e1; }
 .dark .kpi-pagination .admin-pagination__btn--active { border-color: #3b82f6; background: #3b82f6; color: #fff; }
 .dark .users-action-btn--blue { border-color: rgb(59 130 246 / 0.4); color: #60a5fa; }

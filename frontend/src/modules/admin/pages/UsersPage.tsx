@@ -87,18 +87,14 @@ function FilterSelect({
         </button>
 
         {open && (
-          <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-full sm:w-[290px] max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-850">
+          <div className="kpi-select-menu kpi-select-menu--down">
             <button
               type="button"
               onClick={() => {
                 onChange('');
                 setOpen(false);
               }}
-              className={`flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
-                !value
-                  ? 'bg-blue-50 font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-300'
-                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
-              }`}
+              className={`kpi-select-menu__item${!value ? ' kpi-select-menu__item--active' : ''}`}
             >
               {allLabel}
             </button>
@@ -110,11 +106,7 @@ function FilterSelect({
                   onChange(option);
                   setOpen(false);
                 }}
-                className={`flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-[13px] leading-snug break-words transition-colors ${
-                  value === option
-                    ? 'bg-blue-50 font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-300'
-                    : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
-                }`}
+                className={`kpi-select-menu__item${value === option ? ' kpi-select-menu__item--active' : ''}`}
               >
                 {getLabel(option)}
               </button>
