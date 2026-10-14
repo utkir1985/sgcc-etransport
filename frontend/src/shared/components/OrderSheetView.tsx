@@ -41,28 +41,26 @@ function getLineFulfilledTons(line: { wagonCount?: number | null; tonCount?: num
  */
 function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][number]; showShipped: boolean }) {
   const fixedStation = line.destinationStation?.trim();
-  // Qatorda stansiya belgilangan bo‘lsa — barcha vagonlar o‘sha stansiyaga ketgan (qator yig‘indisidan);
-  // aks holda yuk xatlarida tanlangan stansiyalar kesimi (serverda hisoblanadi).
-  const shipments = !showShipped ? [] : fixedStation
-    ? ((line.fulfilledWagonCount ?? 0) > 0
-      ? [{ station: fixedStation, wagons: line.fulfilledWagonCount ?? 0, netTons: Number(line.fulfilledNetWeight ?? 0) }]
-      : [])
-    : (line.stationShipments ?? []);
-  if (shipments.length === 0) {
+  if (!showShipped) {
     return (
       <span className="order-sheet-destination__inner">
         <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-        {fixedStation
-          ? <span>{fixedStation}</span>
-          : <span className="text-slate-400 dark:text-slate-500 italic">Yuk xatida tanlanadi</span>}
+        <span>{fixedStation || '—'}</span>
       </span>
     );
+  }
+  // Qatorda stansiya belgilangan bo‘lsa — barcha vagonlar o‘sha stansiyaga (qator yig‘indisi, 0 ta bo‘lsa ham);
+  // aks holda yuk xatlarida tanlangan stansiyalar kesimi (serverda hisoblanadi).
+  const shipments = fixedStation
+    ? [{ station: fixedStation, wagons: line.fulfilledWagonCount ?? 0, netTons: Number(line.fulfilledNetWeight ?? 0) }]
+    : (line.stationShipments ?? []);
+  if (shipments.length === 0) {
+    return <span className="text-slate-400 dark:text-slate-500 italic">Yuk xatida tanlanadi</span>;
   }
   return (
     <ul className="order-sheet-station-shipments">
       {shipments.map(item => (
         <li key={item.station || '—'}>
-          <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
           <span className="order-sheet-station-shipments__name">{item.station || '—'}</span>
           <span className="order-sheet-station-shipments__meta">
             {item.wagons} ta{item.netTons > 0 ? ` · ${formatTons(item.netTons)} t` : ''}
@@ -157,7 +155,7 @@ export function OrderSheetView({
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
                       <div className="font-semibold">{lineTonCount(line)}</div>
-                      {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                      {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
                         const linePlanT = lineTonCount(line);
                         const lineDoneT = getLineFulfilledTons(line);
                         const lineRemT = Math.max(0, Math.round((linePlanT - lineDoneT) * 100) / 100);
@@ -199,7 +197,7 @@ export function OrderSheetView({
                       </>
                     )}
                     <td className="order-sheet-destination">
-                      <LineDestination line={line} showShipped={!wagonPlan} />
+                      <LineDestination line={line} showShipped={!wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed')} />
                     </td>
                     {showDeadline && (() => {
                       const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
@@ -220,7 +218,7 @@ export function OrderSheetView({
                   </tr>
                 );
               })}
-              {(wagonPlan || lines.length > 1) && (
+              {wagonPlan && (
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
@@ -257,6 +255,28 @@ export function OrderSheetView({
                 {showDeadline && <td className="order-sheet-center" />}
               </tr>
               )}
+              {!wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                // Yangi buyurtma: JAMI o‘rnida buyurtma bo‘yicha qolgan og‘irlik
+                const totalDoneT = lines.reduce((sum, l) => sum + getLineFulfilledTons(l), 0);
+                const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
+                return (
+                  <tr className="order-sheet-total">
+                    <td colSpan={2} className="order-sheet-total-label">QOLDIQ</td>
+                    <td className="order-sheet-center order-sheet-qty order-sheet-qty--total" />
+                    <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
+                      {totalRemT > 0 ? (
+                        <span className="text-amber-600 dark:text-amber-400">{formatTons(totalRemT)} t</span>
+                      ) : (
+                        <span className="text-emerald-600 dark:text-emerald-400">✓ Yopildi</span>
+                      )}
+                    </td>
+                    <td className="order-sheet-contract order-sheet-center" />
+                    <td className="order-sheet-contract order-sheet-center" />
+                    <td className="order-sheet-destination" />
+                    {showDeadline && <td className="order-sheet-center" />}
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </div>
@@ -340,7 +360,7 @@ export function OrderSheetView({
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
                       <div className="font-semibold">{lineTonCount(line)}</div>
-                      {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                      {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
                         const linePlanT = lineTonCount(line);
                         const lineDoneT = getLineFulfilledTons(line);
                         const lineRemT = Math.max(0, Math.round((linePlanT - lineDoneT) * 100) / 100);
@@ -382,7 +402,7 @@ export function OrderSheetView({
                       </>
                     )}
                     <td className="order-sheet-destination">
-                      <LineDestination line={line} showShipped={!wagonPlan} />
+                      <LineDestination line={line} showShipped={!wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed')} />
                     </td>
                     {showDeadline && (() => {
                       const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
@@ -403,7 +423,7 @@ export function OrderSheetView({
                   </tr>
                 );
               })}
-              {(wagonPlan || lines.length > 1) && (
+              {wagonPlan && (
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
@@ -440,6 +460,28 @@ export function OrderSheetView({
                 {showDeadline && <td className="order-sheet-center" />}
               </tr>
               )}
+              {!wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (() => {
+                // Yangi buyurtma: JAMI o‘rnida buyurtma bo‘yicha qolgan og‘irlik
+                const totalDoneT = lines.reduce((sum, l) => sum + getLineFulfilledTons(l), 0);
+                const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
+                return (
+                  <tr className="order-sheet-total">
+                    <td colSpan={2} className="order-sheet-total-label">QOLDIQ</td>
+                    <td className="order-sheet-center order-sheet-qty order-sheet-qty--total" />
+                    <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
+                      {totalRemT > 0 ? (
+                        <span className="text-amber-600 dark:text-amber-400">{formatTons(totalRemT)} t</span>
+                      ) : (
+                        <span className="text-emerald-600 dark:text-emerald-400">✓ Yopildi</span>
+                      )}
+                    </td>
+                    <td className="order-sheet-contract order-sheet-center" />
+                    <td className="order-sheet-contract order-sheet-center" />
+                    <td className="order-sheet-destination" />
+                    {showDeadline && <td className="order-sheet-center" />}
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </div>
