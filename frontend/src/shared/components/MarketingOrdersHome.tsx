@@ -215,7 +215,9 @@ export function MarketingOrdersHome({
                   {canCreate && onCreate ? (
                     <button type="button" onClick={onCreate} className="btn-primary marketing-orders-home__create whitespace-nowrap">
                       <Plus className="w-4 h-4" strokeWidth={2} />
-                      {createLabel}
+                      {createLabel === 'Yangi buyurtma'
+                        ? <span>Yangi<span className="marketing-orders-home__create-extra"> buyurtma</span></span>
+                        : createLabel}
                     </button>
                   ) : null}
                 </div>

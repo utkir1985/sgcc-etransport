@@ -224,7 +224,7 @@ export function OrderList({
 
   return (
     <>
-      <div className="thub-table-wrap reestr-table-wrap hidden md:block">
+      <div className="thub-table-wrap reestr-table-wrap hidden lg:block">
         <table className="thub-table reestr-table marketing-orders-table w-full">
           <colgroup>
             {columns.map(key => (

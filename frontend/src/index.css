@@ -6159,7 +6159,7 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 
 .marketing-orders-list--mobile { display: none; }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .marketing-orders-list--mobile { display: flex; }
 }
 
@@ -19310,4 +19310,129 @@ html.dark .order-progress-track,
 @media (max-width: 639px) {
   .order-kind-toggle { width: 100%; }
   .order-kind-toggle__btn { flex: 1; justify-content: center; padding-inline: 8px; }
+}
+
+/* ==== Buyurtmalar paneli: tugmalar cho‘zilmaydi (barcha o‘lchamlarda o‘z kengligida) ==== */
+.marketing-orders-toolbar__right button {
+  width: auto !important;
+  flex: 0 0 auto;
+}
+
+/* Planshet (768–1023px): qidiruv · mahsulot · davr · «Yangi buyurtma» — bitta qatorda */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .marketing-orders-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .marketing-orders-toolbar__filters {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: 10px;
+    width: auto;
+    min-width: 0;
+  }
+
+  .marketing-orders-search {
+    flex: 1 1 10rem !important;
+    min-width: 8rem;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  .marketing-orders-toolbar .product-type-filter {
+    flex: 0 1 13rem !important;
+    min-width: 9rem;
+    width: auto !important;
+  }
+
+  .marketing-orders-toolbar .marketing-product-filter--sizer { display: none; }
+
+  .marketing-orders-toolbar .marketing-product-filter-anchor,
+  .marketing-orders-toolbar .marketing-product-filter--trigger {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .marketing-orders-toolbar .marketing-product-filter__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .marketing-orders-toolbar__field--period {
+    flex: 0 0 auto !important;
+    width: auto !important;
+  }
+
+  .marketing-orders-toolbar .date-range__trigger {
+    min-width: 12.5rem;
+  }
+
+  .marketing-orders-toolbar__right {
+    flex: 0 0 auto;
+    width: auto;
+    margin-left: auto;
+  }
+
+  .marketing-orders-toolbar__right > div {
+    display: flex !important;
+    width: auto;
+  }
+}
+
+/* Telefon (<768px): qidiruv va mahsulot to‘liq kenglikda; davr + «Yangi buyurtma» bir qatorda */
+@media (max-width: 767px) {
+  .marketing-orders-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .marketing-orders-toolbar__filters {
+    display: contents;
+  }
+
+  .marketing-orders-toolbar__filters > * {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+  }
+
+  .marketing-orders-toolbar__filters > .marketing-orders-toolbar__field--period {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .marketing-orders-toolbar__right {
+    grid-column: 2;
+    width: auto;
+    margin: 0;
+  }
+
+  .marketing-orders-toolbar__right > div {
+    display: flex !important;
+    width: auto;
+  }
+
+  .marketing-orders-toolbar__right .marketing-orders-home__create {
+    grid-column: auto;
+    order: 0;
+    height: 100%;
+  }
+
+  .marketing-orders-toolbar .date-range,
+  .marketing-orders-toolbar .date-range__trigger {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Juda tor telefon: tugmada faqat «+ Yangi» */
+@media (max-width: 420px) {
+  .marketing-orders-home__create-extra { display: none; }
 }
