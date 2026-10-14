@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MONTH_NAMES_UZ } from '../utils/dates';
 import { CheckCircle2, FileDown, MapPin, AlertCircle } from 'lucide-react';
 import type { MonthlyOrder } from '../types';
 import { getTableHeaders } from '../constants/productTypes';
@@ -247,16 +246,6 @@ export function OrderAccountingSheet({
             title: isProductOrderPrintReady(order) ? 'PDF yuklash' : PRINT_LOCKED_TITLE,
             onClick: () => downloadOrderPdf(order.id),
           }]} />
-        </div>
-      </div>
-
-      {/* Katta markazlashtirilgan oy sarlavhasi */}
-      <div className="order-sheet-month-banner my-2.5 mx-4 sm:mx-6 py-2.5 px-6 rounded-2xl bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 dark:from-slate-800/90 dark:via-blue-950/60 dark:to-slate-800/90 border border-blue-200 dark:border-blue-800/80 shadow-sm flex items-center justify-center text-center">
-        <div className="inline-flex items-center justify-center gap-2.5 flex-wrap">
-          <span className="text-xl sm:text-2xl select-none">📅</span>
-          <h2 className="text-base sm:text-lg md:text-xl font-black tracking-wider text-blue-950 dark:text-blue-100 uppercase">
-            {order.year ? `${order.year}-YIL ` : ''}{MONTH_NAMES_UZ[order.month - 1] ? `${MONTH_NAMES_UZ[order.month - 1].toUpperCase()} ` : ''}OYI BUYURTMASI
-          </h2>
         </div>
       </div>
 
