@@ -18295,3 +18295,18 @@ html.dark .order-progress-track,
   background: rgb(34 197 94 / 0.08);
   color: #86efac;
 }
+
+/* Buyurtma varag‘i — jadval ma’lumotlari 14px */
+.order-sheet-table tbody td,
+.order-sheet-table tbody td .text-xs,
+.order-sheet-table tbody td .text-sm,
+.order-sheet-total td,
+.order-sheet-total-label,
+.order-sheet-qty--total {
+  font-size: 14px;
+}
+
+.order-sheet-station-shipments__count,
+.order-sheet-station-shipments__tons {
+  font-size: 13px;
+}
