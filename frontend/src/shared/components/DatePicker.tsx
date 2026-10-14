@@ -31,7 +31,7 @@ interface MenuLayout {
 
 const MENU_WIDTH = 280;
 const MENU_HEIGHT = 360;
-const COMPACT_MENU_MIN_WIDTH = 220;
+const COMPACT_MENU_MIN_WIDTH = 252;
 const YEAR_SPAN = 12;
 
 function getMenuLayout(trigger: HTMLElement, variant: 'default' | 'compact'): MenuLayout {
@@ -52,8 +52,9 @@ function getMenuLayout(trigger: HTMLElement, variant: 'default' | 'compact'): Me
 
   if (variant === 'compact' && cellRect) {
     left = cellRect.left;
+    // Menyu katakdan kengroq bo‘lsa, o‘ng chetini katak o‘ng chetiga tekislaymiz (jadvaldan chiqmaydi)
     if (left + menuWidth > cellRect.right) {
-      left = Math.max(cellRect.left, cellRect.right - menuWidth);
+      left = Math.max(8, cellRect.right - menuWidth);
     }
   } else {
     if (left + menuWidth > window.innerWidth - 8) {
