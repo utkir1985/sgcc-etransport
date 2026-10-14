@@ -440,547 +440,549 @@ export default function ReportsPage() {
           items={laneTabs}
         />
 
-        {periodControls}
+        <div className="docs-panel">
+          {periodControls}
 
-        <div className="thub__board">
-          {loading ? (
-              <div className="thub-empty">Yuklanmoqda…</div>
-            ) : lane === 'overview' ? (
-              <div className="thub-overview">
-                {shippedProducts.length > 0 && (
-                  <RankedBars
-                    unit="tonna — jo‘natilgan"
-                    rows={shippedProducts.map(row => ({
-                      id: row.productType,
-                      label: row.label,
-                      sub: `${row.chiqish.wagons} vagon`,
-                      value: Math.round(row.chiqish.tons * 10) / 10,
-                    }))}
-                  />
-                )}
-                {shippedProducts.length > 0 && (
-                  <div className="thub-table-wrap">
-                    <table className="thub-table">
-                      <thead>
-                        <tr>
-                          <th>Mahsulot</th>
-                          <th className="rhub-right">Yuklangan</th>
-                          <th className="rhub-right">Jo‘natilgan</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {shippedProducts.map(row => (
-                          <tr key={row.productType}>
-                            <td><span className="thub-table__code">{row.label}</span></td>
-                            <td className="rhub-right">
-                              <div className="thub-table__code">{fmtTon(row.yuklash.tons)} t</div>
-                              <div className="rhub-sub">{row.yuklash.wagons} vagon</div>
-                            </td>
-                            <td className="rhub-right">
-                              <div className="thub-table__code">{fmtTon(row.chiqish.tons)} t</div>
-                              <div className="rhub-sub">{row.chiqish.wagons} vagon</div>
-                            </td>
+          <div className="thub__board">
+            {loading ? (
+                <div className="thub-empty">Yuklanmoqda…</div>
+              ) : lane === 'overview' ? (
+                <div className="thub-overview">
+                  {shippedProducts.length > 0 && (
+                    <RankedBars
+                      unit="tonna — jo‘natilgan"
+                      rows={shippedProducts.map(row => ({
+                        id: row.productType,
+                        label: row.label,
+                        sub: `${row.chiqish.wagons} vagon`,
+                        value: Math.round(row.chiqish.tons * 10) / 10,
+                      }))}
+                    />
+                  )}
+                  {shippedProducts.length > 0 && (
+                    <div className="thub-table-wrap">
+                      <table className="thub-table">
+                        <thead>
+                          <tr>
+                            <th>Mahsulot</th>
+                            <th className="rhub-right">Yuklangan</th>
+                            <th className="rhub-right">Jo‘natilgan</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                <HubZoneTabs
-                  label="Davr ko‘rsatkichlari"
-                  columns={4}
-                  value={flowKind === 'all' ? null : flowKind}
-                  onChange={id => {
-                    if (id === 'orders') {
-                      setLane('orders');
-                      return;
-                    }
-                    setFlowKind(current => current === id ? 'all' : id);
-                  }}
-                  items={[
-                    {
-                      id: 'kirish' as const,
-                      label: 'Kirish',
-                      hint: 'Bo‘sh vagon qabul qilindi',
-                      icon: ArrowDownToLine,
-                      tone: 'sisterna' as HubZoneTone,
-                      count: report.kirish.wagons,
-                    },
-                    {
-                      id: 'yuklash' as const,
-                      label: 'Yuklash',
-                      hint: `${fmtTon(report.yuklash.tons)} t`,
-                      icon: Package,
-                      tone: 'platform' as HubZoneTone,
-                      count: report.yuklash.wagons,
-                    },
-                    {
-                      id: 'chiqish' as const,
-                      label: 'Chiqish',
-                      hint: `${fmtTon(report.chiqish.tons)} t`,
-                      icon: ArrowUpFromLine,
-                      tone: 'container' as HubZoneTone,
-                      count: report.chiqish.wagons,
-                    },
-                    {
-                      id: 'orders' as const,
-                      label: 'Buyurtmalar',
-                      hint: `${fmtTon(orderStats.tons)} t · ${orderStats.wagons} vagon`,
-                      icon: ClipboardList,
-                      tone: 'closed' as HubZoneTone,
-                      count: orderStats.total,
-                    },
-                  ]}
-                />
-
-                {flowRows.length > 0 && (
-                  <div className="rhub-flow-summary">
-                    <p className="rhub-flow-summary__count">
-                      {flowKind === 'all' ? 'Davr bo‘yicha barchasi' : FLOW_KIND_LABEL[flowKind]}
-                      {' — '}
-                      <strong>{flowRows.length}</strong> ta yozuv · <strong>{flowWagonsTotal}</strong> vagon
-                      {flowTonsTotal > 0 ? <> · <strong>{fmtTon(flowTonsTotal)}</strong> t</> : null}
-                      {flowKind !== 'all' && (
-                        <button
-                          type="button"
-                          className="ml-2 text-primary-600 underline text-sm font-normal dark:text-primary-400"
-                          onClick={() => setFlowKind('all')}
-                        >
-                          Barchasi
-                        </button>
-                      )}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Har bir partiya/vagonning to‘liq ro‘yxati — mas’ul xodim, hujjat va nosozliklar
-                      bilan — Jarayonlar tarixida ko‘rinadi.
-                    </p>
-                    <button
-                      type="button"
-                      className="btn-secondary flex items-center gap-1.5"
-                      onClick={openFlowInHistory}
-                    >
-                      <History className="w-4 h-4" strokeWidth={1.75} />
-                      <span>Jarayonlar tarixida ko‘rish</span>
-                    </button>
-                  </div>
-                )}
-
-                <div className="thub-overview__flow">
-                  <button type="button" className="thub-flow" onClick={() => setLane('products')}>
-                    <Package className="w-4 h-4" strokeWidth={2} />
-                    <div>
-                      <strong>Mahsulot</strong>
-                      <span>{report.byProduct.length} ta tur</span>
+                        </thead>
+                        <tbody>
+                          {shippedProducts.map(row => (
+                            <tr key={row.productType}>
+                              <td><span className="thub-table__code">{row.label}</span></td>
+                              <td className="rhub-right">
+                                <div className="thub-table__code">{fmtTon(row.yuklash.tons)} t</div>
+                                <div className="rhub-sub">{row.yuklash.wagons} vagon</div>
+                              </td>
+                              <td className="rhub-right">
+                                <div className="thub-table__code">{fmtTon(row.chiqish.tons)} t</div>
+                                <div className="rhub-sub">{row.chiqish.wagons} vagon</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                    <em>{report.byProduct.length}</em>
-                  </button>
-                  <button type="button" className="thub-flow" onClick={() => setLane('ownership')}>
-                    <Boxes className="w-4 h-4" strokeWidth={2} />
-                    <div>
-                      <strong>Egalik</strong>
-                      <span>M {ownership.majmua.wagons} · T {ownership.tashqi.wagons}</span>
-                    </div>
-                    <em>{ownership.majmua.wagons + ownership.tashqi.wagons}</em>
-                  </button>
-                  <button type="button" className="thub-flow" onClick={() => setLane('kinds')}>
-                    <BarChart3 className="w-4 h-4" strokeWidth={2} />
-                    <div>
-                      <strong>Vagon turi</strong>
-                      <span>Sisterna / yopiq / platforma</span>
-                    </div>
-                    <em>{kinds.reduce((s, k) => s + k.chiqish, 0)}</em>
-                  </button>
-                  <button type="button" className="thub-flow" onClick={() => setLane('trend')}>
-                    <TrendingUp className="w-4 h-4" strokeWidth={2} />
-                    <div>
-                      <strong>Tendensiya</strong>
-                      <span>{mode === 'daily' ? '7 kun' : mode === 'weekly' ? '8 hafta' : '6 oy'}</span>
-                    </div>
-                    <em>{trend.length}</em>
-                  </button>
-                </div>
-              </div>
-            ) : lane === 'products' ? (
-              report.byProduct.length === 0 ? (
-                <div className="thub-empty">
-                  <p className="thub-empty__title">Mahsulot kesimi bo‘sh</p>
-                </div>
-              ) : (
-                <div className="thub-table-wrap">
-                  <table className="thub-table">
-                    <thead>
-                      <tr>
-                        <th>Mahsulot</th>
-                        <th className="rhub-right">Kirish, vagon</th>
-                        <th className="rhub-right">Yuklash</th>
-                        <th className="rhub-right">Chiqish</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.byProduct.map(row => (
-                        <tr key={row.productType}>
-                          <td><span className="thub-table__code">{row.label}</span></td>
-                          <td className="rhub-right">
-                            <div className="thub-table__code">{row.kirish.wagons}</div>
-                            <div className="rhub-sub">vagon</div>
-                          </td>
-                          <td className="rhub-right">
-                            <div className="thub-table__code">{row.yuklash.wagons}</div>
-                            <div className="rhub-sub">{fmtTon(row.yuklash.tons)} t</div>
-                          </td>
-                          <td className="rhub-right">
-                            <div className="thub-table__code">{row.chiqish.wagons}</div>
-                            <div className="rhub-sub">{fmtTon(row.chiqish.tons)} t</div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
-            ) : lane === 'destinations' ? (
-              destinations.length === 0 ? (
-                <div className="thub-empty">
-                  <p className="thub-empty__title">Bu davrda chiqish yo‘q</p>
-                  <p className="thub-empty__text">Kontragent va stansiya kesimi chiqib ketgan vagonlar asosida tuziladi.</p>
-                </div>
-              ) : (
-                <div className="thub-overview">
-                <RankedBars
-                  unit="tonna"
-                  maxRows={8}
-                  rows={destinations.map(row => ({
-                    id: row.id,
-                    label: row.contractor,
-                    sub: row.station,
-                    value: row.tons,
-                  }))}
-                />
-                <div className="thub-table-wrap">
-                  <table className="thub-table">
-                    <thead>
-                      <tr>
-                        <th>Kontragent</th>
-                        <th>Jo‘natish stansiyasi</th>
-                        <th className="rhub-right">Yuk xati</th>
-                        <th className="rhub-right">Vagon</th>
-                        <th className="rhub-right">Tonna</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {destinations.map(row => (
-                        <tr key={row.id}>
-                          <td><span className="thub-table__code">{row.contractor}</span></td>
-                          <td>{row.station}</td>
-                          <td className="rhub-right thub-mono">{row.registries}</td>
-                          <td className="rhub-right thub-mono">{row.wagons}</td>
-                          <td className="rhub-right thub-mono">{fmtTon(row.tons)}</td>
-                        </tr>
-                      ))}
-                      <tr>
-                        <td colSpan={2}><b>Jami</b></td>
-                        <td className="rhub-right thub-mono">—</td>
-                        <td className="rhub-right thub-mono"><b>{destinations.reduce((n, r) => n + r.wagons, 0)}</b></td>
-                        <td className="rhub-right thub-mono"><b>{fmtTon(destinations.reduce((n, r) => n + r.tons, 0))}</b></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                </div>
-              )
-            ) : lane === 'cycle' ? (
-              cycle.measured === 0 ? (
-                <div className="thub-empty">
-                  <p className="thub-empty__title">Aylanma hisoblanmadi</p>
-                  <p className="thub-empty__text">Bu davrda chiqib ketgan vagon yo‘q yoki kirish sanasi yozilmagan.</p>
-                </div>
-              ) : (
-                <div className="thub-overview">
+                  )}
                   <HubZoneTabs
-                    label="Aylanma vaqti"
+                    label="Davr ko‘rsatkichlari"
                     columns={4}
-                    value={null}
-                    onChange={() => {}}
-                    readOnly
+                    value={flowKind === 'all' ? null : flowKind}
+                    onChange={id => {
+                      if (id === 'orders') {
+                        setLane('orders');
+                        return;
+                      }
+                      setFlowKind(current => current === id ? 'all' : id);
+                    }}
                     items={[
                       {
-                        id: 'avg' as const,
-                        label: 'O‘rtacha',
-                        hint: `${fmtHours(cycle.avgHours)} · ${cycle.measured} vagon`,
-                        icon: Timer,
+                        id: 'kirish' as const,
+                        label: 'Kirish',
+                        hint: 'Bo‘sh vagon qabul qilindi',
+                        icon: ArrowDownToLine,
                         tone: 'sisterna' as HubZoneTone,
-                        count: Math.round(cycle.avgHours / 24 * 10) / 10,
+                        count: report.kirish.wagons,
                       },
                       {
-                        id: 'min' as const,
-                        label: 'Eng tez',
-                        hint: fmtHours(cycle.minHours),
-                        icon: TrendingUp,
-                        tone: 'done' as HubZoneTone,
-                        count: Math.round(cycle.minHours / 24 * 10) / 10,
-                      },
-                      {
-                        id: 'max' as const,
-                        label: 'Eng uzoq',
-                        hint: fmtHours(cycle.maxHours),
-                        icon: Hourglass,
-                        tone: 'amber' as HubZoneTone,
-                        count: Math.round(cycle.maxHours / 24 * 10) / 10,
-                      },
-                      {
-                        id: 'load' as const,
-                        label: 'Yuklashgacha',
-                        hint: `Yuklashdan chiqishgacha ${fmtHours(cycle.avgLoadToExitHours)}`,
+                        id: 'yuklash' as const,
+                        label: 'Yuklash',
+                        hint: `${fmtTon(report.yuklash.tons)} t`,
                         icon: Package,
                         tone: 'platform' as HubZoneTone,
-                        count: Math.round(cycle.avgToLoadHours / 24 * 10) / 10,
+                        count: report.yuklash.wagons,
+                      },
+                      {
+                        id: 'chiqish' as const,
+                        label: 'Chiqish',
+                        hint: `${fmtTon(report.chiqish.tons)} t`,
+                        icon: ArrowUpFromLine,
+                        tone: 'container' as HubZoneTone,
+                        count: report.chiqish.wagons,
+                      },
+                      {
+                        id: 'orders' as const,
+                        label: 'Buyurtmalar',
+                        hint: `${fmtTon(orderStats.tons)} t · ${orderStats.wagons} vagon`,
+                        icon: ClipboardList,
+                        tone: 'closed' as HubZoneTone,
+                        count: orderStats.total,
                       },
                     ]}
                   />
-                  <RankedBars
-                    unit="vagon — zavodda turish muddati"
-                    rows={cycle.buckets.map(b => ({ id: b.id, label: b.label, value: b.count }))}
-                  />
-                  <div className="thub-table-wrap">
-                    <table className="thub-table">
-                      <thead>
-                        <tr>
-                          <th>Zavodda turish muddati</th>
-                          <th className="rhub-right">Vagon</th>
-                          <th className="rhub-right">Ulush</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cycle.buckets.map(b => (
-                          <tr key={b.id}>
-                            <td>{b.label}</td>
-                            <td className="rhub-right thub-mono">{b.count}</td>
-                            <td className="rhub-right thub-mono">
-                              {cycle.measured === 0 ? '—' : `${Math.round((b.count / cycle.measured) * 100)}%`}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+
+                  {flowRows.length > 0 && (
+                    <div className="rhub-flow-summary">
+                      <p className="rhub-flow-summary__count">
+                        {flowKind === 'all' ? 'Davr bo‘yicha barchasi' : FLOW_KIND_LABEL[flowKind]}
+                        {' — '}
+                        <strong>{flowRows.length}</strong> ta yozuv · <strong>{flowWagonsTotal}</strong> vagon
+                        {flowTonsTotal > 0 ? <> · <strong>{fmtTon(flowTonsTotal)}</strong> t</> : null}
+                        {flowKind !== 'all' && (
+                          <button
+                            type="button"
+                            className="ml-2 text-primary-600 underline text-sm font-normal dark:text-primary-400"
+                            onClick={() => setFlowKind('all')}
+                          >
+                            Barchasi
+                          </button>
+                        )}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Har bir partiya/vagonning to‘liq ro‘yxati — mas’ul xodim, hujjat va nosozliklar
+                        bilan — Jarayonlar tarixida ko‘rinadi.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-secondary flex items-center gap-1.5"
+                        onClick={openFlowInHistory}
+                      >
+                        <History className="w-4 h-4" strokeWidth={1.75} />
+                        <span>Jarayonlar tarixida ko‘rish</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="thub-overview__flow">
+                    <button type="button" className="thub-flow" onClick={() => setLane('products')}>
+                      <Package className="w-4 h-4" strokeWidth={2} />
+                      <div>
+                        <strong>Mahsulot</strong>
+                        <span>{report.byProduct.length} ta tur</span>
+                      </div>
+                      <em>{report.byProduct.length}</em>
+                    </button>
+                    <button type="button" className="thub-flow" onClick={() => setLane('ownership')}>
+                      <Boxes className="w-4 h-4" strokeWidth={2} />
+                      <div>
+                        <strong>Egalik</strong>
+                        <span>M {ownership.majmua.wagons} · T {ownership.tashqi.wagons}</span>
+                      </div>
+                      <em>{ownership.majmua.wagons + ownership.tashqi.wagons}</em>
+                    </button>
+                    <button type="button" className="thub-flow" onClick={() => setLane('kinds')}>
+                      <BarChart3 className="w-4 h-4" strokeWidth={2} />
+                      <div>
+                        <strong>Vagon turi</strong>
+                        <span>Sisterna / yopiq / platforma</span>
+                      </div>
+                      <em>{kinds.reduce((s, k) => s + k.chiqish, 0)}</em>
+                    </button>
+                    <button type="button" className="thub-flow" onClick={() => setLane('trend')}>
+                      <TrendingUp className="w-4 h-4" strokeWidth={2} />
+                      <div>
+                        <strong>Tendensiya</strong>
+                        <span>{mode === 'daily' ? '7 kun' : mode === 'weekly' ? '8 hafta' : '6 oy'}</span>
+                      </div>
+                      <em>{trend.length}</em>
+                    </button>
                   </div>
-                  <p className="rhub-note">
-                    Raqamlar kartalarda kunda, izohda soatda. Har bir vagon o‘z tashrifining
-                    kirish sanasidan hisoblanadi.
-                  </p>
                 </div>
-              )
-            ) : lane === 'exceptions' ? (
-              <div className="thub-overview">
-                <HubZoneTabs
-                  label="Istisnolar"
-                  columns={4}
-                  value={null}
-                  onChange={() => {}}
-                  readOnly
-                  items={[
-                    {
-                      id: 'def' as const,
-                      label: 'Dalolatnoma',
-                      hint: 'Nomuvofiq vagonlar',
-                      icon: TriangleAlert,
-                      tone: 'amber' as HubZoneTone,
-                      count: exceptions.defective,
-                    },
-                    {
-                      id: 'txt' as const,
-                      label: 'Raqamsiz plomba',
-                      hint: 'PLOMBASIZ, tashkilot plombasi',
-                      icon: Lock,
-                      tone: 'container' as HubZoneTone,
-                      count: exceptions.sealTextOnly,
-                    },
-                    {
-                      id: 'nos' as const,
-                      label: 'Plombasiz',
-                      hint: 'Maydon bo‘sh',
-                      icon: TriangleAlert,
-                      tone: 'closed' as HubZoneTone,
-                      count: exceptions.noSeal,
-                    },
-                    {
-                      id: 'rep' as const,
-                      label: 'Takror tashrif',
-                      hint: 'Qayta kelgan vagonlar',
-                      icon: ArrowLeftRight,
-                      tone: 'sisterna' as HubZoneTone,
-                      count: exceptions.repeatVisits,
-                    },
-                  ]}
-                />
-                {exceptions.rows.length === 0 ? (
+              ) : lane === 'products' ? (
+                report.byProduct.length === 0 ? (
                   <div className="thub-empty">
-                    <p className="thub-empty__title">Bu davrda istisno yo‘q</p>
+                    <p className="thub-empty__title">Mahsulot kesimi bo‘sh</p>
                   </div>
                 ) : (
                   <div className="thub-table-wrap">
                     <table className="thub-table">
                       <thead>
                         <tr>
-                          <th>Turi</th>
-                          <th>Vagon №</th>
-                          <th>Yuk xati</th>
-                          <th>Izoh</th>
+                          <th>Mahsulot</th>
+                          <th className="rhub-right">Kirish, vagon</th>
+                          <th className="rhub-right">Yuklash</th>
+                          <th className="rhub-right">Chiqish</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {exceptions.rows.map(row => (
-                          <tr key={row.id}>
-                            <td><span className="thub-chip thub-chip--stage">{row.kind}</span></td>
-                            <td><span className="thub-table__code">{row.wagon}</span></td>
-                            <td className="thub-mono">{row.registry}</td>
-                            <td>{row.note}</td>
+                        {report.byProduct.map(row => (
+                          <tr key={row.productType}>
+                            <td><span className="thub-table__code">{row.label}</span></td>
+                            <td className="rhub-right">
+                              <div className="thub-table__code">{row.kirish.wagons}</div>
+                              <div className="rhub-sub">vagon</div>
+                            </td>
+                            <td className="rhub-right">
+                              <div className="thub-table__code">{row.yuklash.wagons}</div>
+                              <div className="rhub-sub">{fmtTon(row.yuklash.tons)} t</div>
+                            </td>
+                            <td className="rhub-right">
+                              <div className="thub-table__code">{row.chiqish.wagons}</div>
+                              <div className="rhub-sub">{fmtTon(row.chiqish.tons)} t</div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                )}
-                <p className="rhub-note">
-                  Davrda chiqqan vagonlar: <b>{exceptions.exitedWagons}</b>. Raqamsiz plomba —
-                  zavod ehtiyoji yoki tashkilot plombasi bo‘lgan normal holat, nazorat uchun ko‘rsatiladi.
-                </p>
-              </div>
-            ) : lane === 'ownership' ? (
-              <HubZoneTabs
-                label="Egalik"
-                columns={2}
-                value={null}
-                onChange={() => {}}
-                readOnly
-                items={[
-                  {
-                    id: 'majmua' as const,
-                    label: 'Majmua',
-                    hint: `Chiqish · ${fmtTon(ownership.majmua.tons)} t`,
-                    icon: Boxes,
-                    tone: 'sisterna',
-                    count: ownership.majmua.wagons,
-                  },
-                  {
-                    id: 'tashqi' as const,
-                    label: 'Tashqi',
-                    hint: `Chiqish · ${fmtTon(ownership.tashqi.tons)} t`,
-                    icon: Boxes,
-                    tone: 'platform',
-                    count: ownership.tashqi.wagons,
-                  },
-                ]}
-              />
-            ) : lane === 'kinds' ? (
-              <div className="thub-table-wrap">
-                <table className="thub-table">
-                  <thead>
-                    <tr>
-                      <th>Vagon turi</th>
-                      <th className="rhub-right">Kirish</th>
-                      <th className="rhub-right">Yuklash</th>
-                      <th className="rhub-right">Chiqish</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {kinds.map(row => (
-                      <tr key={row.kind}>
-                        <td>
-                          <span className={`thub-chip thub-chip--${row.kind}`}>{row.label}</span>
-                        </td>
-                        <td className="rhub-right thub-mono">{row.kirish}</td>
-                        <td className="rhub-right thub-mono">{row.yuklash}</td>
-                        <td className="rhub-right thub-mono">{row.chiqish}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : lane === 'orders' ? (
-              <div className="thub-overview">
+                )
+              ) : lane === 'destinations' ? (
+                destinations.length === 0 ? (
+                  <div className="thub-empty">
+                    <p className="thub-empty__title">Bu davrda chiqish yo‘q</p>
+                    <p className="thub-empty__text">Kontragent va stansiya kesimi chiqib ketgan vagonlar asosida tuziladi.</p>
+                  </div>
+                ) : (
+                  <div className="thub-overview">
+                  <RankedBars
+                    unit="tonna"
+                    maxRows={8}
+                    rows={destinations.map(row => ({
+                      id: row.id,
+                      label: row.contractor,
+                      sub: row.station,
+                      value: row.tons,
+                    }))}
+                  />
+                  <div className="thub-table-wrap">
+                    <table className="thub-table">
+                      <thead>
+                        <tr>
+                          <th>Kontragent</th>
+                          <th>Jo‘natish stansiyasi</th>
+                          <th className="rhub-right">Yuk xati</th>
+                          <th className="rhub-right">Vagon</th>
+                          <th className="rhub-right">Tonna</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {destinations.map(row => (
+                          <tr key={row.id}>
+                            <td><span className="thub-table__code">{row.contractor}</span></td>
+                            <td>{row.station}</td>
+                            <td className="rhub-right thub-mono">{row.registries}</td>
+                            <td className="rhub-right thub-mono">{row.wagons}</td>
+                            <td className="rhub-right thub-mono">{fmtTon(row.tons)}</td>
+                          </tr>
+                        ))}
+                        <tr>
+                          <td colSpan={2}><b>Jami</b></td>
+                          <td className="rhub-right thub-mono">—</td>
+                          <td className="rhub-right thub-mono"><b>{destinations.reduce((n, r) => n + r.wagons, 0)}</b></td>
+                          <td className="rhub-right thub-mono"><b>{fmtTon(destinations.reduce((n, r) => n + r.tons, 0))}</b></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  </div>
+                )
+              ) : lane === 'cycle' ? (
+                cycle.measured === 0 ? (
+                  <div className="thub-empty">
+                    <p className="thub-empty__title">Aylanma hisoblanmadi</p>
+                    <p className="thub-empty__text">Bu davrda chiqib ketgan vagon yo‘q yoki kirish sanasi yozilmagan.</p>
+                  </div>
+                ) : (
+                  <div className="thub-overview">
+                    <HubZoneTabs
+                      label="Aylanma vaqti"
+                      columns={4}
+                      value={null}
+                      onChange={() => {}}
+                      readOnly
+                      items={[
+                        {
+                          id: 'avg' as const,
+                          label: 'O‘rtacha',
+                          hint: `${fmtHours(cycle.avgHours)} · ${cycle.measured} vagon`,
+                          icon: Timer,
+                          tone: 'sisterna' as HubZoneTone,
+                          count: Math.round(cycle.avgHours / 24 * 10) / 10,
+                        },
+                        {
+                          id: 'min' as const,
+                          label: 'Eng tez',
+                          hint: fmtHours(cycle.minHours),
+                          icon: TrendingUp,
+                          tone: 'done' as HubZoneTone,
+                          count: Math.round(cycle.minHours / 24 * 10) / 10,
+                        },
+                        {
+                          id: 'max' as const,
+                          label: 'Eng uzoq',
+                          hint: fmtHours(cycle.maxHours),
+                          icon: Hourglass,
+                          tone: 'amber' as HubZoneTone,
+                          count: Math.round(cycle.maxHours / 24 * 10) / 10,
+                        },
+                        {
+                          id: 'load' as const,
+                          label: 'Yuklashgacha',
+                          hint: `Yuklashdan chiqishgacha ${fmtHours(cycle.avgLoadToExitHours)}`,
+                          icon: Package,
+                          tone: 'platform' as HubZoneTone,
+                          count: Math.round(cycle.avgToLoadHours / 24 * 10) / 10,
+                        },
+                      ]}
+                    />
+                    <RankedBars
+                      unit="vagon — zavodda turish muddati"
+                      rows={cycle.buckets.map(b => ({ id: b.id, label: b.label, value: b.count }))}
+                    />
+                    <div className="thub-table-wrap">
+                      <table className="thub-table">
+                        <thead>
+                          <tr>
+                            <th>Zavodda turish muddati</th>
+                            <th className="rhub-right">Vagon</th>
+                            <th className="rhub-right">Ulush</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cycle.buckets.map(b => (
+                            <tr key={b.id}>
+                              <td>{b.label}</td>
+                              <td className="rhub-right thub-mono">{b.count}</td>
+                              <td className="rhub-right thub-mono">
+                                {cycle.measured === 0 ? '—' : `${Math.round((b.count / cycle.measured) * 100)}%`}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="rhub-note">
+                      Raqamlar kartalarda kunda, izohda soatda. Har bir vagon o‘z tashrifining
+                      kirish sanasidan hisoblanadi.
+                    </p>
+                  </div>
+                )
+              ) : lane === 'exceptions' ? (
+                <div className="thub-overview">
+                  <HubZoneTabs
+                    label="Istisnolar"
+                    columns={4}
+                    value={null}
+                    onChange={() => {}}
+                    readOnly
+                    items={[
+                      {
+                        id: 'def' as const,
+                        label: 'Dalolatnoma',
+                        hint: 'Nomuvofiq vagonlar',
+                        icon: TriangleAlert,
+                        tone: 'amber' as HubZoneTone,
+                        count: exceptions.defective,
+                      },
+                      {
+                        id: 'txt' as const,
+                        label: 'Raqamsiz plomba',
+                        hint: 'PLOMBASIZ, tashkilot plombasi',
+                        icon: Lock,
+                        tone: 'container' as HubZoneTone,
+                        count: exceptions.sealTextOnly,
+                      },
+                      {
+                        id: 'nos' as const,
+                        label: 'Plombasiz',
+                        hint: 'Maydon bo‘sh',
+                        icon: TriangleAlert,
+                        tone: 'closed' as HubZoneTone,
+                        count: exceptions.noSeal,
+                      },
+                      {
+                        id: 'rep' as const,
+                        label: 'Takror tashrif',
+                        hint: 'Qayta kelgan vagonlar',
+                        icon: ArrowLeftRight,
+                        tone: 'sisterna' as HubZoneTone,
+                        count: exceptions.repeatVisits,
+                      },
+                    ]}
+                  />
+                  {exceptions.rows.length === 0 ? (
+                    <div className="thub-empty">
+                      <p className="thub-empty__title">Bu davrda istisno yo‘q</p>
+                    </div>
+                  ) : (
+                    <div className="thub-table-wrap">
+                      <table className="thub-table">
+                        <thead>
+                          <tr>
+                            <th>Turi</th>
+                            <th>Vagon №</th>
+                            <th>Yuk xati</th>
+                            <th>Izoh</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {exceptions.rows.map(row => (
+                            <tr key={row.id}>
+                              <td><span className="thub-chip thub-chip--stage">{row.kind}</span></td>
+                              <td><span className="thub-table__code">{row.wagon}</span></td>
+                              <td className="thub-mono">{row.registry}</td>
+                              <td>{row.note}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <p className="rhub-note">
+                    Davrda chiqqan vagonlar: <b>{exceptions.exitedWagons}</b>. Raqamsiz plomba —
+                    zavod ehtiyoji yoki tashkilot plombasi bo‘lgan normal holat, nazorat uchun ko‘rsatiladi.
+                  </p>
+                </div>
+              ) : lane === 'ownership' ? (
                 <HubZoneTabs
-                  label="Buyurtmalar statistikasi"
-                  columns={4}
+                  label="Egalik"
+                  columns={2}
                   value={null}
                   onChange={() => {}}
                   readOnly
                   items={[
                     {
-                      id: 'total' as const,
-                      label: 'Jami',
-                      hint: 'Davrdagi buyurtmalar',
-                      icon: ClipboardList,
-                      tone: 'sky',
-                      count: orderStats.total,
-                    },
-                    {
-                      id: 'faol' as const,
-                      label: 'Faol',
-                      hint: 'Active',
-                      icon: Hourglass,
+                      id: 'majmua' as const,
+                      label: 'Majmua',
+                      hint: `Chiqish · ${fmtTon(ownership.majmua.tons)} t`,
+                      icon: Boxes,
                       tone: 'sisterna',
-                      count: orderStats.faol,
+                      count: ownership.majmua.wagons,
                     },
                     {
-                      id: 'tasdiq' as const,
-                      label: 'Tasdiqlanayotgan',
-                      hint: 'Jarayonda',
-                      icon: Hourglass,
-                      tone: 'amber',
-                      count: orderStats.tasdiq,
-                    },
-                    {
-                      id: 'yakun' as const,
-                      label: 'Yakunlangan',
-                      hint: `${fmtTon(orderStats.tons)} t`,
-                      icon: CheckCircle2,
-                      tone: 'done',
-                      count: orderStats.yakun,
+                      id: 'tashqi' as const,
+                      label: 'Tashqi',
+                      hint: `Chiqish · ${fmtTon(ownership.tashqi.tons)} t`,
+                      icon: Boxes,
+                      tone: 'platform',
+                      count: ownership.tashqi.wagons,
                     },
                   ]}
                 />
-                <p className="rhub-note">
-                  Buyurtma vagonlari: <b>{orderStats.wagons}</b> · tonna: <b>{fmtTon(orderStats.tons)}</b>
-                </p>
-              </div>
-            ) : (
-              <div className="thub-overview">
-                <div className="thub-pills" role="group" aria-label="O‘lchov">
-                  <button type="button" className={trendUnit === 'wagons' ? 'is-on' : undefined} onClick={() => setTrendUnit('wagons')}>
-                    Vagon
-                  </button>
-                  <button type="button" className={trendUnit === 'tons' ? 'is-on' : undefined} onClick={() => setTrendUnit('tons')}>
-                    Tonna
-                  </button>
+              ) : lane === 'kinds' ? (
+                <div className="thub-table-wrap">
+                  <table className="thub-table">
+                    <thead>
+                      <tr>
+                        <th>Vagon turi</th>
+                        <th className="rhub-right">Kirish</th>
+                        <th className="rhub-right">Yuklash</th>
+                        <th className="rhub-right">Chiqish</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kinds.map(row => (
+                        <tr key={row.kind}>
+                          <td>
+                            <span className={`thub-chip thub-chip--${row.kind}`}>{row.label}</span>
+                          </td>
+                          <td className="rhub-right thub-mono">{row.kirish}</td>
+                          <td className="rhub-right thub-mono">{row.yuklash}</td>
+                          <td className="rhub-right thub-mono">{row.chiqish}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <GroupedColumnsChart
-                  unit={trendUnit === 'wagons' ? 'vagon' : 'tonna'}
-                  series={trendUnit === 'wagons'
-                    ? [
-                      { key: 'kirish', label: 'Kirish', color: 'var(--viz-s1)' },
-                      { key: 'yuklash', label: 'Yuklash', color: 'var(--viz-s2)' },
-                      { key: 'chiqish', label: 'Chiqish', color: 'var(--viz-s3)' },
-                    ]
-                    : [
-                      { key: 'yuklash', label: 'Yuklash', color: 'var(--viz-s2)' },
-                      { key: 'chiqish', label: 'Chiqish', color: 'var(--viz-s3)' },
+              ) : lane === 'orders' ? (
+                <div className="thub-overview">
+                  <HubZoneTabs
+                    label="Buyurtmalar statistikasi"
+                    columns={4}
+                    value={null}
+                    onChange={() => {}}
+                    readOnly
+                    items={[
+                      {
+                        id: 'total' as const,
+                        label: 'Jami',
+                        hint: 'Davrdagi buyurtmalar',
+                        icon: ClipboardList,
+                        tone: 'sky',
+                        count: orderStats.total,
+                      },
+                      {
+                        id: 'faol' as const,
+                        label: 'Faol',
+                        hint: 'Active',
+                        icon: Hourglass,
+                        tone: 'sisterna',
+                        count: orderStats.faol,
+                      },
+                      {
+                        id: 'tasdiq' as const,
+                        label: 'Tasdiqlanayotgan',
+                        hint: 'Jarayonda',
+                        icon: Hourglass,
+                        tone: 'amber',
+                        count: orderStats.tasdiq,
+                      },
+                      {
+                        id: 'yakun' as const,
+                        label: 'Yakunlangan',
+                        hint: `${fmtTon(orderStats.tons)} t`,
+                        icon: CheckCircle2,
+                        tone: 'done',
+                        count: orderStats.yakun,
+                      },
                     ]}
-                  points={trend.map(p => ({
-                    key: p.key,
-                    label: p.label,
-                    values: (trendUnit === 'wagons'
-                      ? { kirish: p.kirish, yuklash: p.yuklash, chiqish: p.chiqish }
-                      : { yuklash: p.tonsLoad, chiqish: p.tonsOut }) as Record<string, number>,
-                  }))}
-                />
-                {trendUnit === 'tons' && (
+                  />
                   <p className="rhub-note">
-                    Kirishda tonna ko‘rsatilmaydi: vagon korxonaga bo‘sh kiradi.
+                    Buyurtma vagonlari: <b>{orderStats.wagons}</b> · tonna: <b>{fmtTon(orderStats.tons)}</b>
                   </p>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              ) : (
+                <div className="thub-overview">
+                  <div className="thub-pills" role="group" aria-label="O‘lchov">
+                    <button type="button" className={trendUnit === 'wagons' ? 'is-on' : undefined} onClick={() => setTrendUnit('wagons')}>
+                      Vagon
+                    </button>
+                    <button type="button" className={trendUnit === 'tons' ? 'is-on' : undefined} onClick={() => setTrendUnit('tons')}>
+                      Tonna
+                    </button>
+                  </div>
+                  <GroupedColumnsChart
+                    unit={trendUnit === 'wagons' ? 'vagon' : 'tonna'}
+                    series={trendUnit === 'wagons'
+                      ? [
+                        { key: 'kirish', label: 'Kirish', color: 'var(--viz-s1)' },
+                        { key: 'yuklash', label: 'Yuklash', color: 'var(--viz-s2)' },
+                        { key: 'chiqish', label: 'Chiqish', color: 'var(--viz-s3)' },
+                      ]
+                      : [
+                        { key: 'yuklash', label: 'Yuklash', color: 'var(--viz-s2)' },
+                        { key: 'chiqish', label: 'Chiqish', color: 'var(--viz-s3)' },
+                      ]}
+                    points={trend.map(p => ({
+                      key: p.key,
+                      label: p.label,
+                      values: (trendUnit === 'wagons'
+                        ? { kirish: p.kirish, yuklash: p.yuklash, chiqish: p.chiqish }
+                        : { yuklash: p.tonsLoad, chiqish: p.tonsOut }) as Record<string, number>,
+                    }))}
+                  />
+                  {trendUnit === 'tons' && (
+                    <p className="rhub-note">
+                      Kirishda tonna ko‘rsatilmaydi: vagon korxonaga bo‘sh kiradi.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+        </div>
         </section>
     </div>
   );

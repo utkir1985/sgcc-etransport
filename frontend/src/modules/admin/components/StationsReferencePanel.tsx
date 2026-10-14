@@ -118,9 +118,9 @@ export function StationsReferencePanel() {
   const deleting = stations.find(s => s.id === deleteId);
 
   return (
-    <div className="space-y-4">
+    <div className="docs-panel">
       {/* Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="docs-panel__toolbar flex flex-wrap items-center justify-between gap-3">
         <div />
         {canStationsCreate && (
           <button type="button" className="btn-primary" onClick={openCreate}>

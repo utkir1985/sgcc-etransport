@@ -681,7 +681,7 @@ export default function AuditPage() {
       {/* Jadval hech qachon sakramaydi, toraymaydi yoki siljimaydi! */}
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* 1. CHAP TARAF: FILTRLAR VA JADVAL (Doimiy barqaror maydon) */}
-        <div className="w-full lg:flex-1 min-w-0 space-y-3">
+        <div className="w-full lg:flex-1 min-w-0 docs-panel">
           {/* FILTR VA BOSHQARUV TOOLBARI (Skrinshotdagidek faqat jadval ustida) */}
           <div className="thub__toolbar reestr-toolbar flex flex-wrap items-center justify-between gap-2.5 p-2.5 bg-white dark:bg-[#161c2b] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
             <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">

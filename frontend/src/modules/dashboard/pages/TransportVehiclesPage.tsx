@@ -276,216 +276,218 @@ export default function TransportVehiclesPage() {
           </div>
         </header>
 
-        <div className="tvhub-toolbar">
-          <label className="thub-search tvhub-toolbar__search">
-            <Search className="thub-search__ico" strokeWidth={1.75} />
-            <input
-              value={hub.search}
-              onChange={event => hub.setSearch(event.target.value)}
-              placeholder={meta.search}
-              aria-label="Vagonlarni qidirish"
-            />
-            {hub.search ? (
-              <button type="button" className="thub-search__x" onClick={() => hub.setSearch('')} aria-label="Qidiruvni tozalash">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-          </label>
-
-          <ProductTypeFilter
-            value={hub.product}
-            options={productOptions}
-            onChange={hub.setProduct}
-            fieldLabel=""
-            emptyLabel="Barcha mahsulotlar"
-            disabled={productOptions.length === 0}
-            className="tvhub-product-filter"
-          />
-
-          <div className="tvhub-toolbar__actions">
-            {filtersActive ? (
-              <button type="button" className="tvhub-toolbar__clear" onClick={clearFilters}>
-                <X className="h-3.5 w-3.5" aria-hidden />
-                Tozalash
-              </button>
-            ) : null}
-            <span className="tvhub-toolbar__result" aria-live="polite">
-              {filteredRows.length} / {sourceRows.length} vagon
-            </span>
-            <button
-              type="button"
-              className="tvhub-toolbar__refresh"
-              onClick={() => load()}
-              disabled={loading}
-              title="Ma’lumotlarni yangilash"
-              aria-label="Ma’lumotlarni yangilash"
-            >
-              <RotateCw className={loading ? 'is-spinning' : ''} aria-hidden />
-            </button>
-          </div>
-        </div>
-
-        <div className="thub__board">
-          {loading ? (
-            <div className="tvhub-skeleton" aria-label="Ma’lumotlar yuklanmoqda" aria-busy="true">
-              <div className="tvhub-skeleton__summary" />
-              <div className="tvhub-skeleton__head" />
-              {Array.from({ length: 8 }, (_, index) => (
-                <div className="tvhub-skeleton__row" key={index} />
-              ))}
-            </div>
-          ) : loadError ? (
-            <div className="thub-empty tvhub-error" role="alert">
-              <span className="tvhub-error__icon"><AlertCircle aria-hidden /></span>
-              <p className="thub-empty__title">Ma’lumotlarni olib bo‘lmadi</p>
-              <p className="thub-empty__text">{loadError}</p>
-              <button type="button" className="btn-secondary tvhub-error__retry" onClick={() => load()}>
-                <RotateCw className="h-4 w-4" aria-hidden />
-                Qayta urinish
-              </button>
-            </div>
-          ) : rawSourceRows.length === 0 ? (
-            <div className="thub-empty tvhub-empty">
-              <span className="tvhub-empty__icon"><ZoneIcon aria-hidden /></span>
-              <p className="thub-empty__title">{meta.emptyTitle}</p>
-              <p className="thub-empty__text">{meta.emptyText}</p>
-              <span className="tvhub-empty__live"><i /> Ma’lumotlar avtomatik yangilanadi</span>
-            </div>
-          ) : (
-            /* =========================================================================
-             * ODATIY JADVAL: BARCHA ZONALAR UCHUN (TARED, LOADING, LOADED, READY, DEFECTIVE)
-             * ========================================================================= */
-            <div className="thub-table-wrap reestr-table-wrap">
-              <div className="tvhub-table-summary flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 dark:text-slate-400">Jami:</span>
-                    <strong className="font-extrabold text-gray-900 dark:text-slate-100">{zoneStats.total} ta vagon</strong>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold border border-blue-200/80 dark:border-blue-800/60 shadow-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      Majmua: {zoneStats.majmua} ta
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold border border-amber-200/80 dark:border-amber-800/60 shadow-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      Tashqi: {zoneStats.tashqi} ta
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  className="btn-secondary !text-xs !py-1.5 !px-3.5 flex items-center gap-1.5"
-                  onClick={exportExcel}
-                  disabled={filteredRows.length === 0}
-                  title="Ushbu bo‘limdagi barcha vagonlarni Excel fayliga yuklash"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Excel yuklash</span>
+        <div className="docs-panel">
+          <div className="tvhub-toolbar">
+            <label className="thub-search tvhub-toolbar__search">
+              <Search className="thub-search__ico" strokeWidth={1.75} />
+              <input
+                value={hub.search}
+                onChange={event => hub.setSearch(event.target.value)}
+                placeholder={meta.search}
+                aria-label="Vagonlarni qidirish"
+              />
+              {hub.search ? (
+                <button type="button" className="thub-search__x" onClick={() => hub.setSearch('')} aria-label="Qidiruvni tozalash">
+                  <X className="h-3.5 w-3.5" />
                 </button>
-                {zone === 'ready' && (
+              ) : null}
+            </label>
+
+            <ProductTypeFilter
+              value={hub.product}
+              options={productOptions}
+              onChange={hub.setProduct}
+              fieldLabel=""
+              emptyLabel="Barcha mahsulotlar"
+              disabled={productOptions.length === 0}
+              className="tvhub-product-filter"
+            />
+
+            <div className="tvhub-toolbar__actions">
+              {filtersActive ? (
+                <button type="button" className="tvhub-toolbar__clear" onClick={clearFilters}>
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                  Tozalash
+                </button>
+              ) : null}
+              <span className="tvhub-toolbar__result" aria-live="polite">
+                {filteredRows.length} / {sourceRows.length} vagon
+              </span>
+              <button
+                type="button"
+                className="tvhub-toolbar__refresh"
+                onClick={() => load()}
+                disabled={loading}
+                title="Ma’lumotlarni yangilash"
+                aria-label="Ma’lumotlarni yangilash"
+              >
+                <RotateCw className={loading ? 'is-spinning' : ''} aria-hidden />
+              </button>
+            </div>
+          </div>
+
+          <div className="thub__board">
+            {loading ? (
+              <div className="tvhub-skeleton" aria-label="Ma’lumotlar yuklanmoqda" aria-busy="true">
+                <div className="tvhub-skeleton__summary" />
+                <div className="tvhub-skeleton__head" />
+                {Array.from({ length: 8 }, (_, index) => (
+                  <div className="tvhub-skeleton__row" key={index} />
+                ))}
+              </div>
+            ) : loadError ? (
+              <div className="thub-empty tvhub-error" role="alert">
+                <span className="tvhub-error__icon"><AlertCircle aria-hidden /></span>
+                <p className="thub-empty__title">Ma’lumotlarni olib bo‘lmadi</p>
+                <p className="thub-empty__text">{loadError}</p>
+                <button type="button" className="btn-secondary tvhub-error__retry" onClick={() => load()}>
+                  <RotateCw className="h-4 w-4" aria-hidden />
+                  Qayta urinish
+                </button>
+              </div>
+            ) : rawSourceRows.length === 0 ? (
+              <div className="thub-empty tvhub-empty">
+                <span className="tvhub-empty__icon"><ZoneIcon aria-hidden /></span>
+                <p className="thub-empty__title">{meta.emptyTitle}</p>
+                <p className="thub-empty__text">{meta.emptyText}</p>
+                <span className="tvhub-empty__live"><i /> Ma’lumotlar avtomatik yangilanadi</span>
+              </div>
+            ) : (
+              /* =========================================================================
+               * ODATIY JADVAL: BARCHA ZONALAR UCHUN (TARED, LOADING, LOADED, READY, DEFECTIVE)
+               * ========================================================================= */
+              <div className="thub-table-wrap reestr-table-wrap">
+                <div className="tvhub-table-summary flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 dark:text-slate-400">Jami:</span>
+                      <strong className="font-extrabold text-gray-900 dark:text-slate-100">{zoneStats.total} ta vagon</strong>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold border border-blue-200/80 dark:border-blue-800/60 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        Majmua: {zoneStats.majmua} ta
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold border border-amber-200/80 dark:border-amber-800/60 shadow-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        Tashqi: {zoneStats.tashqi} ta
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => navigate('/registry/create')}
-                    className="btn-primary !text-xs !py-1.5 !px-3.5 flex items-center gap-2 shadow-xs cursor-pointer"
-                    title="Yuk xatini shakllantirish bo‘limiga o‘tish"
+                    className="btn-secondary !text-xs !py-1.5 !px-3.5 flex items-center gap-1.5"
+                    onClick={exportExcel}
+                    disabled={filteredRows.length === 0}
+                    title="Ushbu bo‘limdagi barcha vagonlarni Excel fayliga yuklash"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Yuk xati shakllantirishga o‘tish</span>
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Excel yuklash</span>
                   </button>
-                )}
+                  {zone === 'ready' && (
+                    <button
+                      type="button"
+                      onClick={() => navigate('/registry/create')}
+                      className="btn-primary !text-xs !py-1.5 !px-3.5 flex items-center gap-2 shadow-xs cursor-pointer"
+                      title="Yuk xatini shakllantirish bo‘limiga o‘tish"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Yuk xati shakllantirishga o‘tish</span>
+                    </button>
+                  )}
+                  </div>
                 </div>
-              </div>
 
-              <table className="thub-table reestr-table docs-hub-table tvhub-table">
-                <thead>
-                  <tr>
-                    <th>№</th>
-                    <th>Hujjat raqami</th>
-                    <th>Vagon</th>
-                    {zone !== 'defective' ? <th>Vagon turi</th> : null}
-                    <th>Mahsulot</th>
-                    {zone !== 'defective' ? <th>Tegishlilik</th> : null}
-                    <th>Holat</th>
-                    {zone === 'defective' ? <th>Nosozlik tafsiloti</th> : null}
-                    <th>Vaqt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paged.slice.map(((row, index) => {
-                    const rowNumber = (paged.page - 1) * hub.pageSize + index + 1;
-                    const ownership = normalizeWagonOwnership(row.ownership);
-                    const isMajmua = ownership === WAGON_OWNERSHIP.Majmua;
-                    const kind = resolveWagonKind(row.wagonKind);
+                <table className="thub-table reestr-table docs-hub-table tvhub-table">
+                  <thead>
+                    <tr>
+                      <th>№</th>
+                      <th>Hujjat raqami</th>
+                      <th>Vagon</th>
+                      {zone !== 'defective' ? <th>Vagon turi</th> : null}
+                      <th>Mahsulot</th>
+                      {zone !== 'defective' ? <th>Tegishlilik</th> : null}
+                      <th>Holat</th>
+                      {zone === 'defective' ? <th>Nosozlik tafsiloti</th> : null}
+                      <th>Vaqt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paged.slice.map(((row, index) => {
+                      const rowNumber = (paged.page - 1) * hub.pageSize + index + 1;
+                      const ownership = normalizeWagonOwnership(row.ownership);
+                      const isMajmua = ownership === WAGON_OWNERSHIP.Majmua;
+                      const kind = resolveWagonKind(row.wagonKind);
 
-                    return (
-                      <tr key={row.id}>
-                        <td className="thub-row-num">{rowNumber}</td>
-                        <td className="thub-mono font-semibold">{row.arrivalNumber || '—'}</td>
-                        <td>
-                          <div className="tvhub-wagon-cell">
-                            <span className="tvhub-wagon-num">{row.wagonNumber}</span>
-                            {row.cisternNumber ? (
-                              <span className="tvhub-cistern-num">/ {row.cisternNumber}</span>
-                            ) : null}
-                          </div>
-                        </td>
-                        {zone !== 'defective' ? (
+                      return (
+                        <tr key={row.id}>
+                          <td className="thub-row-num">{rowNumber}</td>
+                          <td className="thub-mono font-semibold">{row.arrivalNumber || '—'}</td>
                           <td>
-                            <span className="thub-chip thub-chip--kind">{kindLabel(kind)}</span>
+                            <div className="tvhub-wagon-cell">
+                              <span className="tvhub-wagon-num">{row.wagonNumber}</span>
+                              {row.cisternNumber ? (
+                                <span className="tvhub-cistern-num">/ {row.cisternNumber}</span>
+                              ) : null}
+                            </div>
                           </td>
-                        ) : null}
-                        <td>{row.product || '—'}</td>
-                        {zone !== 'defective' ? (
+                          {zone !== 'defective' ? (
+                            <td>
+                              <span className="thub-chip thub-chip--kind">{kindLabel(kind)}</span>
+                            </td>
+                          ) : null}
+                          <td>{row.product || '—'}</td>
+                          {zone !== 'defective' ? (
+                            <td>
+                              {row.ownership ? (
+                                <span className={`thub-chip thub-chip--ownership thub-chip--ownership-${ownership}`}>
+                                  {isMajmua ? (
+                                    <span className="inline-flex items-center gap-1 font-bold text-blue-700 dark:text-blue-300">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                      Majmuaga tegishli
+                                    </span>
+                                  ) : (
+                                    <span className="text-amber-800 dark:text-amber-300">
+                                      Tashqi vagon
+                                    </span>
+                                  )}
+                                </span>
+                              ) : '—'}
+                            </td>
+                          ) : null}
                           <td>
-                            {row.ownership ? (
-                              <span className={`thub-chip thub-chip--ownership thub-chip--ownership-${ownership}`}>
-                                {isMajmua ? (
-                                  <span className="inline-flex items-center gap-1 font-bold text-blue-700 dark:text-blue-300">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                    Majmuaga tegishli
-                                  </span>
-                                ) : (
-                                  <span className="text-amber-800 dark:text-amber-300">
-                                    Tashqi vagon
-                                  </span>
-                                )}
+                            {row.isDefective ? (
+                              <span className="thub-chip thub-chip--stage bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800">
+                                Nomuvofiq
                               </span>
-                            ) : '—'}
+                            ) : (
+                              <span className={"thub-chip thub-chip--stage tvhub-stage tvhub-stage--" + zone}>{row.stage}</span>
+                            )}
                           </td>
-                        ) : null}
-                        <td>
-                          {row.isDefective ? (
-                            <span className="thub-chip thub-chip--stage bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800">
-                              Nomuvofiq
-                            </span>
-                          ) : (
-                            <span className={"thub-chip thub-chip--stage tvhub-stage tvhub-stage--" + zone}>{row.stage}</span>
-                          )}
-                        </td>
-                        {zone === 'defective' ? (
-                          <td className="reestr-notes" title={row.issue}>{row.issue || '—'}</td>
-                        ) : null}
-                        <td className="thub-mono whitespace-nowrap">{fmtStamp(row.at)}</td>
-                      </tr>
-                    );
-                  }))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                          {zone === 'defective' ? (
+                            <td className="reestr-notes" title={row.issue}>{row.issue || '—'}</td>
+                          ) : null}
+                          <td className="thub-mono whitespace-nowrap">{fmtStamp(row.at)}</td>
+                        </tr>
+                      );
+                    }))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
-        <DocsHubPagination
-          total={filteredRows.length}
-          page={paged.page}
-          pageSize={hub.pageSize}
-          onPageChange={hub.setPage}
-          onPageSizeChange={hub.setPageSize}
-          unitLabel="vagon"
-        />
+          <DocsHubPagination
+            total={filteredRows.length}
+            page={paged.page}
+            pageSize={hub.pageSize}
+            onPageChange={hub.setPage}
+            onPageSizeChange={hub.setPageSize}
+            unitLabel="vagon"
+          />
+        </div>
       </section>
     </div>
   );

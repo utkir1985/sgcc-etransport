@@ -17531,7 +17531,9 @@ html.dark .order-progress-track,
   box-shadow: 0 8px 28px rgb(15 23 42 / 0.05);
 }
 
-.docs-panel > .thub__toolbar {
+.docs-panel > .thub__toolbar,
+.docs-panel > .tvhub-toolbar,
+.docs-panel > .docs-panel__toolbar {
   padding: 0 0 16px;
   border: 0;
   border-bottom: 1px solid #edf1f6;
@@ -17547,8 +17549,19 @@ html.dark .order-progress-track,
   box-shadow: none;
 }
 
+/* Panel ichidagi kartalar — soyasiz, yumshoq ramka */
+.docs-panel .ui-card,
+.docs-panel .reestr-card {
+  border-color: #dbe5f0;
+  box-shadow: none;
+}
+
 .dark .docs-panel { background: #0f172a; border-color: #1e293b; box-shadow: none; }
-.dark .docs-panel > .thub__toolbar { border-bottom-color: #1e293b; }
+.dark .docs-panel > .thub__toolbar,
+.dark .docs-panel > .tvhub-toolbar,
+.dark .docs-panel > .docs-panel__toolbar { border-bottom-color: #1e293b; background: transparent; }
+.dark .docs-panel .ui-card,
+.dark .docs-panel .reestr-card { border-color: #334155; }
 .dark .docs-panel .thub-table-wrap,
 .dark .docs-panel .reestr-table-wrap { border-color: #334155; }
 

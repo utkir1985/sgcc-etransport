@@ -3117,76 +3117,78 @@ export function EmptyWagonsPage() {
             </div>
           ) : null}
 
-          <DocsHubToolbar
-            search={hub.search}
-            onSearchChange={hub.setSearch}
-            searchPlaceholder="Partiya, vagon yoki kirish hujjati №…"
-            preset={hub.preset}
-            onPreset={hub.pickPreset}
-            from={hub.from}
-            to={hub.to}
-            onFromChange={hub.onFromChange}
-            onToChange={hub.onToChange}
-            product={hub.product}
-            productOptions={kiritishProductOptions}
-            onProductChange={hub.setProduct}
-            actions={
-              <button
-                type="button"
-                className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30 shrink-0"
-                onClick={() => exportKiritishExcel(ichdxTab === 'pending' ? filteredPending : filteredSent)}
-                disabled={(ichdxTab === 'pending' ? filteredPending : filteredSent).length === 0}
-                title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
-              >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Excel yuklash</span>
-              </button>
-            }
-          />
-          <div className="thub__board">
-            {loading ? (
-              <div className="thub-empty">Yuklanmoqda…</div>
-            ) : ichdxTab === 'pending' ? (
-              pendingRailwayIntakes.length === 0 ? (
-                <div className="thub-empty">
-                  <p className="thub-empty__title">Kutilayotgan partiya yo‘q</p>
-                  <p className="thub-empty__text">Temir yo‘l vagon kiritgach, shu yerda paydo bo‘ladi.</p>
-                </div>
-              ) : filteredPending.length === 0 ? (
-                <div className="thub-empty">
-                  <p className="thub-empty__title">Mos partiya yo‘q</p>
-                  <p className="thub-empty__text">Qidiruv yoki davrni o‘zgartiring.</p>
-                </div>
-              ) : (
-                renderRailwayStylePartyTable(filteredPending, 0, false, false)
-              )
-            ) : processArrivals.length === 0 ? (
-              <div className="thub-empty">
-                <p className="thub-empty__title">Yuborilgan xabarnoma yo‘q</p>
-                <p className="thub-empty__text">Kutilmoqdadan partiya tanlab sexlarga yuboring.</p>
-              </div>
-            ) : filteredSent.length === 0 ? (
-                <div className="thub-empty">
-                  <p className="thub-empty__title">Mos partiya yo‘q</p>
-                  <p className="thub-empty__text">Qidiruv yoki davrni o‘zgartiring.</p>
-                </div>
-              ) : (
-                renderRailwayStylePartyTable(pagedSent.slice, pagedSent.startIndex, false, false)
-              )}
-          </div>
-          {ichdxTab === 'sent' ? (
-            <DocsHubPagination
-              total={filteredSent.length}
-              page={pagedSent.page}
-              pageSize={hub.pageSize}
-              onPageChange={hub.setPage}
-              onPageSizeChange={hub.setPageSize}
-              unitLabel="kiritish xati"
+          <div className="docs-panel">
+            <DocsHubToolbar
+              search={hub.search}
+              onSearchChange={hub.setSearch}
+              searchPlaceholder="Partiya, vagon yoki kirish hujjati №…"
+              preset={hub.preset}
+              onPreset={hub.pickPreset}
+              from={hub.from}
+              to={hub.to}
+              onFromChange={hub.onFromChange}
+              onToChange={hub.onToChange}
+              product={hub.product}
+              productOptions={kiritishProductOptions}
+              onProductChange={hub.setProduct}
+              actions={
+                <button
+                  type="button"
+                  className="btn-secondary !h-9 !py-0 !px-3.5 !text-xs !font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition-all text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/30 shrink-0"
+                  onClick={() => exportKiritishExcel(ichdxTab === 'pending' ? filteredPending : filteredSent)}
+                  disabled={(ichdxTab === 'pending' ? filteredPending : filteredSent).length === 0}
+                  title="Kiritish xizmat xatlarini Excel (.xlsx) fayliga yuklash"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Excel yuklash</span>
+                </button>
+              }
             />
-          ) : null}
+            <div className="thub__board">
+              {loading ? (
+                <div className="thub-empty">Yuklanmoqda…</div>
+              ) : ichdxTab === 'pending' ? (
+                pendingRailwayIntakes.length === 0 ? (
+                  <div className="thub-empty">
+                    <p className="thub-empty__title">Kutilayotgan partiya yo‘q</p>
+                    <p className="thub-empty__text">Temir yo‘l vagon kiritgach, shu yerda paydo bo‘ladi.</p>
+                  </div>
+                ) : filteredPending.length === 0 ? (
+                  <div className="thub-empty">
+                    <p className="thub-empty__title">Mos partiya yo‘q</p>
+                    <p className="thub-empty__text">Qidiruv yoki davrni o‘zgartiring.</p>
+                  </div>
+                ) : (
+                  renderRailwayStylePartyTable(filteredPending, 0, false, false)
+                )
+              ) : processArrivals.length === 0 ? (
+                <div className="thub-empty">
+                  <p className="thub-empty__title">Yuborilgan xabarnoma yo‘q</p>
+                  <p className="thub-empty__text">Kutilmoqdadan partiya tanlab sexlarga yuboring.</p>
+                </div>
+              ) : filteredSent.length === 0 ? (
+                  <div className="thub-empty">
+                    <p className="thub-empty__title">Mos partiya yo‘q</p>
+                    <p className="thub-empty__text">Qidiruv yoki davrni o‘zgartiring.</p>
+                  </div>
+                ) : (
+                  renderRailwayStylePartyTable(pagedSent.slice, pagedSent.startIndex, false, false)
+                )}
+            </div>
+            {ichdxTab === 'sent' ? (
+              <DocsHubPagination
+                total={filteredSent.length}
+                page={pagedSent.page}
+                pageSize={hub.pageSize}
+                onPageChange={hub.setPage}
+                onPageSizeChange={hub.setPageSize}
+                unitLabel="kiritish xati"
+              />
+            ) : null}
+          </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={menuGateCheck ? 'space-y-3' : 'docs-panel'}>
           {menuGateCheck ? null : (
             <DocsHubToolbar
               search={hub.search}

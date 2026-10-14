@@ -97,8 +97,8 @@ export function ProductsReferencePanel() {
   const deleting = products.find(p => p.id === deleteId);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="docs-panel">
+      <div className="docs-panel__toolbar flex flex-wrap items-center justify-between gap-3">
         <div className="admin-tabs" role="tablist">
           <button
             type="button"

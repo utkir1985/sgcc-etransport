@@ -811,71 +811,73 @@ export default function HistoryPage() {
           items={categoryTabs}
         />
 
-        <div className="thub__toolbar reestr-toolbar">
-          <div className="thub-pills" role="group" aria-label="Davr turi">
-            {DOCS_PERIOD_PRESETS.map(p => (
-              <button key={p.id} type="button" className={periodPreset === p.id ? 'is-on' : undefined} onClick={() => pickPreset(p.id)}>
-                {p.label}
-              </button>
-            ))}
+        <div className="docs-panel">
+          <div className="thub__toolbar reestr-toolbar">
+            <div className="thub-pills" role="group" aria-label="Davr turi">
+              {DOCS_PERIOD_PRESETS.map(p => (
+                <button key={p.id} type="button" className={periodPreset === p.id ? 'is-on' : undefined} onClick={() => pickPreset(p.id)}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <label className="thub-search">
+              <Search className="thub-search__ico" strokeWidth={1.75} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Partiya, vagon, yuk xati yoki xodim" />
+              {search ? (
+                <button type="button" className="thub-search__x" onClick={() => setSearch('')} aria-label="Tozalash">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : null}
+            </label>
+
+            <div className="thub-date">
+              <span className="thub-date__lbl">Dan</span>
+              <DatePicker value={from} onChange={onFromChange} variant="compact" placeholder="dd.mm.yyyy" />
+              <span className="thub-date__lbl">Gacha</span>
+              <DatePicker value={to} onChange={onToChange} variant="compact" placeholder="dd.mm.yyyy" />
+            </div>
+
+            <span className="thub-history__meta">
+              {loading ? '…' : (
+                <>
+                  {periodLabel} · {recordLabel}
+                </>
+              )}
+            </span>
+
+            <button
+              type="button"
+              className="btn-secondary flex items-center gap-1.5"
+              onClick={exportExcel}
+              disabled={loading || activeTimeline.length === 0}
+              title="Tanlangan davr va bo‘lim bo‘yicha Excel yuklash"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Excel yuklash</span>
+            </button>
           </div>
 
-          <label className="thub-search">
-            <Search className="thub-search__ico" strokeWidth={1.75} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Partiya, vagon, yuk xati yoki xodim" />
-            {search ? (
-              <button type="button" className="thub-search__x" onClick={() => setSearch('')} aria-label="Tozalash">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            ) : null}
-          </label>
+          {loadError && activeTimeline.length > 0 && (
+            <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
+              Ma’lumot yangilanmadi: {loadError}. Ko‘rsatilayotgan tarix oxirgi muvaffaqiyatli holat.
+            </div>
+          )}
+          {board()}
 
-          <div className="thub-date">
-            <span className="thub-date__lbl">Dan</span>
-            <DatePicker value={from} onChange={onFromChange} variant="compact" placeholder="dd.mm.yyyy" />
-            <span className="thub-date__lbl">Gacha</span>
-            <DatePicker value={to} onChange={onToChange} variant="compact" placeholder="dd.mm.yyyy" />
-          </div>
-
-          <span className="thub-history__meta">
-            {loading ? '…' : (
-              <>
-                {periodLabel} · {recordLabel}
-              </>
-            )}
-          </span>
-
-          <button
-            type="button"
-            className="btn-secondary flex items-center gap-1.5"
-            onClick={exportExcel}
-            disabled={loading || activeTimeline.length === 0}
-            title="Tanlangan davr va bo‘lim bo‘yicha Excel yuklash"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Excel yuklash</span>
-          </button>
+          <TablePagination
+            total={activeTotal}
+            page={currentPage}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            unitLabel={tab === 'defects'
+              ? `vagon${totalDefectRecords > activeTotal ? ` (${totalDefectRecords} ta yozuv)` : ''}`
+              : 'yozuv'}
+            pageSizeOptions={[10, 20, 50]}
+          />
         </div>
-
-        {loadError && activeTimeline.length > 0 && (
-          <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
-            Ma’lumot yangilanmadi: {loadError}. Ko‘rsatilayotgan tarix oxirgi muvaffaqiyatli holat.
-          </div>
-        )}
-        {board()}
-
-        <TablePagination
-          total={activeTotal}
-          page={currentPage}
-          pageSize={pageSize}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
-          unitLabel={tab === 'defects'
-            ? `vagon${totalDefectRecords > activeTotal ? ` (${totalDefectRecords} ta yozuv)` : ''}`
-            : 'yozuv'}
-          pageSizeOptions={[10, 20, 50]}
-        />
       </section>
     </div>
   );

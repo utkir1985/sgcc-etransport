@@ -162,53 +162,55 @@ export function MarketingOrdersHome({
           }))}
         />
 
-        <div className="thub__toolbar reestr-toolbar">
-          {onSearchQueryChange ? (
-            <label className="thub-search">
-              <Search className="thub-search__ico" strokeWidth={1.75} aria-hidden />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={e => onSearchQueryChange(e.target.value)}
-                placeholder="Qidiruv…"
-                autoComplete="off"
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  className="thub-search__x"
-                  onClick={() => onSearchQueryChange('')}
-                  aria-label="Tozalash"
-                >
-                  <X className="w-3.5 h-3.5" strokeWidth={2} />
+        <div className="docs-panel">
+          <div className="thub__toolbar reestr-toolbar">
+            {onSearchQueryChange ? (
+              <label className="thub-search">
+                <Search className="thub-search__ico" strokeWidth={1.75} aria-hidden />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={e => onSearchQueryChange(e.target.value)}
+                  placeholder="Qidiruv…"
+                  autoComplete="off"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    className="thub-search__x"
+                    onClick={() => onSearchQueryChange('')}
+                    aria-label="Tozalash"
+                  >
+                    <X className="w-3.5 h-3.5" strokeWidth={2} />
+                  </button>
+                ) : null}
+              </label>
+            ) : null}
+
+            {productFilter}
+
+            {showPeriodField ? (
+              <div className="ohub-period">{periodControl}</div>
+            ) : null}
+
+            <div className="ohub-toolbar__right">
+              {typeof resultCount === 'number' ? (
+                <span className="ohub-count">{resultCount} ta natija</span>
+              ) : null}
+              <div className="flex flex-nowrap items-center gap-2">
+              {toolbarActions}
+              {canCreate && onCreate ? (
+                <button type="button" onClick={onCreate} className="btn-primary whitespace-nowrap">
+                  <Plus className="w-4 h-4" strokeWidth={2} />
+                  {createLabel}
                 </button>
               ) : null}
-            </label>
-          ) : null}
-
-          {productFilter}
-
-          {showPeriodField ? (
-            <div className="ohub-period">{periodControl}</div>
-          ) : null}
-
-          <div className="ohub-toolbar__right">
-            {typeof resultCount === 'number' ? (
-              <span className="ohub-count">{resultCount} ta natija</span>
-            ) : null}
-            <div className="flex flex-nowrap items-center gap-2">
-            {toolbarActions}
-            {canCreate && onCreate ? (
-              <button type="button" onClick={onCreate} className="btn-primary whitespace-nowrap">
-                <Plus className="w-4 h-4" strokeWidth={2} />
-                {createLabel}
-              </button>
-            ) : null}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="thub__board">{children}</div>
+          <div className="thub__board">{children}</div>
+        </div>
       </section>
     </div>
   );

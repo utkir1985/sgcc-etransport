@@ -374,9 +374,9 @@ export function RolesManagePanel() {
   }, [state.roles, search]);
 
   return (
-    <div className="space-y-4">
+    <div className="docs-panel">
       {/* Yuqori boshqaruv paneli */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="docs-panel__toolbar flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex items-center h-10 w-72 lg:w-80 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xs focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
             <Search className="w-4 h-4 absolute left-3.5 text-slate-400 shrink-0" />
@@ -597,8 +597,8 @@ export function RolesMenusPanel() {
   }, [allMenus, activeModule]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="docs-panel">
+      <div className="docs-panel__toolbar flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed max-w-2xl">
           Har bir rol tizimga kirganda qaysi menyularni ko&apos;rishini belgilang.
         </p>
@@ -766,8 +766,8 @@ export function RolesModulesPanel() {
   }, [state.modulesByRole, role]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="docs-panel">
+      <div className="docs-panel__toolbar flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed max-w-2xl">
           Modul darajasida ruxsatlar — butun bo&apos;limga kirishni yoqish / o&apos;chirish.
         </p>
@@ -1260,9 +1260,9 @@ export function RolesCrudPanel() {
   if (!roleMeta) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="docs-panel">
       {/* Yuqori boshqaruv paneli */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="docs-panel__toolbar flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="flex flex-wrap items-center gap-3">
           <RoleMenu roles={state.roles} value={role} onChange={setRole} />
           

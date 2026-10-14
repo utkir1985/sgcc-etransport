@@ -998,9 +998,11 @@ export function FleetWagonsReferencePanel() {
         />
 
         {view === 'containers' ? (
-          <ContainersReferencePanel embedded />
+          <div className="docs-panel">
+            <ContainersReferencePanel embedded />
+          </div>
         ) : view === 'majmua' || view === 'attention' ? (
-          <div className="reestr-attention-stack">
+          <div className="reestr-attention-stack docs-panel">
             {renderWagonToolbar(
               view === 'attention'
                 ? kindTab === 'container'
@@ -1040,7 +1042,7 @@ export function FleetWagonsReferencePanel() {
             )}
           </div>
         ) : view === 'tashqi' ? (
-          <>
+          <div className="docs-panel">
             {renderWagonToolbar('Tashqi vagon raqami, manzil, egasi…', { showActions: true })}
             {info ? <p className="text-sm text-emerald-700 dark:text-emerald-400">{info}</p> : null}
             {error && !dialog ? <p className="text-sm text-rose-600">{error}</p> : null}
@@ -1049,14 +1051,14 @@ export function FleetWagonsReferencePanel() {
               emptyTitle: 'Tashqi vagonlar yo‘q',
               emptyText: 'Hozircha tizimda tashqi yoki ijara vagonlari mavjud emas.',
             })}
-          </>
+          </div>
         ) : (
-          <>
+          <div className="docs-panel">
             {renderWagonToolbar('Majmua vagoni, manzil, izoh…', { showActions: true })}
             {info ? <p className="text-sm text-emerald-700 dark:text-emerald-400">{info}</p> : null}
             {error && !dialog ? <p className="text-sm text-rose-600">{error}</p> : null}
             {renderWagonBoard(visible)}
-          </>
+          </div>
         )}
       </section>
 
