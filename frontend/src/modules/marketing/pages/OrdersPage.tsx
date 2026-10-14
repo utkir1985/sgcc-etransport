@@ -59,7 +59,8 @@ import { listMarketingOrdersForPeriod } from '../../../shared/utils/marketingOrd
 import { OrderFilterPlaceholder } from '../../../shared/components/OrderFilterPlaceholder';
 import { isOrderFaol, isOrderTasdiqlanayotgan, isOrderYakunlangan } from '../../../shared/utils/dashboardOverview';
 import { parseOrderListView, type OrderListView } from '../../../shared/utils/menuNav';
-import { defaultYearMonthFromRange, formatDateTimeDisplay, formatPeriodRangeLabel, matchesPeriodRange } from '../../../shared/utils/dates';
+import { defaultYearMonthFromRange, formatDateTimeDisplay, formatDateUz, formatPeriodRangeLabel, matchesPeriodRange } from '../../../shared/utils/dates';
+import { DatePicker } from '../../../shared/components/DatePicker';
 
 const EMPTY_LINE = (): MonthlyOrderLineInput => ({
   sortOrder: 0,
@@ -1265,30 +1266,25 @@ function MarketingOrdersPanel({
                     return (
                       <td className="order-sheet-center px-2 py-1">
                         {editable ? (
-                          <div className="flex flex-col items-center gap-1">
-                            <input
-                              type="date"
+                          <div className="flex flex-col items-stretch gap-1 min-w-[9.5rem]">
+                            <DatePicker
+                              variant="compact"
                               value={lineDeadline}
-                              onChange={e => updateLine(idx, { lastLoadingDate: e.target.value || null })}
-                              aria-label="Yuklash oxirgi sanasi (ixtiyoriy)"
-                              className={`h-9 w-36 rounded-lg border px-2 text-xs font-semibold outline-none transition-colors ${
-                                isOverdue
-                                  ? 'border-rose-400 bg-rose-50 text-rose-800 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-200'
-                                  : 'border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 focus:border-blue-500'
-                              }`}
+                              onChange={value => updateLine(idx, { lastLoadingDate: value || null })}
+                              placeholder="Sanani tanlang"
                             />
                             {isOverdue && (
                               <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                                ⛔ Srok o‘tgan (Taqiq)
+                                Muddat o‘tgan
                               </span>
                             )}
                           </div>
                         ) : (
                           <div className="text-center">
-                            <span className="text-xs font-semibold tabular-nums">{lineDeadline || '—'}</span>
+                            <span className="text-xs font-semibold tabular-nums">{lineDeadline ? formatDateUz(lineDeadline) : '—'}</span>
                             {isOverdue && (
                               <span className="block text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                                ⛔ Taqiq
+                                Muddat o‘tgan
                               </span>
                             )}
                           </div>
