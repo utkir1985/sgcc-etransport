@@ -133,7 +133,7 @@ type OrderColumnKey =
 
 /** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
 const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
-  num: 3, order: 10, product: 15, wagons: 6, tons: 7.5, done: 11, remain: 8, shipped: 12, stage: 15,
+  num: 3, order: 10, product: 15, wagons: 7, tons: 7, done: 11, remain: 8, shipped: 12, stage: 15,
   contract: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
 };
 
@@ -197,8 +197,8 @@ export function OrderList({
     num: { label: '№', className: 'text-center' },
     order: { label: 'Buyurtma', className: 'text-center' },
     product: { label: 'Mahsulot', className: 'text-left' },
-    wagons: { label: 'Vagon', className: 'text-center', title: 'Yuklangan vagonlar soni' },
-    tons: { label: 'Og‘irlik (t)', className: 'text-center', title: 'Buyurtma og‘irligi, tonna' },
+    wagons: { label: 'Vagon soni', className: 'text-center', title: 'Yuklangan vagonlar soni' },
+    tons: { label: 'Reja (t)', className: 'text-center', title: 'Buyurtma bo‘yicha reja, tonna' },
     done: { label: 'Bajarilish', className: 'text-center', title: 'Yuklangan og‘irlik va foiz' },
     remain: { label: 'Qoldiq', className: 'text-center', title: 'Yuklanishi qolgan og‘irlik' },
     shipped: { label: 'Jo‘natildi', className: 'text-center' },
@@ -276,7 +276,7 @@ export function OrderList({
                       </strong>
                     </div>
                   </td>
-                  {has('wagons') && <td className="text-center font-semibold tabular-nums text-xs">{fulfillment.fulfilledWagons}</td>}
+                  {has('wagons') && <td className="text-center font-semibold tabular-nums text-xs whitespace-nowrap">{fulfillment.fulfilledWagons} ta</td>}
                   <td className="text-center font-semibold tabular-nums text-xs">{tonTotal}</td>
 
                   {has('stage') && (
