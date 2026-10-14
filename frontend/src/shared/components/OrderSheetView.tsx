@@ -63,7 +63,7 @@ function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][nu
         <li key={item.station || '—'}>
           <span className="order-sheet-station-shipments__name">{item.station || '—'}</span>
           <span className="order-sheet-station-shipments__meta">
-            {item.wagons} ta{item.netTons > 0 ? ` · ${formatTons(item.netTons)} t` : ''}
+            — {item.wagons} ta{item.netTons > 0 ? ` · ${formatTons(item.netTons)} t` : ''}
           </span>
         </li>
       ))}
