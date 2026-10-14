@@ -523,6 +523,7 @@ class ApiClient {
       lastLoadingDate?: string | null;
       contractNumber?: string;
       productGrade?: string;
+      customerOrderNumber?: string;
     }[];
   }) {
     return this.request<{ success: boolean; data: MonthlyOrder }>('/orders', { method: 'POST', body: JSON.stringify(data) });
@@ -547,6 +548,7 @@ class ApiClient {
       lastLoadingDate?: string | null;
       contractNumber?: string;
       productGrade?: string;
+      customerOrderNumber?: string;
     }[];
   }) {
     return this.request(`/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) });

@@ -18,7 +18,7 @@ public record MonthlyOrderLineDto(
     string QuantityUnit, string AccountingStatus, bool? AccountingReviewChecked,
     int FulfilledWagonCount = 0, decimal FulfilledNetWeight = 0,
     int RemainingWagonCount = 0, decimal RemainingTonCount = 0,
-    string ContractNumber = "", string ProductGrade = "");
+    string ContractNumber = "", string ProductGrade = "", string CustomerOrderNumber = "");
 
 public record MonthlyOrderDto(
     Guid Id, string OrderNumber, string LogisticsType, string ContractNumber, string ProductType,
@@ -45,7 +45,8 @@ public record OrderAttachmentDto(
 public record MonthlyOrderLineInput(
     int SortOrder, string Contractor, int WagonCount, string WagonNumbers,
     string DestinationStation, DateTime? LastLoadingDate, string QuantityUnit = "wagon",
-    Guid? Id = null, decimal TonCount = 0, string? ContractNumber = null, string? ProductGrade = null);
+    Guid? Id = null, decimal TonCount = 0, string? ContractNumber = null, string? ProductGrade = null,
+    string? CustomerOrderNumber = null);
 
 public record AccountingReviewSelection(string Contractor, bool Checked);
 

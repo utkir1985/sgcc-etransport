@@ -143,6 +143,8 @@ export interface MonthlyOrderLine {
   contractNumber?: string;
   /** Ixtiyoriy: mahsulot markasi */
   productGrade?: string;
+  /** Hujjatdagi (kontragent) buyurtma raqami — tizimdagi Buyurtma ID dan alohida */
+  customerOrderNumber?: string;
 }
 
 export interface OrderAttachment {
@@ -199,6 +201,7 @@ export interface MonthlyOrderLineInput {
   lastLoadingDate?: string | null;
   contractNumber?: string;
   productGrade?: string;
+  customerOrderNumber?: string;
 }
 
 export interface Contractor {

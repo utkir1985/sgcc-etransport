@@ -1030,6 +1030,9 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
 
                 page.Content().Column(col =>
                 {
+                    // Eski buyurtmalar vagon rejali; yangilarida vagon o‘rnida marka, shartnoma va
+                    // hujjatdagi buyurtma raqami esa har qatorda.
+                    var wagonPlan = model.Lines.Any(l => l.WagonCount > 0);
                     col.Item().PaddingTop(6).Table(tbl =>
                     {
                         tbl.ColumnsDefinition(columns =>
@@ -1039,11 +1042,10 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             columns.RelativeColumn(1.2f);
                             columns.RelativeColumn(1.2f);
                             columns.RelativeColumn(2f);
+                            if (!wagonPlan) columns.RelativeColumn(1.8f);
                             columns.RelativeColumn(2.5f);
                         });
 
-                        // Eski buyurtmalar vagon rejali; yangilarida vagon o‘rnida marka, shartnoma esa har qatorda.
-                        var wagonPlan = model.Lines.Any(l => l.WagonCount > 0);
                         tbl.Header(h =>
                         {
                             void H(string text) => h.Cell().Border(0.6f).BorderColor(Colors.Black).Background(Colors.Grey.Lighten4).PaddingVertical(7f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(text).Bold().FontSize(10.5f);
@@ -1052,6 +1054,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             H(wagonPlan ? "Vagon soni" : "Markasi");
                             H("Og'irligi (t)");
                             H("Shartnoma raqami");
+                            if (!wagonPlan) H("Buyurtma №");
                             H("Yetkazib berish joyi (stansiya)");
                         });
 
@@ -1074,6 +1077,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             else
                             {
                                 tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.ContractNumber) ? "—" : line.ContractNumber).FontSize(10.5f);
+                                tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.CustomerOrderNumber) ? "—" : line.CustomerOrderNumber).FontSize(10.5f);
                             }
 
                             tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.DestinationStation) ? "—" : line.DestinationStation).FontSize(10.5f);
@@ -1084,6 +1088,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(model.TotalWagons > 0 ? model.TotalWagons.ToString() : "—").Bold().FontSize(10.5f);
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(model.TotalTons > 0 ? model.TotalTons.ToString("0.###") : "—").Bold().FontSize(10.5f);
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).Text("");
+                        if (!wagonPlan) tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).Text("");
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).Text("");
                     });
 

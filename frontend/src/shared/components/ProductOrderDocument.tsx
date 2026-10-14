@@ -190,7 +190,10 @@ export function ProductOrderDocument({
                 {wagonPlan ? (isFirstInTable ? (
                   <td className="product-order-contract" rowSpan={totalRows}>{order.contractNumber || '—'}</td>
                 ) : null) : (
-                  <td className="product-order-contract">{line.contractNumber || '—'}</td>
+                  <>
+                    <td className="product-order-contract">{line.contractNumber || '—'}</td>
+                    <td className="product-order-contract">{line.customerOrderNumber || '—'}</td>
+                  </>
                 )}
                 <td className="product-order-dest">{line.destinationStation || '—'}</td>
               </tr>
@@ -200,6 +203,7 @@ export function ProductOrderDocument({
               <td className="product-order-qty">{wagonPlan ? totals.wagonTotal : ''}</td>
               <td className="product-order-qty">{totals.tonTotal}</td>
               <td className="product-order-contract" />
+              {!wagonPlan && <td className="product-order-contract" />}
               <td className="product-order-dest" />
             </tr>
           </tbody>

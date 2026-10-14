@@ -32,7 +32,7 @@ import { useRbacPermission } from '../hooks/useRbacPermission';
 
 function getOrderSheetHeaderClass(header: string): string | undefined {
   if (header === 'Yuklash oxirgi sanasi') return 'order-sheet-date-col';
-  if (header === 'Shartnoma raqami') return 'order-sheet-contract-col';
+  if (header === 'Shartnoma raqami' || header === 'Buyurtma №') return 'order-sheet-contract-col';
   if (header === 'Kelishish') return 'order-sheet-review-col';
   return undefined;
 }
@@ -161,7 +161,10 @@ export function OrderAccountingSheet({
                         {order.contractNumber}
                       </td>
                     )) : (
-                      <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
+                      <>
+                        <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
+                        <td className="order-sheet-contract order-sheet-center">{line.customerOrderNumber || '—'}</td>
+                      </>
                     )}
                     <td className="order-sheet-destination">
                       <span className="order-sheet-destination__inner">
@@ -204,7 +207,7 @@ export function OrderAccountingSheet({
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{wagonPlan ? quantityTotals.wagonTotal : ''}</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
-                <td colSpan={3} />
+                <td colSpan={wagonPlan ? 3 : 4} />
               </tr>
             </tbody>
           </table>

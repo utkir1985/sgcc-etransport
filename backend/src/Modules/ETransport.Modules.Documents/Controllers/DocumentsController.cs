@@ -2107,7 +2107,8 @@ public class DocumentsController(
                 TonCount: (decimal)tons,
                 ContractNumber: string.IsNullOrWhiteSpace(line.ContractNumber) ? order.ContractNumber : line.ContractNumber,
                 DestinationStation: line.DestinationStation,
-                ProductGrade: line.ProductGrade ?? ""
+                ProductGrade: line.ProductGrade ?? "",
+                CustomerOrderNumber: line.CustomerOrderNumber ?? ""
             ));
         }
 

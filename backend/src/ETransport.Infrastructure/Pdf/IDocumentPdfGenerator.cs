@@ -126,7 +126,8 @@ public record MonthlyOrderPdfLineRow(
     int GroupRowSpan = 1,
     bool IsFirstInTable = true,
     int TotalTableRows = 1,
-    string ProductGrade = ""
+    string ProductGrade = "",
+    string CustomerOrderNumber = ""
 );
 
 public record MonthlyOrderPdfModel(

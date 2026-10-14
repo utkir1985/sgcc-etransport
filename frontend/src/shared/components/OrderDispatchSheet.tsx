@@ -23,7 +23,7 @@ import {
 
 function getOrderSheetHeaderClass(header: string): string | undefined {
   if (header === 'Yuklash oxirgi sanasi') return 'order-sheet-date-col';
-  if (header === 'Shartnoma raqami') return 'order-sheet-contract-col';
+  if (header === 'Shartnoma raqami' || header === 'Buyurtma №') return 'order-sheet-contract-col';
   return undefined;
 }
 
@@ -104,7 +104,10 @@ export function OrderDispatchSheet({
                       {order.contractNumber}
                     </td>
                   )) : (
-                    <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
+                    <>
+                      <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
+                      <td className="order-sheet-contract order-sheet-center">{line.customerOrderNumber || '—'}</td>
+                    </>
                   )}
                   <td className="order-sheet-destination">{line.destinationStation || '—'}</td>
                 </tr>
@@ -114,6 +117,7 @@ export function OrderDispatchSheet({
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{wagonPlan ? quantityTotals.wagonTotal : ''}</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
                 <td className="order-sheet-contract order-sheet-center" />
+                {!wagonPlan && <td className="order-sheet-contract order-sheet-center" />}
                 <td className="order-sheet-destination" />
               </tr>
             </tbody>

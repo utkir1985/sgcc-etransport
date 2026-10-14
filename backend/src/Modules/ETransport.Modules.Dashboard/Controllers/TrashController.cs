@@ -330,6 +330,7 @@ public class TrashController(AppDbContext db, IFileStorageService fileStorage) :
                         DestinationStation = lineElem.TryGetProperty("DestinationStation", out var ds) ? (ds.GetString() ?? "") : "",
                         ContractNumber = lineElem.TryGetProperty("ContractNumber", out var lcn) ? (lcn.GetString() ?? "") : "",
                         ProductGrade = lineElem.TryGetProperty("ProductGrade", out var lpg) ? (lpg.GetString() ?? "") : "",
+                        CustomerOrderNumber = lineElem.TryGetProperty("CustomerOrderNumber", out var lcon) ? (lcon.GetString() ?? "") : "",
                         LastLoadingDate = lineElem.TryGetProperty("LastLoadingDate", out var lld) && lld.ValueKind == JsonValueKind.String && lld.TryGetDateTime(out var lldDate) ? lldDate : null,
                         AccountingStatus = lineElem.TryGetProperty("AccountingStatus", out var acs) ? (acs.GetString() ?? LineAccountingStatuses.Pending) : LineAccountingStatuses.Pending
                     };

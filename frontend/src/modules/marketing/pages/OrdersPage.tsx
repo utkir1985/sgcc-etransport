@@ -72,6 +72,7 @@ const EMPTY_LINE = (): MonthlyOrderLineInput => ({
   destinationStation: '',
   contractNumber: '',
   productGrade: '',
+  customerOrderNumber: '',
 });
 
 function reindexLines(lines: MonthlyOrderLineInput[]): MonthlyOrderLineInput[] {
@@ -80,7 +81,7 @@ function reindexLines(lines: MonthlyOrderLineInput[]): MonthlyOrderLineInput[] {
 
 function getOrderSheetHeaderClass(header: string): string | undefined {
   if (header === 'Yuklash oxirgi sanasi') return 'order-sheet-date-col';
-  if (header === 'Shartnoma raqami') return 'order-sheet-contract-col';
+  if (header === 'Shartnoma raqami' || header === 'Buyurtma №') return 'order-sheet-contract-col';
   if (header === 'Markasi') return 'order-sheet-grade-col';
   return undefined;
 }
@@ -110,8 +111,6 @@ function validateOrderDraft(
   lineFilter?: (line: MonthlyOrderLineInput) => boolean,
 ): string | null {
   const isBlankOrder = /zaxira|bo['‘ʼ`]?sh|favqulodda/i.test(header.contractNumber);
-  // Zaxira (bo‘sh) buyurtmaga raqamni tizim o‘zi beradi
-  if (!isBlankOrder && !header.orderNumber.trim()) return 'Buyurtma raqamini kiriting';
   if (!header.productType.trim()) return 'Mahsulot turini tanlang';
 
   const targetLines = lineFilter ? lines.filter(lineFilter) : lines;
@@ -130,6 +129,9 @@ function validateOrderDraft(
     // Shartnoma majburiy (eski buyurtmada sarlavhadagisi yetarli, zaxirada shart emas).
     if (!isBlankOrder && !header.contractNumber.trim() && !line.contractNumber?.trim()) {
       return `${rowNumber}-qator: shartnoma raqamini kiriting`;
+    }
+    if (!isBlankOrder && !header.contractNumber.trim() && !line.customerOrderNumber?.trim()) {
+      return `${rowNumber}-qator: hujjatdagi buyurtma raqamini kiriting`;
     }
 
     // Marka, stansiya va yuklash muddati — ixtiyoriy.
@@ -551,6 +553,7 @@ function MarketingOrdersPanel({
       lastLoadingDate: l.lastLoadingDate?.slice(0, 10) ?? null,
       contractNumber: l.contractNumber ?? '',
       productGrade: l.productGrade ?? '',
+      customerOrderNumber: l.customerOrderNumber ?? '',
     })));
   };
 
@@ -648,6 +651,7 @@ function MarketingOrdersPanel({
       lastLoadingDate: line.lastLoadingDate || null,
       contractNumber: line.contractNumber?.trim() ?? '',
       productGrade: line.productGrade?.trim() ?? '',
+      customerOrderNumber: line.customerOrderNumber?.trim() ?? '',
       id: line.id,
     })),
   });
@@ -1003,7 +1007,7 @@ function MarketingOrdersPanel({
   /** Ro'yxatdagi buyurtmalar satrlar darajasida Excelga chiqadi. */
   const exportOrdersExcel = (sectionOrders: MonthlyOrder[]) => {
     exportSheet(`buyurtmalar_${logisticsType}_${todayStamp()}.xlsx`, 'Buyurtmalar', [
-      ['Buyurtma raqami', 'Shartnoma', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
+      ['Buyurtma ID', 'Shartnoma', 'Buyurtma №', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
        'Kontragent', 'Jo‘natish stansiyasi', 'Reja, vagon', 'Reja, tonna',
        'Bajarilgan, vagon', 'Bajarilgan, tonna'],
       ...sectionOrders.flatMap(order => {
@@ -1011,13 +1015,14 @@ function MarketingOrdersPanel({
         const prodName = order.productGrade ? `${order.productType} (${order.productGrade})` : order.productType || '—';
         const lines = order.lines ?? [];
         if (lines.length === 0) {
-          return [[order.orderNumber, order.contractNumber || '—', prodName, order.productGrade || '—',
+          return [[order.orderNumber, order.contractNumber || '—', '—', prodName, order.productGrade || '—',
                    order.year, order.month, status, '—', '—', order.totalWagons ?? 0,
                    order.totalTons ?? 0, 0, 0]];
         }
         return lines.map(line => [
           order.orderNumber,
           line.contractNumber || order.contractNumber || '—',
+          line.customerOrderNumber || '—',
           prodName,
           line.productGrade || '—',
           order.year,
@@ -1122,19 +1127,15 @@ function MarketingOrdersPanel({
               className="marketing-order-product-picker"
             />
 
-            <label className="marketing-order-contract-field">
-              <span className="marketing-order-contract-field__label">
-                Buyurtma raqami {!/zaxira/i.test(header.contractNumber) && <span className="text-rose-500 font-bold">*</span>}
-              </span>
-              <input
-                value={header.orderNumber}
-                onChange={e => setHeader(h => ({ ...h, orderNumber: e.target.value }))}
-                className="marketing-order-contract-field__input"
-                placeholder={/zaxira/i.test(header.contractNumber) ? 'Avtomatik beriladi' : 'Buyurtma raqami'}
-                maxLength={50}
-                autoComplete="off"
-              />
-            </label>
+            <div className="marketing-order-contract-field">
+              <span className="marketing-order-contract-field__label">Buyurtma ID</span>
+              <div
+                className="marketing-order-contract-field__input marketing-order-id-field"
+                title="Tizimdagi ichki raqam — avtomatik beriladi"
+              >
+                {header.orderNumber || 'Avtomatik beriladi'}
+              </div>
+            </div>
           </div>
           <div className="marketing-order-edit-aside">
             <button
@@ -1204,7 +1205,7 @@ function MarketingOrdersPanel({
                 {tableHeaders.map(h => (
                   <th key={h} className={getOrderSheetHeaderClass(h)}>
                     {h}
-                    {h === 'Shartnoma raqami' && !/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
+                    {(h === 'Shartnoma raqami' || h === 'Buyurtma №') && !/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
                   </th>
                 ))}
                 <th className="order-sheet-center order-sheet-deadline-col">Yuklash oxirgi sanasi</th>
@@ -1276,6 +1277,22 @@ function MarketingOrdersPanel({
                       line.contractNumber || '—'
                     )}
                   </td>
+                  <td className="order-sheet-contract order-sheet-center">
+                    {editable ? (
+                      <input
+                        value={line.customerOrderNumber ?? ''}
+                        onChange={e => updateLine(idx, { customerOrderNumber: e.target.value })}
+                        className="order-sheet-input order-sheet-input--sm"
+                        placeholder="Buyurtma №"
+                        required={!header.contractNumber.trim()}
+                        maxLength={100}
+                        aria-label="Hujjatdagi buyurtma raqami"
+                        autoComplete="off"
+                      />
+                    ) : (
+                      line.customerOrderNumber || '—'
+                    )}
+                  </td>
                   <td className="order-sheet-destination">
                     {editable ? (
                       <StationSelect
@@ -1336,7 +1353,7 @@ function MarketingOrdersPanel({
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total" />
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
-                <td colSpan={lines.length > 1 ? 4 : 3} />
+                <td colSpan={lines.length > 1 ? 5 : 4} />
               </tr>
             </tbody>
           </table>

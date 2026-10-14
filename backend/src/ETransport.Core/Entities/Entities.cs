@@ -140,6 +140,8 @@ public class MonthlyOrderLine
     public DateTime? LastLoadingDate { get; set; }
     /// <summary>Ixtiyoriy: shu kontragent bilan tuzilgan shartnoma raqami.</summary>
     public string ContractNumber { get; set; } = string.Empty;
+    /// <summary>Hujjatdagi (kontragent) buyurtma raqami — tizimdagi Buyurtma ID dan alohida.</summary>
+    public string CustomerOrderNumber { get; set; } = string.Empty;
     /// <summary>Ixtiyoriy: mahsulot markasi (masalan, polietilen B-Y250).</summary>
     public string ProductGrade { get; set; } = string.Empty;
     public string AccountingStatus { get; set; } = Constants.LineAccountingStatuses.Pending;

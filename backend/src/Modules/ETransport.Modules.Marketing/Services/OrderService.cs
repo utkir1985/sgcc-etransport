@@ -158,9 +158,9 @@ public class OrderService(
         if (order.Deadline.Date != request.Deadline.Date)
             changes.Add($"Muddat: {order.Deadline:dd.MM.yyyy} → {request.Deadline:dd.MM.yyyy}");
         var oldLines = string.Join("|", order.Lines.OrderBy(l => l.SortOrder)
-            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation}:{l.ContractNumber}:{l.ProductGrade}"));
+            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation}:{l.ContractNumber}:{l.ProductGrade}:{l.CustomerOrderNumber}"));
         var newLines = string.Join("|", request.Lines.OrderBy(l => l.SortOrder)
-            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation?.Trim() ?? ""}:{l.ContractNumber?.Trim() ?? ""}:{l.ProductGrade?.Trim() ?? ""}"));
+            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation?.Trim() ?? ""}:{l.ContractNumber?.Trim() ?? ""}:{l.ProductGrade?.Trim() ?? ""}:{l.CustomerOrderNumber?.Trim() ?? ""}"));
         if (!string.Equals(oldLines, newLines, StringComparison.Ordinal))
             changes.Add("Buyurtma qatorlari o‘zgartirildi");
 
@@ -711,6 +711,7 @@ public class OrderService(
                 existing.LastLoadingDate = ToUtcDate(input.LastLoadingDate);
                 existing.ContractNumber = input.ContractNumber?.Trim() ?? "";
                 existing.ProductGrade = input.ProductGrade?.Trim() ?? "";
+                existing.CustomerOrderNumber = input.CustomerOrderNumber?.Trim() ?? "";
                 keptIds.Add(existing.Id);
                 continue;
             }
@@ -729,6 +730,7 @@ public class OrderService(
                 LastLoadingDate = ToUtcDate(input.LastLoadingDate),
                 ContractNumber = input.ContractNumber?.Trim() ?? "",
                 ProductGrade = input.ProductGrade?.Trim() ?? "",
+                CustomerOrderNumber = input.CustomerOrderNumber?.Trim() ?? "",
                 AccountingStatus = LineAccountingStatuses.Pending,
             };
             order.Lines.Add(created);
@@ -764,6 +766,7 @@ public class OrderService(
             line.LastLoadingDate = ToUtcDate(input.LastLoadingDate);
             line.ContractNumber = input.ContractNumber?.Trim() ?? "";
             line.ProductGrade = input.ProductGrade?.Trim() ?? "";
+            line.CustomerOrderNumber = input.CustomerOrderNumber?.Trim() ?? "";
         }
     }
 
@@ -847,11 +850,15 @@ public class OrderService(
                 || contractNumber.Contains("BOSH", StringComparison.OrdinalIgnoreCase)
                 || contractNumber.Contains("FAVQULODDA", StringComparison.OrdinalIgnoreCase));
 
-        // Shartnoma raqami majburiy: har bir qatorda (eski buyurtmalarda — sarlavhada). Zaxira buyurtmada shart emas.
-        if (!isBlankOrEmergencyOrder
-            && string.IsNullOrWhiteSpace(headerContract)
-            && lines.Any(l => string.IsNullOrWhiteSpace(l.ContractNumber)))
-            throw new ArgumentException("Har bir korxona uchun shartnoma raqamini kiriting");
+        // Shartnoma va hujjatdagi buyurtma raqami majburiy: har bir qatorda (eski buyurtmalarda — sarlavhada
+        // shartnoma yetarli, buyurtma raqami talab qilinmaydi). Zaxira buyurtmada shart emas.
+        if (!isBlankOrEmergencyOrder && string.IsNullOrWhiteSpace(headerContract))
+        {
+            if (lines.Any(l => string.IsNullOrWhiteSpace(l.ContractNumber)))
+                throw new ArgumentException("Har bir korxona uchun shartnoma raqamini kiriting");
+            if (lines.Any(l => string.IsNullOrWhiteSpace(l.CustomerOrderNumber)))
+                throw new ArgumentException("Har bir korxona uchun hujjatdagi buyurtma raqamini kiriting");
+        }
 
         // Tonna majburiy (oddiy buyurtmada > 0 bo'lishi shart, zaxira/bo'sh buyurtmada 0 bo'lishi mumkin)
         if (!isBlankOrEmergencyOrder && lines.Any(l => l.TonCount <= 0))
@@ -863,8 +870,10 @@ public class OrderService(
 
         if (lines.Any(l => !OrderQuantityUnits.IsValid(l.QuantityUnit)))
             throw new ArgumentException("Noto'g'ri o'lchov birligi");
-        if (lines.Any(l => (l.ContractNumber?.Trim().Length ?? 0) > 100 || (l.ProductGrade?.Trim().Length ?? 0) > 100))
-            throw new ArgumentException("Shartnoma raqami va marka 100 belgidan oshmasligi kerak");
+        if (lines.Any(l => (l.ContractNumber?.Trim().Length ?? 0) > 100
+            || (l.ProductGrade?.Trim().Length ?? 0) > 100
+            || (l.CustomerOrderNumber?.Trim().Length ?? 0) > 100))
+            throw new ArgumentException("Shartnoma, buyurtma raqami va marka 100 belgidan oshmasligi kerak");
     }
 
     private static readonly Regex ManualOrderNumber = new(@"^[\p{L}\p{N}][\p{L}\p{N}\-/_.№ ]{0,49}$", RegexOptions.Compiled);
@@ -956,6 +965,7 @@ public class OrderService(
                 LastLoadingDate = ToUtcDate(l.LastLoadingDate),
                 ContractNumber = l.ContractNumber?.Trim() ?? "",
                 ProductGrade = l.ProductGrade?.Trim() ?? "",
+                CustomerOrderNumber = l.CustomerOrderNumber?.Trim() ?? "",
                 AccountingStatus = LineAccountingStatuses.Pending,
             })
             .ToList();
@@ -1006,7 +1016,8 @@ public class OrderService(
                     Math.Max(0, orderedWagons - l.FulfilledWagonCount),
                     Math.Max(0, orderedTons - l.FulfilledNetWeight),
                     l.ContractNumber ?? "",
-                    l.ProductGrade ?? ""
+                    l.ProductGrade ?? "",
+                    l.CustomerOrderNumber ?? ""
                 );
             }).ToList(),
             lines.Sum(ResolveWagonCount),
@@ -1041,7 +1052,8 @@ public class OrderService(
                 TonCount: (decimal)tons,
                 ContractNumber: string.IsNullOrWhiteSpace(line.ContractNumber) ? order.ContractNumber : line.ContractNumber,
                 DestinationStation: line.DestinationStation,
-                ProductGrade: line.ProductGrade ?? ""
+                ProductGrade: line.ProductGrade ?? "",
+                CustomerOrderNumber: line.CustomerOrderNumber ?? ""
             ));
         }
 

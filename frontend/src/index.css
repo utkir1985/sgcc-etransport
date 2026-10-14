@@ -18074,3 +18074,18 @@ html.dark .order-progress-track,
   background: rgb(74 222 128 / 0.06);
   color: #7fcf9b;
 }
+
+/* Buyurtma ID — faqat ko‘rsatiladi (tizim beradi) */
+.marketing-order-id-field {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  cursor: default;
+}
+
+.dark .marketing-order-id-field {
+  background: #0b1222;
+  color: #cbd5e1;
+}
