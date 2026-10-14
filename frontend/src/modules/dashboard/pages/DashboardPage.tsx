@@ -718,19 +718,29 @@ function orderTiles(role: string, orders: MonthlyOrder[], orderId?: string | nul
   const o3At = maxIso(...pastDeputy.map(o => o.deputyApprovedAt));
   const o4At = maxIso(...pastDispatch.map(o => o.dispatchApprovedAt));
 
+  // Tanlangan buyurtma bo‘lsa — har bir bosqich faqat shu buyurtmani uning holat bo‘limida ochadi
+  const focus = scoped[0];
+  const focusLink = focus
+    ? `/orders/${focus.logisticsType === 'Road' ? 'road' : 'railway'}?view=${
+      focus.status === 'Active' ? 'faol'
+        : ['Completed', 'Cancelled', 'Rejected'].includes(focus.status) ? 'yakun'
+          : 'tasdiq'
+    }&order=${focus.id}`
+    : null;
+
   return [
     makeTile(role, 'o1', 'Buyurtma yaratish', 'Mahsulotlarni sotish va marketing xizmati',
       'Oylik buyurtmani yaratadi',
-      '/orders', ClipboardPen, drafts.length, ['Marketing', 'Management'], o1At),
+      focusLink ?? '/orders', ClipboardPen, drafts.length, ['Marketing', 'Management'], o1At),
     makeTile(role, 'o2', 'Buyurtmani kelishish', 'Buxgalteriya',
       'Buyurtmani kelishadi',
-      '/orders/railway?view=tasdiq', Handshake, accounting.length, ['Accounting'], o2At),
+      focusLink ?? '/orders/railway?view=tasdiq', Handshake, accounting.length, ['Accounting'], o2At),
     makeTile(role, 'o3', 'Buyurtmani tasdiqlash va ijro uchun yuborish', 'Bosh direktor o\'rinbosari',
       'Kelishilgan buyurtmani tasdiqlab ijroga yuboradi',
-      '/orders/railway?view=tasdiq', Send, deputyOrder.length, ['DeputyDirector'], o3At),
+      focusLink ?? '/orders/railway?view=tasdiq', Send, deputyOrder.length, ['DeputyDirector'], o3At),
     makeTile(role, 'o4', 'Ijro uchun qabul qilish', 'Ishlab chiqarish dispetcherlik xizmati boshlig‘i',
       'Buyurtmani ijroga qabul qiladi',
-      '/orders/railway?view=tasdiq', ClipboardCheck, ichdxOrder.length, ['DispatchSupervisor'], o4At),
+      focusLink ?? '/orders/railway?view=tasdiq', ClipboardCheck, ichdxOrder.length, ['DispatchSupervisor'], o4At),
   ];
 }
 

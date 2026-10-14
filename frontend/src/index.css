@@ -19436,3 +19436,36 @@ html.dark .order-progress-track,
 @media (max-width: 420px) {
   .marketing-orders-home__create-extra { display: none; }
 }
+
+/* Jarayondan kelingan: faqat bitta buyurtma ko‘rsatilmoqda */
+.order-focus-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  padding: 8px 12px;
+  color: #1e3a8a;
+  font-size: 13.5px;
+}
+.order-focus-chip strong { font-weight: 700; }
+.order-focus-chip__clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  background: #fff;
+  padding: 4px 10px;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 600;
+}
+.order-focus-chip__clear:hover { background: #dbeafe; }
+.dark .order-focus-chip { border-color: rgb(59 130 246 / 0.35); background: rgb(59 130 246 / 0.1); color: #bfdbfe; }
+.dark .order-focus-chip__clear { border-color: rgb(59 130 246 / 0.45); background: #0f172a; color: #93c5fd; }
+.dark .order-focus-chip__clear:hover { background: #1e293b; }
