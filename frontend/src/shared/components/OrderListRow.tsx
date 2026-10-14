@@ -15,6 +15,19 @@ import { computeOrderFulfillment, isOrderFulfilled, isOrderLoadingOverdue } from
 import { TablePagination } from './TablePagination';
 
 /** Tonna: mingliklar probel bilan, kasr nuqta bilan (masalan, 8 301.26) — brauzer locale'iga bog‘liq emas. */
+/** Buyurtma hozirgi kelishuv bosqichiga qachon kelgani (mavjud vaqt belgilari bo‘yicha). */
+function stageEnteredAt(order: MonthlyOrder): string | null | undefined {
+  switch (order.status) {
+    case 'Draft': return order.createdAt;
+    case 'PendingAccounting': return order.submittedAt;
+    case 'ReadyForDispatch': return order.approvedAt ?? order.submittedAt;
+    case 'PendingDeputyDirector': return order.submittedToDispatchAt ?? order.approvedAt ?? order.submittedAt;
+    case 'PendingDispatching': return order.deputyApprovedAt ?? order.submittedToDispatchAt;
+    case 'ReturnedToMarketing': return order.approvedAt ?? order.submittedAt;
+    default: return null;
+  }
+}
+
 function formatTons(value: number): string {
   const rounded = Math.round(value * 100) / 100;
   const [int, frac] = Math.abs(rounded).toFixed(2).split('.');
@@ -133,12 +146,12 @@ interface OrderListProps {
 export type OrderListVariant = 'all' | 'faol' | 'tasdiq' | 'yakun';
 
 type OrderColumnKey =
-  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'done' | 'remain' | 'shipped' | 'stage'
+  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'done' | 'remain' | 'shipped' | 'stage' | 'waiting'
   | 'contract' | 'created' | 'approved' | 'status' | 'doc' | 'actions';
 
 /** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
 const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
-  num: 3, order: 10, product: 15, wagons: 7, tons: 7, done: 11, remain: 8, shipped: 12, stage: 15,
+  num: 3, order: 10, product: 15, wagons: 7, tons: 7, done: 11, remain: 8, shipped: 10, stage: 16, waiting: 13,
   contract: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
 };
 
@@ -147,7 +160,7 @@ function orderColumns(variant: OrderListVariant, showActions: boolean): OrderCol
     case 'faol':
       return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'created', 'approved', 'doc'];
     case 'tasdiq':
-      return ['num', 'order', 'product', 'tons', 'stage', 'contract', 'created', 'doc'];
+      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'contract', 'created', 'doc'];
     case 'yakun':
       return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'contract', 'created', 'approved', 'doc'];
     default:
@@ -206,8 +219,9 @@ export function OrderList({
     tons: { label: 'Reja (t)', className: 'text-center', title: 'Buyurtma bo‘yicha reja, tonna' },
     done: { label: 'Bajarilish', className: 'text-center', title: 'Yuklangan og‘irlik va foiz' },
     remain: { label: 'Qoldiq', className: 'text-center', title: 'Yuklanishi qolgan og‘irlik' },
-    shipped: { label: 'Jo‘natildi', className: 'text-center' },
-    stage: { label: 'Kimda turibdi', className: 'text-center' },
+    shipped: { label: 'Jo‘natildi (t)', className: 'text-center', title: 'Yuk xatlari bo‘yicha jo‘natilgan og‘irlik' },
+    stage: { label: 'Kelishuv bosqichi', className: 'text-center', title: 'Buyurtma hozir kimning kelishuvida turibdi' },
+    waiting: { label: 'Bosqichda', className: 'text-center', title: 'Shu bosqichga qachon kelgani va qancha kutayotgani' },
     contract: { label: 'Shartnoma', className: 'text-center' },
     created: { label: 'Yaratilgan', className: 'text-center', title: 'Yaratilgan sana va vaqt' },
     approved: { label: 'Tasdiqlangan', className: 'text-center', title: 'Tasdiqlangan sana va vaqt' },
@@ -296,11 +310,34 @@ export function OrderList({
 
                   {has('shipped') && (
                     <td className="text-center text-xs">
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                        {formatTons(fulfillment.fulfilledTons)} t
-                      </span>
+                      {order.status === 'Cancelled' ? (
+                        <span className="order-status-badge order-status-badge--cancelled">Bekor qilingan</span>
+                      ) : (
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap tabular-nums">
+                          {formatTons(fulfillment.fulfilledTons)}
+                        </span>
+                      )}
                     </td>
                   )}
+
+                  {has('waiting') && (() => {
+                    const since = stageEnteredAt(order);
+                    const days = since ? Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 86_400_000)) : null;
+                    return (
+                      <td className="text-center text-xs">
+                        {since ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            {renderDateTimeCell(since)}
+                            <span className={`text-[11px] font-semibold ${days !== null && days >= 3 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                              {days === 0 ? 'bugun' : `${days} kun kutmoqda`}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                    );
+                  })()}
 
                   {/* Bajarilish: foiz + yuklangan og‘irlik + progress */}
                   {has('done') && (
