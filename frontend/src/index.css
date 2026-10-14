@@ -18573,3 +18573,16 @@ html.dark .order-progress-track,
     justify-content: flex-start;
   }
 }
+
+/* Planshet/telefon: hujjat raqami ustuni 260px emas — mazmuniga yarasha (keyingi ustunlar ko‘rinadi) */
+@media (max-width: 1023px) {
+  .entry-letter-archive-table th:nth-child(2),
+  .entry-letter-archive-table td:nth-child(2),
+  .registry-archive-table th:nth-child(2),
+  .registry-archive-table td:nth-child(2),
+  .docs-hub-table th:nth-child(2),
+  .docs-hub-table td:nth-child(2) {
+    min-width: 11rem;
+    width: 11rem;
+  }
+}
