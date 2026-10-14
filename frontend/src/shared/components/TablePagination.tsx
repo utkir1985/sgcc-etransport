@@ -12,8 +12,6 @@ export interface TablePaginationProps {
   unitLabel?: string;
   pageSizeOptions?: number[];
   className?: string;
-  /** `kpi` — KPI tizimi andozasi: chapda soni, markazda sahifalar, o‘ngda «Sahifada». */
-  variant?: 'default' | 'kpi';
 }
 
 /** KPI andozasidagi «Sahifada» tanlovi — brauzer select'i o‘rniga yuqoriga ochiladigan menyu. */
@@ -81,7 +79,7 @@ function PageSizeMenu({
 }
 
 /**
- * Foydalanuvchilar andozasidagi qat'iy yagona pagination komponenti (.admin-table-footer + .admin-pagination)
+ * Tizimdagi yagona pagination (KPI andozasi): chapda jami soni, markazda sahifalar, o‘ngda «Sahifada».
  */
 export function TablePagination({
   total,
@@ -93,7 +91,6 @@ export function TablePagination({
   unitLabel = 'yozuv',
   pageSizeOptions = [10, 20, 25, 50],
   className = '',
-  variant = 'default',
 }: TablePaginationProps) {
   const calculatedTotalPages = Math.max(1, Math.ceil(total / pageSize));
   const totalPages = propTotalPages ?? calculatedTotalPages;
@@ -147,41 +144,15 @@ export function TablePagination({
     </div>
   );
 
-  if (variant === 'kpi') {
-    return (
-      <div className={`kpi-pagination${className ? ` ${className}` : ''}`}>
-        <p className="kpi-pagination__count">
-          <strong>{total}</strong> ta {unitLabel}
-        </p>
-        {pagination}
-        <div className="kpi-pagination__size">
-          <span>Sahifada:</span>
-          <PageSizeMenu value={pageSize} options={pageSizeOptions} onChange={changePageSize} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`admin-table-footer${className ? ` ${className}` : ''}`}>
-      <p className="admin-table-footer__count">
-        Jami {total} ta {unitLabel}
+    <div className={`kpi-pagination${className ? ` ${className}` : ''}`}>
+      <p className="kpi-pagination__count">
+        <strong>{total}</strong> ta {unitLabel}
       </p>
-      <div className="admin-table-footer__controls">
-        <label className="admin-table-footer__pagesize">
-          <span>Sahifadagi qatorlar:</span>
-          <select
-            value={pageSize}
-            onChange={e => changePageSize(Number(e.target.value))}
-          >
-            {pageSizeOptions.map(opt => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
-        {pagination}
+      {pagination}
+      <div className="kpi-pagination__size">
+        <span>Sahifada:</span>
+        <PageSizeMenu value={pageSize} options={pageSizeOptions} onChange={changePageSize} />
       </div>
     </div>
   );

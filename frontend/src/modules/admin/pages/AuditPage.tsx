@@ -971,6 +971,7 @@ export default function AuditPage() {
               onPageSizeChange={setPageSize}
               unitLabel="yozuv"
               pageSizeOptions={[10, 20, 25, 50, 100]}
+              className="kpi-pagination--in-card"
             />
           </div>
         </div>

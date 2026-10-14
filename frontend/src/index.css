@@ -11157,6 +11157,16 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
   font-weight: 600;
 }
 
+/* Karta ichida, jadval ostida joylashganda */
+.kpi-pagination--in-card {
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dark .kpi-pagination--in-card {
+  border-color: #1e293b;
+}
+
 @media (max-width: 767px) {
   .kpi-pagination {
     grid-template-columns: 1fr;

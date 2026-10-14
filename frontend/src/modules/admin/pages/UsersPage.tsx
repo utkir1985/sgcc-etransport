@@ -858,7 +858,6 @@ export default function UsersPage() {
         </div>
 
         <TablePagination
-          variant="kpi"
           total={filteredUsers.length}
           page={currentPage}
           pageSize={pageSize}

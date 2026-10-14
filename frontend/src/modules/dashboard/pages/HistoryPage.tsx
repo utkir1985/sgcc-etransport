@@ -6,7 +6,6 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Check,
-  ChevronLeft,
   ChevronRight,
   Copy,
   History,
@@ -37,6 +36,7 @@ import {
   type DocsPeriodPreset,
 } from '../../../shared/utils/docsHubFilter';
 import { parseIsoDate } from '../../../shared/utils/dates';
+import { TablePagination } from '../../../shared/components/TablePagination';
 
 type Tab = 'timeline' | 'entries' | 'orders' | 'loads' | 'exits' | 'defects';
 type PeriodPreset = DocsPeriodPreset;
@@ -66,22 +66,6 @@ function fmtShort(iso?: string | null): string {
   }).formatToParts(d);
   const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value || '';
   return `${value('day')}.${value('month')}.${value('year')} ${value('hour')}:${value('minute')}`;
-}
-
-function buildPageItems(currentPage: number, totalPages: number): Array<number | 'dots-left' | 'dots-right'> {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-
-  if (currentPage <= 4) {
-    return [1, 2, 3, 4, 5, 'dots-right', totalPages];
-  }
-
-  if (currentPage >= totalPages - 3) {
-    return [1, 'dots-left', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-  }
-
-  return [1, 'dots-left', currentPage - 1, currentPage, currentPage + 1, 'dots-right', totalPages];
 }
 
 function WagonsGrid({ wagons, partyTitle }: { wagons: string[]; partyTitle?: string }) {
@@ -443,7 +427,6 @@ export default function HistoryPage() {
   const activeTotal = activeTimeline.length;
   const totalPages = Math.max(1, Math.ceil(activeTotal / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = buildPageItems(currentPage, totalPages);
   const pagedHistory = activeTimeline.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const selectTab = (nextTab: Tab) => {
@@ -881,58 +864,18 @@ export default function HistoryPage() {
         )}
         {board()}
 
-        <div className="thub-history-pagination">
-          <p className="thub-history-pagination__count">
-            {tab === 'defects'
-              ? `Jami ${activeTotal} ta vagon${totalDefectRecords > activeTotal ? ` (${totalDefectRecords} ta yozuv)` : ''}`
-              : `Jami ${activeTotal} ta yozuv`}
-          </p>
-          <div className="thub-history-pagination__pages">
-            <button
-              type="button"
-              className="admin-pagination__btn"
-              disabled={currentPage <= 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              aria-label="Oldingi sahifa"
-            >
-              <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
-            </button>
-            {pageItems.map(item => {
-              if (item === 'dots-left' || item === 'dots-right') {
-                return (
-                  <span key={item} className="thub-history-pagination__dots">…</span>
-                );
-              }
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  className={`admin-pagination__btn${item === currentPage ? ' admin-pagination__btn--active' : ''}`}
-                  onClick={() => setPage(item)}
-                >
-                  {item}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              className="admin-pagination__btn"
-              disabled={currentPage >= totalPages}
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              aria-label="Keyingi sahifa"
-            >
-              <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
-            </button>
-          </div>
-          <label className="admin-table-footer__pagesize thub-history-pagination__size">
-              <span>Sahifadagi qatorlar:</span>
-              <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-            </label>
-        </div>
+        <TablePagination
+          total={activeTotal}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          unitLabel={tab === 'defects'
+            ? `vagon${totalDefectRecords > activeTotal ? ` (${totalDefectRecords} ta yozuv)` : ''}`
+            : 'yozuv'}
+          pageSizeOptions={[10, 20, 50]}
+        />
       </section>
     </div>
   );
