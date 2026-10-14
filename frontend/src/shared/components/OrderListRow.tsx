@@ -237,7 +237,6 @@ export function OrderList({
                   </td>
                   <td className="px-1.5">
                     <div className="flex items-center gap-1.5 leading-snug">
-                      <ProductTypeIcon productType={order.productType} size="sm" className="shrink-0" />
                       <strong className="text-xs font-semibold text-slate-900 dark:text-slate-100 break-words whitespace-normal line-clamp-2 inline-flex items-center gap-1.5 flex-wrap" title={productLabel}>
                         <span>{productLabel}</span>
                         {order.productGrade && (
