@@ -1041,8 +1041,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             columns.RelativeColumn(3.5f);
                             columns.RelativeColumn(1.2f);
                             columns.RelativeColumn(1.2f);
-                            columns.RelativeColumn(2f);
                             if (!wagonPlan) columns.RelativeColumn(1.8f);
+                            columns.RelativeColumn(2f);
                             columns.RelativeColumn(2.5f);
                         });
 
@@ -1053,8 +1053,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             H("Korxona (kontragent) nomi");
                             H(wagonPlan ? "Vagon soni" : "Markasi");
                             H("Og'irligi (t)");
-                            H("Shartnoma raqami");
                             if (!wagonPlan) H("Buyurtma №");
+                            H("Shartnoma raqami");
                             H("Yetkazib berish joyi (stansiya)");
                         });
 
@@ -1076,8 +1076,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             }
                             else
                             {
-                                tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.ContractNumber) ? "—" : line.ContractNumber).FontSize(10.5f);
                                 tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.CustomerOrderNumber) ? "—" : line.CustomerOrderNumber).FontSize(10.5f);
+                                tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.ContractNumber) ? "—" : line.ContractNumber).FontSize(10.5f);
                             }
 
                             tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.DestinationStation) ? "—" : line.DestinationStation).FontSize(10.5f);

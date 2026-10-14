@@ -158,13 +158,13 @@ const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
 function orderColumns(variant: OrderListVariant, showActions: boolean): OrderColumnKey[] {
   switch (variant) {
     case 'faol':
-      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'customer', 'created', 'approved', 'doc'];
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'customer', 'contract', 'created', 'approved', 'doc'];
     case 'tasdiq':
-      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'contract', 'customer', 'created', 'doc'];
+      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'customer', 'contract', 'created', 'doc'];
     case 'yakun':
-      return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'contract', 'customer', 'created', 'approved', 'doc'];
+      return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'customer', 'contract', 'created', 'approved', 'doc'];
     default:
-      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'customer', 'created', 'approved', 'status', 'doc',
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'customer', 'contract', 'created', 'approved', 'status', 'doc',
         ...(showActions ? ['actions' as const] : [])];
   }
 }
@@ -376,9 +376,6 @@ export function OrderList({
                     </td>
                   )}
 
-                  <td className="text-xs text-center leading-snug break-words whitespace-normal px-1" title={order.contractNumber || '—'}>
-                    <span className="line-clamp-2">{order.contractNumber || '—'}</span>
-                  </td>
                   {has('customer') && (() => {
                     const numbers = Array.from(new Set((order.lines ?? [])
                       .map(l => l.customerOrderNumber?.trim())
@@ -398,6 +395,9 @@ export function OrderList({
                       </td>
                     );
                   })()}
+                  <td className="text-xs text-center leading-snug break-words whitespace-normal px-1" title={order.contractNumber || '—'}>
+                    <span className="line-clamp-2">{order.contractNumber || '—'}</span>
+                  </td>
                   <td className="whitespace-nowrap text-center text-xs">
                     {renderDateTimeCell(order.createdAt)}
                   </td>

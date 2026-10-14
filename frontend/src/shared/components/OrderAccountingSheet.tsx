@@ -162,8 +162,8 @@ export function OrderAccountingSheet({
                       </td>
                     )) : (
                       <>
-                        <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
                         <td className="order-sheet-contract order-sheet-center">{line.customerOrderNumber || '—'}</td>
+                        <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
                       </>
                     )}
                     <td className="order-sheet-destination">

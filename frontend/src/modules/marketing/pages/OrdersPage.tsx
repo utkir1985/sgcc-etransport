@@ -1007,7 +1007,7 @@ function MarketingOrdersPanel({
   /** Ro'yxatdagi buyurtmalar satrlar darajasida Excelga chiqadi. */
   const exportOrdersExcel = (sectionOrders: MonthlyOrder[]) => {
     exportSheet(`buyurtmalar_${logisticsType}_${todayStamp()}.xlsx`, 'Buyurtmalar', [
-      ['Hujjat raqami', 'Shartnoma', 'Buyurtma №', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
+      ['Hujjat raqami', 'Buyurtma №', 'Shartnoma', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
        'Kontragent', 'Jo‘natish stansiyasi', 'Reja, vagon', 'Reja, tonna',
        'Bajarilgan, vagon', 'Bajarilgan, tonna'],
       ...sectionOrders.flatMap(order => {
@@ -1015,14 +1015,14 @@ function MarketingOrdersPanel({
         const prodName = order.productGrade ? `${order.productType} (${order.productGrade})` : order.productType || '—';
         const lines = order.lines ?? [];
         if (lines.length === 0) {
-          return [[order.orderNumber, order.contractNumber || '—', '—', prodName, order.productGrade || '—',
+          return [[order.orderNumber, '—', order.contractNumber || '—', prodName, order.productGrade || '—',
                    order.year, order.month, status, '—', '—', order.totalWagons ?? 0,
                    order.totalTons ?? 0, 0, 0]];
         }
         return lines.map(line => [
           order.orderNumber,
-          line.contractNumber || order.contractNumber || '—',
           line.customerOrderNumber || '—',
+          line.contractNumber || order.contractNumber || '—',
           prodName,
           line.productGrade || '—',
           order.year,
@@ -1264,22 +1264,6 @@ function MarketingOrdersPanel({
                   <td className="order-sheet-contract order-sheet-center">
                     {editable ? (
                       <input
-                        value={line.contractNumber ?? ''}
-                        onChange={e => updateLine(idx, { contractNumber: e.target.value })}
-                        className="order-sheet-input order-sheet-input--sm"
-                        placeholder="Shartnoma raqami"
-                        required={!header.contractNumber.trim()}
-                        maxLength={100}
-                        aria-label="Shartnoma raqami"
-                        autoComplete="off"
-                      />
-                    ) : (
-                      line.contractNumber || '—'
-                    )}
-                  </td>
-                  <td className="order-sheet-contract order-sheet-center">
-                    {editable ? (
-                      <input
                         value={line.customerOrderNumber ?? ''}
                         onChange={e => updateLine(idx, { customerOrderNumber: e.target.value })}
                         className="order-sheet-input order-sheet-input--sm"
@@ -1291,6 +1275,22 @@ function MarketingOrdersPanel({
                       />
                     ) : (
                       line.customerOrderNumber || '—'
+                    )}
+                  </td>
+                  <td className="order-sheet-contract order-sheet-center">
+                    {editable ? (
+                      <input
+                        value={line.contractNumber ?? ''}
+                        onChange={e => updateLine(idx, { contractNumber: e.target.value })}
+                        className="order-sheet-input order-sheet-input--sm"
+                        placeholder="Shartnoma raqami"
+                        required={!header.contractNumber.trim()}
+                        maxLength={100}
+                        aria-label="Shartnoma raqami"
+                        autoComplete="off"
+                      />
+                    ) : (
+                      line.contractNumber || '—'
                     )}
                   </td>
                   <td className="order-sheet-destination">

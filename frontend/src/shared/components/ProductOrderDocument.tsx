@@ -191,8 +191,8 @@ export function ProductOrderDocument({
                   <td className="product-order-contract" rowSpan={totalRows}>{order.contractNumber || '—'}</td>
                 ) : null) : (
                   <>
-                    <td className="product-order-contract">{line.contractNumber || '—'}</td>
                     <td className="product-order-contract">{line.customerOrderNumber || '—'}</td>
+                    <td className="product-order-contract">{line.contractNumber || '—'}</td>
                   </>
                 )}
                 <td className="product-order-dest">{line.destinationStation || '—'}</td>
