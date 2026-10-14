@@ -970,7 +970,9 @@ public class DocumentsController(
         registry.EconomistApprovedWithSecurityAt ??= now;
         if (string.IsNullOrWhiteSpace(registry.EconomistApprovedByName))
         {
-            registry.EconomistApprovedByName = userName;
+            registry.EconomistApprovedByName = !string.IsNullOrWhiteSpace(registry.PreparedByName)
+                ? registry.PreparedByName
+                : userName;
         }
         await db.SaveChangesAsync();
 

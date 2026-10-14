@@ -50,13 +50,20 @@ function personDisplayName(name?: string | null) {
 }
 
 function signerQrValue(model: YukXatiModel, signer: Signer) {
-  void model;
-  return [
-    `Bo‘lim/sex: ${signer.department}`,
-    `Holat: ${signer.at ? signer.status : 'Tasdiqlash kutilmoqda'}`,
-    `F.I.Sh.: ${signer.name || 'Tizimda qayd etilmagan'}`,
+  const cleanDept = (signer.department || '').replace(/[‘’`]/g, "'");
+  const cleanName = (signer.name || 'Tizimda qayd etilmagan').replace(/[‘’`]/g, "'");
+  const cleanStatus = (signer.status || 'Tasdiqlash kutilmoqda').replace(/[‘’`]/g, "'");
+  const lines = [
+    `Hujjat: Yuk xati № ${model.registryNumber}`,
+    `Bo'lim/sex: ${cleanDept}`,
+    `Holat: ${signer.at ? cleanStatus : 'Tasdiqlash kutilmoqda'}`,
+    `F.I.Sh.: ${cleanName}`,
     `Sana/vaqt: ${formatYukXatiDateTime(signer.at) || 'Tasdiqlanmagan'}`,
-  ].join('\n');
+  ];
+  if (model.qrVerificationUrl) {
+    lines.push(`Havola: ${model.qrVerificationUrl}`);
+  }
+  return lines.join('\n');
 }
 
 function SignerBlock({ model, signer }: { model: YukXatiModel; signer: Signer }) {
@@ -202,8 +209,8 @@ export function YukXatiView({ model }: YukXatiViewProps) {
     ? `${model.exitToKengsoyDate} ${model.exitToKengsoyTime || ''}`.trim()
     : '—';
   const shiftApproved = Boolean(model.railwayRepAt);
-  const shiftName = personDisplayName(model.railwayRepName);
-  /* PDF: chap ustun — warehouse/scale/economist; o‘ng — permit/security */
+
+  /* 6 ta imzo: Sex, Tarozi, Iqtisodchi, PDS smena boshlig'i, Ruxsatnoma, Qo'riqlash */
   const signers: Signer[] = [
     {
       key: 'warehouse',
@@ -225,6 +232,13 @@ export function YukXatiView({ model }: YukXatiViewProps) {
       status: model.economistAt ? 'Yuk xati shakllantirildi' : 'Kutilmoqda',
       name: model.economistName,
       at: model.economistAt,
+    },
+    {
+      key: 'shift_supervisor',
+      department: 'PDS (ICHDX) smena boshlig‘i',
+      status: model.shiftSupervisorAt ? 'Tasdiqlandi' : 'Kutilmoqda',
+      name: model.shiftSupervisorName,
+      at: model.shiftSupervisorAt,
     },
     {
       key: 'permit',
@@ -297,13 +311,14 @@ export function YukXatiView({ model }: YukXatiViewProps) {
                   <ApprovalQrCode
                     value={[
                       'Holat: Tasdiqlandi',
-                      'Bo\'lim/sex: ICHDX smena boshlig\'i',
-                      `F.I.Sh.: ${shiftName === '—' ? 'Xayitov Anvarjon Karimovich' : shiftName}`,
+                      'Lavozim: Bosh direktor',
+                      'F.I.Sh.: Sh. Aslanov',
                       'Ishonchnoma raqami: 01-5/25-33 12.08.2026',
-                      `Sana/vaqt: ${formatYukXatiDateTime(model.railwayRepAt) || 'Tasdiqlanmagan'}`,
+                      `Sana/vaqt: ${formatYukXatiDateTime(model.shiftSupervisorAt || model.railwayRepAt || model.formedAt) || 'Tasdiqlanmagan'}`,
+                      ...(model.qrVerificationUrl ? [`Havola: ${model.qrVerificationUrl}`] : []),
                     ].join('\n')}
                     size={HEADER_QR_SIZE}
-                    level="L"
+                    level="M"
                   />
                 ) : (
                   <span>QR</span>

@@ -116,12 +116,15 @@ public static class FinalDocumentModels
         var isPermitApproved = reg.IsApprovedByPermit;
         var isSecurityApproved = reg.IsApprovedBySecurity;
 
-        var economistSignerName = (isShiftApproved || isEcoApproved)
-            ? (FirstName(reg.ShiftSupervisorApprovedByName, reg.EconomistApprovedByName, reg.PreparedByName))
-            : "—";
-        var economistSignerAt = (isShiftApproved || isEcoApproved)
-            ? (reg.ShiftSupervisorApprovedAt ?? reg.EconomistApprovedWithPermitAt ?? reg.EconomistApprovedAt ?? reg.PreparedAt)
-            : (DateTime?)null;
+        var economistSignerName = FirstName(reg.EconomistApprovedByName, reg.PreparedByName);
+        if (string.IsNullOrWhiteSpace(economistSignerName) || economistSignerName == "—")
+        {
+            economistSignerName = "Toshpulatov Abror Yuldoshevich";
+        }
+        var economistSignerAt = reg.EconomistApprovedWithPermitAt ?? reg.EconomistApprovedAt ?? reg.PreparedAt;
+
+        var shiftSignerName = isShiftApproved ? (reg.ShiftSupervisorApprovedByName ?? "—") : "—";
+        var shiftSignerAt = isShiftApproved ? reg.ShiftSupervisorApprovedAt : (DateTime?)null;
 
         var permitSignerName = isPermitApproved ? (reg.PermitApprovedByName ?? "—") : "—";
         var permitSignerAt = isPermitApproved ? reg.PermitApprovedAt : (DateTime?)null;
@@ -133,7 +136,8 @@ public static class FinalDocumentModels
         {
             new("warehouse", "Tayyor mahsulotlar va xom ashyo sexi", "Yuklandi", warehouseSignerName, warehouseSignerAt),
             new("scale", "Tarozi operatori", "Tarozida tortildi", scaleSignerName, scaleSignerAt),
-            new("economist", "ICHDX iqtisodchisi", (isShiftApproved || isEcoApproved) ? "Yuk xati shakllantirildi" : "Kutilmoqda", economistSignerName, economistSignerAt),
+            new("economist", "ICHDX iqtisodchisi", "Yuk xati shakllantirildi", economistSignerName, economistSignerAt),
+            new("shift_supervisor", "PDS (ICHDX) smena boshlig‘i", isShiftApproved ? "Tasdiqlandi" : "Kutilmoqda", shiftSignerName, shiftSignerAt),
             new("permit", "Ruxsatnoma byurosi xodimi", isPermitApproved ? "Kelishildi" : "Kutilmoqda", permitSignerName, permitSignerAt),
             new("security", "Qo‘riqlash xizmati (NO‘J) xodimi", isSecurityApproved ? "Kelishildi" : "Kutilmoqda", securitySignerName, securitySignerAt)
         };

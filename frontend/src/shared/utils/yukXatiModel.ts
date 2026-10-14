@@ -91,6 +91,8 @@ export interface YukXatiModel {
   scaleOperatorName: string;
   railwayRepAt: string | null;
   railwayRepName: string;
+  shiftSupervisorAt: string | null;
+  shiftSupervisorName: string;
   securityAt: string | null;
   securityName: string;
   economistAt: string | null;
@@ -105,7 +107,7 @@ export interface YukXatiModel {
 
 export function isYukXatiPrintReady(model: YukXatiModel): boolean {
   return Boolean(
-    model.railwayRepAt
+    (model.shiftSupervisorAt || model.railwayRepAt)
     && model.warehouseAt
     && model.scaleOperatorAt
     && model.economistAt
@@ -372,8 +374,8 @@ export function buildYukXatiModel(
   const etId = registry.registryNumber || registry.id.slice(0, 8).toUpperCase();
   const registryNumber = normalizeRegistryNumber(registry.registryNumber || '');
   const fallbackQrTarget = registry.qrGlobalId;
-  const qrLink = registry.qrVerificationUrl || (fallbackQrTarget ? `https://qrlink.sgcc.uz/verify/${encodeURIComponent(fallbackQrTarget)}` : '');
-  const qrValue = qrLink || registry.registryNumber || registry.id;
+  const qrLink = registry.qrVerificationUrl || (fallbackQrTarget ? `https://qrlink.sgcc.uz/verify/${encodeURIComponent(fallbackQrTarget)}` : `https://qrlink.sgcc.uz/verify/${encodeURIComponent(registry.registryNumber || registry.id)}`);
+  const qrValue = qrLink;
 
   const grossAt = maxUnit(registryUnits, u => u.grossWeighedAt);
   const sealedAt = maxUnit(registryUnits, u => u.sealedAt);
@@ -510,14 +512,16 @@ export function buildYukXatiModel(
     scaleOperatorName,
     railwayRepAt: arrival?.createdAt || registry.preparedAt,
     railwayRepName: arrival?.createdByName || '',
+    shiftSupervisorAt: registry.isApprovedByShiftSupervisor ? (registry.shiftSupervisorApprovedAt || null) : null,
+    shiftSupervisorName: registry.isApprovedByShiftSupervisor ? (registry.shiftSupervisorApprovedByName || '—') : '',
     securityAt: registry.isApprovedBySecurity ? (registry.securityApprovedAt || null) : null,
     securityName: registry.isApprovedBySecurity ? (securityName || '—') : '',
-    economistAt: (registry.isApprovedByShiftSupervisor || registry.isEconomistApprovedWithPermit || registry.isEconomistApprovedWithSecurity)
-      ? (registry.shiftSupervisorApprovedAt || registry.economistApprovedWithPermitAt || registry.economistApprovedAt || registry.preparedAt)
+    economistAt: (registry.isEconomistApprovedWithPermit || registry.isEconomistApprovedWithSecurity || registry.isApprovedByShiftSupervisor || registry.preparedAt)
+      ? (registry.economistApprovedWithPermitAt || registry.economistApprovedAt || registry.preparedAt)
       : null,
-    economistName: (registry.isApprovedByShiftSupervisor || registry.isEconomistApprovedWithPermit || registry.isEconomistApprovedWithSecurity)
-      ? (registry.shiftSupervisorApprovedByName || economistName || '—')
-      : '',
+    economistName: (economistName && economistName !== '—')
+      ? economistName
+      : (registry.preparedByName || '—'),
     warehouseAt,
     warehouseName,
     permitAt: registry.isApprovedByPermit ? (registry.permitApprovedAt || null) : null,

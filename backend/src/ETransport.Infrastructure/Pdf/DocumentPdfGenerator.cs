@@ -195,8 +195,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
         var shiftLeaderName = !string.IsNullOrWhiteSpace(model.ShiftLeaderName) ? model.ShiftLeaderName : (model.InspectorName ?? "Xayitov Anvarjon Karimovich");
         if (shiftLeaderName == "—") shiftLeaderName = "Xayitov Anvarjon Karimovich";
         var shiftApproved = model.ShiftLeaderAt != null || !string.IsNullOrWhiteSpace(model.InspectorName) || model.PermitOk;
-        var shiftQrPayload = $"Holat: Tasdiqlandi\nBo'lim/sex: ICHDX smena boshlig'i\nF.I.Sh.: {shiftLeaderName}\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {FormatUzt(model.ShiftLeaderAt ?? model.PreparedAt)}";
-        var shiftQrBytes = GenerateQrPngBytes(shiftQrPayload);
+        var dirQrPayload = $"Holat: Tasdiqlandi\nLavozim: Bosh direktor\nF.I.Sh.: Sh. Aslanov\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {FormatUzt(model.ShiftLeaderAt ?? model.PreparedAt)}\nHavola: {mainQrTarget}";
+        var shiftQrBytes = GenerateQrPngBytes(dirQrPayload);
 
         decimal NormalizeKg(decimal w) => (w > 0 && w < 1000) ? Math.Round(w * 1000m, 0) : w;
 
@@ -254,6 +254,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
             new("warehouse", "Tayyor mahsulotlar va xom ashyo sexi", "Yuklandi", model.PreparedByName, model.PreparedAt),
             new("scale", "Tarozi operatori", "Tarozida tortildi", model.PreparedByName, model.PreparedAt),
             new("economist", "ICHDX iqtisodchisi", "Yuk xati shakllantirildi", model.PreparedByName, model.PreparedAt),
+            new("shift_supervisor", "PDS (ICHDX) smena boshlig‘i", "Tasdiqlandi", model.ShiftLeaderName, model.ShiftLeaderAt ?? model.PreparedAt),
             new("permit", "Ruxsatnoma byurosi xodimi", "Kelishildi", model.InspectorName, model.PreparedAt),
             new("security", "Qo‘riqlash xizmati (NO‘J) xodimi", "Kelishildi", model.SecurityOfficerName, model.PreparedAt)
         };
@@ -328,7 +329,12 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
             byte[]? sQrBytes = null;
             if (isApproved)
             {
-                var sQrPayload = $"Bo'lim/sex: {s.Department}\nHolat: {statusText}\nF.I.Sh.: {sName}\nSana/vaqt: {timeText}";
+                var cleanDept = s.Department.Replace('‘', '\'').Replace('’', '\'').Replace('`', '\'');
+                var sQrPayload = $"Hujjat: Yuk xati № {model.RegistryNumber}\nBo'lim/sex: {cleanDept}\nHolat: {statusText}\nF.I.Sh.: {sName}\nSana/vaqt: {timeText}";
+                if (!string.IsNullOrWhiteSpace(mainQrTarget))
+                {
+                    sQrPayload += $"\nHavola: {mainQrTarget}";
+                }
                 sQrBytes = GenerateQrPngBytes(sQrPayload);
             }
 
@@ -390,7 +396,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                     if (signers.Count > 2) RenderSignCard(r1, signers[2]);
                 });
 
-                // 2-qator: 2 ta kartochka + 1 ta bo'sh spacer
+                // 2-qator: 3 ta kartochka
                 if (signers.Count > 3)
                 {
                     cardsCol.Item().Row(r2 =>
@@ -400,7 +406,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                         if (signers.Count > 4) RenderSignCard(r2, signers[4]);
                         else r2.ConstantItem(195);
                         r2.ConstantItem(10);
-                        r2.ConstantItem(195); // 3-ustun bo'sh joy
+                        if (signers.Count > 5) RenderSignCard(r2, signers[5]);
+                        else r2.ConstantItem(195);
                     });
                 }
             });

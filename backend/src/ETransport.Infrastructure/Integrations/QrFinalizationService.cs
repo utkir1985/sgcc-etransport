@@ -18,7 +18,7 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static string Hash(object model) => Convert.ToHexString(SHA256.HashData(
-        Encoding.UTF8.GetBytes((model is YukXatiPdfModel ? "final-pdf-v3:" : "final-pdf-v1:") + JsonSerializer.Serialize(model))));
+        Encoding.UTF8.GetBytes((model is YukXatiPdfModel ? "final-pdf-v4:" : "final-pdf-v1:") + JsonSerializer.Serialize(model))));
     private static string Name(params string?[] names) => names.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "Mas'ul xodim";
 
     public async Task<QrSyncResult> SyncAsync(CancellationToken ct = default)
@@ -63,22 +63,32 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                 if (!r.IsApprovedByPermit || !r.IsApprovedBySecurity) return false;
                 var model = FinalDocumentModels.BuildYukXatiPdfModel(r);
                 if (r.QrFinalFileHash == Hash(model)) return false;
-                if (model.Signers == null || model.Signers.Count != 5 || model.Signers.Any(s =>
+                if (model.Signers == null || model.Signers.Count < 5 || model.Signers.Any(s =>
                     !s.At.HasValue || string.IsNullOrWhiteSpace(s.Name) || s.Name == "—" || s.Status == "Kutilmoqda"))
                     throw new InvalidOperationException("Yakuniy yuk xatida tasdiqlovchi F.I.Sh. yoki sana mavjud emas.");
                 
                 var registryDate = r.SecurityApprovedAt ?? r.PreparedAt;
-                var ownerName = Name(r.SecurityApprovedByName, r.PreparedByName);
+                var ownerName = Name(r.ShiftSupervisorApprovedByName, r.PreparedByName, r.SecurityApprovedByName);
                 var workflowJson = JsonSerializer.Serialize(new {
                     workflowName = "Tasdiqlangan",
                     approvedByName = ownerName,
-                    completedAt = registryDate.ToString("O")
+                    completedAt = registryDate.ToString("O"),
+                    shiftSupervisor = r.ShiftSupervisorApprovedByName,
+                    shiftSupervisorAt = r.ShiftSupervisorApprovedAt?.ToString("O"),
+                    economist = r.PreparedByName,
+                    permit = r.PermitApprovedByName,
+                    security = r.SecurityApprovedByName
                 });
                 var metadataJson = JsonSerializer.Serialize(new {
                     documentDate = r.PreparedAt.ToString("O"),
                     registryNumber = r.RegistryNumber,
                     productType = model.ProductType,
-                    wagonCount = model.Wagons.Count
+                    wagonCount = model.Wagons.Count,
+                    shiftSupervisor = r.ShiftSupervisorApprovedByName,
+                    shiftSupervisorAt = r.ShiftSupervisorApprovedAt?.ToString("O"),
+                    economist = r.PreparedByName,
+                    permit = r.PermitApprovedByName,
+                    security = r.SecurityApprovedByName
                 });
 
                 var request = new QrLinkRegisterRequest(r.RegistryNumber, "Yuk xati", $"Yuk xati № {r.RegistryNumber}",
