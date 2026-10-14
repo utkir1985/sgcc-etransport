@@ -18790,3 +18790,12 @@ html.dark .order-progress-track,
     justify-content: space-between;
   }
 }
+
+@media (max-width: 640px) {
+  .thub__toolbar .product-type-filter .marketing-product-filter-anchor,
+  .thub__toolbar .product-type-filter button,
+  .docs-hub-toolbar .product-type-filter .marketing-product-filter-anchor,
+  .docs-hub-toolbar .product-type-filter button {
+    width: 100%;
+  }
+}
