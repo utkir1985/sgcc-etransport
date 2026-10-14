@@ -807,8 +807,8 @@ export default function UsersPage() {
                       <td className="admin-table__col-num">{rowNumber}</td>
                       <td>
                         <div className="users-table__person">
-                          <span className="users-table__name">{user.fullName || '—'}</span>
-                          <span className="users-table__login">{user.username}</span>
+                          <span className="users-table__name">{user.fullName || user.username}</span>
+                          {user.fullName && <span className="users-table__login">{user.username}</span>}
                         </div>
                       </td>
                       <td>
