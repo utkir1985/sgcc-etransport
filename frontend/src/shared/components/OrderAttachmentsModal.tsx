@@ -13,6 +13,8 @@ interface OrderAttachmentsModalProps {
   onPickFiles: (files: FileList | null) => void;
   onRemovePending: (index: number) => void;
   onRemoveExisting: (attachmentId: string) => void;
+  /** Tasdiqlash jarayonidagi buyurtmada mavjud ilova o‘chirilmaydi — faqat yangisi qo‘shiladi. */
+  canRemoveExisting?: boolean;
 }
 
 function formatSize(bytes: number): string {
@@ -31,6 +33,7 @@ export function OrderAttachmentsModal({
   onPickFiles,
   onRemovePending,
   onRemoveExisting,
+  canRemoveExisting = true,
 }: OrderAttachmentsModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -85,7 +88,7 @@ export function OrderAttachmentsModal({
               Fayl biriktirish
             </h2>
             <p className="order-attach-modal__subtitle">
-              Majburiy · PDF, Word, Excel, rasm yoki ZIP — har biri 20 MB gacha
+              Bir nechta fayl tanlash mumkin · PDF, Word, Excel, rasm yoki ZIP — har biri 20 MB gacha
             </p>
           </div>
           <button
@@ -125,8 +128,8 @@ export function OrderAttachmentsModal({
             <span className="order-attach-dropzone__icon">
               <Upload className="w-6 h-6" strokeWidth={1.75} />
             </span>
-            <span className="order-attach-dropzone__title">Faylni bu yerga tashlang</span>
-            <span className="order-attach-dropzone__hint">yoki tanlash uchun bosing</span>
+            <span className="order-attach-dropzone__title">Fayllarni bu yerga tashlang</span>
+            <span className="order-attach-dropzone__hint">yoki tanlash uchun bosing — bir yo‘la bir nechtasini</span>
           </button>
 
           {totalCount === 0 ? (
@@ -142,15 +145,17 @@ export function OrderAttachmentsModal({
                     <p className="order-attach-item__name truncate" title={file.fileName}>{file.fileName}</p>
                     <p className="order-attach-item__meta">{formatSize(file.sizeBytes)}</p>
                   </div>
-                  <button
-                    type="button"
-                    className="order-attach-item__remove"
-                    disabled={saving || removingAttachmentId === file.id}
-                    onClick={() => onRemoveExisting(file.id)}
-                    aria-label="O‘chirish"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canRemoveExisting ? (
+                    <button
+                      type="button"
+                      className="order-attach-item__remove"
+                      disabled={saving || removingAttachmentId === file.id}
+                      onClick={() => onRemoveExisting(file.id)}
+                      aria-label="O‘chirish"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  ) : null}
                 </li>
               ))}
               {pendingFiles.map((file, idx) => (

@@ -1126,15 +1126,6 @@ function MarketingOrdersPanel({
               className="marketing-order-product-picker"
             />
 
-            <div className="marketing-order-contract-field">
-              <span className="marketing-order-contract-field__label">Hujjat raqami</span>
-              <div
-                className="marketing-order-contract-field__input marketing-order-id-field"
-                title="Tizimdagi ichki raqam — avtomatik beriladi"
-              >
-                {header.orderNumber || 'Avtomatik beriladi'}
-              </div>
-            </div>
           </div>
           <div className="marketing-order-edit-aside">
             <button
@@ -1649,6 +1640,7 @@ function MarketingOrdersPanel({
         onPickFiles={onPickAttachmentFiles}
         onRemovePending={removePendingFile}
         onRemoveExisting={(id) => { void removeExistingAttachment(id); }}
+        canRemoveExisting={isNew || editingOrder?.status === 'Draft' || editingOrder?.status === 'ReturnedToMarketing'}
       />
 
       <ConfirmDialog

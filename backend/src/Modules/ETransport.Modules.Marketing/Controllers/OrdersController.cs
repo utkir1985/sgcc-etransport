@@ -289,8 +289,10 @@ public class OrdersController(
         if (order is null)
             return NotFound(new ApiResponse<OrderAttachmentDto>(false, null, "Buyurtma topilmadi"));
 
-        if (order.Status is not (OrderStatus.Draft or OrderStatus.ReturnedToMarketing))
-            return BadRequest(new ApiResponse<OrderAttachmentDto>(false, null, "Faqat qoralama yoki qaytarilgan buyurtmaga ilova qo'shish mumkin"));
+        // Qo‘shimcha ilova tahrirlashda ham qo‘shiladi; faqat yopilgan buyurtmaga qo‘shib bo‘lmaydi.
+        // (O‘chirish esa avvalgidek faqat qoralama/qaytarilgan buyurtmada — tasdiqlangan hujjat saqlanadi.)
+        if (order.Status is OrderStatus.Completed or OrderStatus.Cancelled)
+            return BadRequest(new ApiResponse<OrderAttachmentDto>(false, null, "Yakunlangan yoki bekor qilingan buyurtmaga ilova qo'shib bo'lmaydi"));
 
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await using var stream = file.OpenReadStream();
