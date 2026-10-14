@@ -6,10 +6,19 @@ import Header from './Header';
 // realtime sync handled per-component
 
 export default function MainLayout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // 1024px dan tor oynada (planshet, kichik noutbuk oynasi) menyu ochiladigan panel bo‘ladi;
+  // 1024–1279px da avtomatik ikonkalarga yig‘iladi, keng ekranda to‘liq ochiq.
+  // Foydalanuvchi tugma bilan o‘zgartirsa — uning tanlovi ustun (ekran o‘lchami o‘zgarguncha).
+  const [userCollapsed, setUserCollapsed] = useState<boolean | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const isWide = useMediaQuery('(min-width: 1280px)');
+  const sidebarCollapsed = userCollapsed ?? !isWide;
   const location = useLocation();
+
+  useEffect(() => {
+    setUserCollapsed(null);
+  }, [isWide]);
 
   useEffect(() => {
     if (isDesktop) setMobileOpen(false);
@@ -52,7 +61,7 @@ export default function MainLayout() {
         isDesktop={isDesktop}
         sidebarCollapsed={sidebarCollapsed}
         mobileOpen={mobileOpen}
-        onSidebarToggle={() => setSidebarCollapsed(c => !c)}
+        onSidebarToggle={() => setUserCollapsed(!sidebarCollapsed)}
         onMobileMenuToggle={() => setMobileOpen(o => !o)}
       />
 

@@ -18511,3 +18511,24 @@ html.dark .order-progress-track,
   overflow-wrap: normal !important;
   word-break: normal !important;
 }
+
+/* Holat kartochkalari — doim 3 ta yonma-yon (planshetda ixcham), faqat telefonda vertikal ko‘rinish */
+.order-status-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .order-status-card {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .order-status-card__text {
+    flex: 1 1 0;
+  }
+}
+
+/* Buyurtma raqami bo‘linib ketmaydi */
+.marketing-orders-table__number {
+  white-space: nowrap;
+}
