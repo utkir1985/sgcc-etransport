@@ -7,12 +7,12 @@ import Header from './Header';
 
 export default function MainLayout() {
   // 1024px dan tor oynada (planshet, kichik noutbuk oynasi) menyu ochiladigan panel bo‘ladi;
-  // 1024–1279px da avtomatik ikonkalarga yig‘iladi, keng ekranda to‘liq ochiq.
+  // 1024–1439px da (1366/1280 noutbuklar) avtomatik ikonkalarga yig‘iladi, keng ekranda to‘liq ochiq.
   // Foydalanuvchi tugma bilan o‘zgartirsa — uning tanlovi ustun (ekran o‘lchami o‘zgarguncha).
   const [userCollapsed, setUserCollapsed] = useState<boolean | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const isWide = useMediaQuery('(min-width: 1280px)');
+  const isWide = useMediaQuery('(min-width: 1440px)');
   const sidebarCollapsed = userCollapsed ?? !isWide;
   const location = useLocation();
 
