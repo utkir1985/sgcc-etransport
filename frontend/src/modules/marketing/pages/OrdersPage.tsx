@@ -81,6 +81,7 @@ function reindexLines(lines: MonthlyOrderLineInput[]): MonthlyOrderLineInput[] {
 function getOrderSheetHeaderClass(header: string): string | undefined {
   if (header === 'Yuklash oxirgi sanasi') return 'order-sheet-date-col';
   if (header === 'Shartnoma raqami') return 'order-sheet-contract-col';
+  if (header === 'Markasi') return 'order-sheet-grade-col';
   return undefined;
 }
 
@@ -1179,7 +1180,7 @@ function MarketingOrdersPanel({
                     {h === 'Shartnoma raqami' && !/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
                   </th>
                 ))}
-                <th className="order-sheet-center w-40">Yuklash oxirgi sanasi</th>
+                <th className="order-sheet-center order-sheet-deadline-col">Yuklash oxirgi sanasi</th>
                 {lines.length > 1 && <th className="order-sheet-actions-col" />}
               </tr>
             </thead>

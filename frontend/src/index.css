@@ -17623,3 +17623,21 @@ html.dark .order-progress-track,
 .registry-route-station-picker {
   margin-top: 6px;
 }
+
+/* Buyurtma formasi — ustunlar mutanosibligi (Markasi va muddat ixcham) */
+.order-sheet-table--edit th:nth-child(2),
+.order-sheet-table--edit .order-sheet-contractor {
+  min-width: 22rem;
+  width: 22rem;
+}
+
+.order-sheet-table--edit th.order-sheet-grade-col,
+.order-sheet-table--edit td.order-sheet-grade-col {
+  min-width: 10rem;
+  width: 10rem;
+}
+
+.order-sheet-table--edit th.order-sheet-deadline-col {
+  min-width: 12rem;
+  width: 12rem;
+}

@@ -62,6 +62,11 @@ function getMenuLayout(trigger: HTMLElement, variant: 'default' | 'compact'): Me
     if (left < 8) left = 8;
   }
 
+  // Jadvalning o‘ng chetidagi katakda menyu ekrandan chiqib ketmasin
+  if (left + menuWidth > window.innerWidth - 8) {
+    left = Math.max(8, window.innerWidth - menuWidth - 8);
+  }
+
   return { top, left, width: menuWidth };
 }
 
