@@ -60,6 +60,43 @@ export interface OrderStatusCard {
   tone: 'blue' | 'amber' | 'green';
 }
 
+/** KPI andozasidagi holat kartochkalari — oddiy ro‘yxat va hub ko‘rinishida bir xil. */
+function OrderStatusCards({
+  cards,
+  active,
+  onChange,
+}: {
+  cards: OrderStatusCard[];
+  active?: string;
+  onChange?: (id: string) => void;
+}) {
+  return (
+    <div className="order-status-cards" role="tablist" aria-label="Buyurtma holati">
+      {cards.map(card => {
+        const Icon = card.icon;
+        const isActive = card.id === active;
+        return (
+          <button
+            key={card.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            className={`order-status-card order-status-card--${card.tone}${isActive ? ' is-active' : ''}`}
+            onClick={() => onChange?.(card.id)}
+          >
+            <span className="order-status-card__icon"><Icon strokeWidth={1.9} aria-hidden /></span>
+            <span className="order-status-card__text">
+              <strong>{card.label}</strong>
+              <small>{card.hint}</small>
+            </span>
+            <span className="order-status-card__count">{card.count} ta</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface MarketingOrdersHomeProps {
   title: string;
   productEntries: ProductCatalogEntry[];
@@ -137,29 +174,7 @@ export function MarketingOrdersHome({
           </header>
         ) : null}
         {statusCards && statusCards.length > 0 ? (
-          <div className="order-status-cards" role="tablist" aria-label="Buyurtma holati">
-            {statusCards.map(card => {
-              const Icon = card.icon;
-              const active = card.id === activeStatus;
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  className={`order-status-card order-status-card--${card.tone}${active ? ' is-active' : ''}`}
-                  onClick={() => onStatusChange?.(card.id)}
-                >
-                  <span className="order-status-card__icon"><Icon strokeWidth={1.9} aria-hidden /></span>
-                  <span className="order-status-card__text">
-                    <strong>{card.label}</strong>
-                    <small>{card.hint}</small>
-                  </span>
-                  <span className="order-status-card__count">{card.count} ta</span>
-                </button>
-              );
-            })}
-          </div>
+          <OrderStatusCards cards={statusCards} active={activeStatus} onChange={onStatusChange} />
         ) : null}
         <div className="docs-panel">
           <div className="marketing-orders-toolbar docs-panel__toolbar">
@@ -216,16 +231,20 @@ export function MarketingOrdersHome({
   return (
     <div className="thub reestr ohub">
       <section className="thub__main reestr-main">
-        <HubZoneTabs
-          label="Buyurtma holati"
-          columns={4}
-          value={listView!}
-          onChange={id => onListViewChange?.(id)}
-          items={SEGMENTS.map(item => ({
-            ...item,
-            count: segmentCounts?.[item.id] ?? 0,
-          }))}
-        />
+        {statusCards && statusCards.length > 0 ? (
+          <OrderStatusCards cards={statusCards} active={activeStatus} onChange={onStatusChange} />
+        ) : (
+          <HubZoneTabs
+            label="Buyurtma holati"
+            columns={4}
+            value={listView!}
+            onChange={id => onListViewChange?.(id)}
+            items={SEGMENTS.map(item => ({
+              ...item,
+              count: segmentCounts?.[item.id] ?? 0,
+            }))}
+          />
+        )}
 
         <div className="docs-panel">
           <div className="thub__toolbar reestr-toolbar">

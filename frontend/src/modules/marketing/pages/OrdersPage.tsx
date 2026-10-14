@@ -46,7 +46,7 @@ import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { downloadOrderPdf } from '../../../shared/utils/orderSheetPrint';
 import { isProductOrderPrintReady } from '../../../shared/components/ProductOrderDocument';
 import { PRINT_LOCKED_TITLE } from '../../../shared/utils/documentPrintGuard';
-import { MarketingOrdersHome } from '../../../shared/components/MarketingOrdersHome';
+import { MarketingOrdersHome, type OrderStatusCard } from '../../../shared/components/MarketingOrdersHome';
 import { ProductTypeFilter } from '../../../shared/components/ProductTypeFilter';
 import { ProductDetailBackButton } from '../../../shared/components/ProductDetailBackButton';
 import { OrderList, type OrderListVariant } from '../../../shared/components/OrderListRow';
@@ -149,6 +149,14 @@ function orderStatusTab(status: string): StatusTab {
   return 'tasdiq';
 }
 
+function buildStatusCards(counts: Record<StatusTab, number>): OrderStatusCard[] {
+  return [
+    { id: 'faol', label: 'Ijroda', hint: 'Tasdiqlangan, yuklanayotgan buyurtmalar', count: counts.faol, icon: Truck, tone: 'blue' },
+    { id: 'tasdiq', label: 'Kelishuvda', hint: 'Buxgalteriya, o‘rinbosar va ICHDX kelishuvida', count: counts.tasdiq, icon: Hourglass, tone: 'amber' },
+    { id: 'yakun', label: 'Yakunlangan', hint: 'To‘liq bajarilgan buyurtmalar', count: counts.yakun, icon: CheckCircle2, tone: 'green' },
+  ];
+}
+
 function MarketingOrdersPanel({
   logisticsType,
   canCreate,
@@ -178,6 +186,8 @@ function MarketingOrdersPanel({
   const { user } = useAuth();
   const role = user?.role;
   const listView: OrderListView = parseOrderListView(searchParams.get('view')) ?? defaultListView;
+  // «Barchasi» bo‘limi yo‘q — aralash ro‘yxat o‘rniga «Ijroda» ochiladi
+  const hubView: StatusTab = listView === 'all' ? 'faol' : listView;
   const now = new Date();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusTab, setStatusTab] = useState<StatusTab>('faol');
@@ -313,18 +323,13 @@ function MarketingOrdersPanel({
     }
 
     const q = searchQuery.trim().toLowerCase();
-    let list = orders.filter(o => {
-      if (listView === 'all') return true;
-      if (listView === 'faol') return isOrderFaol(o.status);
-      if (listView === 'tasdiq') return isOrderTasdiqlanayotgan(o.status);
-      return isOrderYakunlangan(o.status);
-    });
+    let list = orders.filter(o => orderStatusTab(o.status) === hubView);
 
     if (filterProductType) {
       list = list.filter(o => o.productType === filterProductType);
     }
 
-    if (listView === 'yakun' || periodFrom || periodTo) {
+    if (hubView === 'yakun' || periodFrom || periodTo) {
       list = list.filter(o => matchesPeriodRange(o.year, o.month, periodFrom, periodTo));
     }
 
@@ -347,7 +352,7 @@ function MarketingOrdersPanel({
       });
     }
 
-    if (listView === 'yakun') {
+    if (hubView === 'yakun') {
       return [...list].sort((a, b) => {
         if (a.year !== b.year) return b.year - a.year;
         if (a.month !== b.month) return b.month - a.month;
@@ -360,7 +365,13 @@ function MarketingOrdersPanel({
       if (a.month !== b.month) return b.month - a.month;
       return b.createdAt.localeCompare(a.createdAt);
     });
-  }, [orders, periodFrom, periodTo, filterProductType, hubMode, listView, searchQuery, plainListOrders, statusTab]);
+  }, [orders, periodFrom, periodTo, filterProductType, hubMode, hubView, searchQuery, plainListOrders, statusTab]);
+
+  const hubStatusCounts = useMemo(() => {
+    const counts: Record<StatusTab, number> = { faol: 0, tasdiq: 0, yakun: 0 };
+    for (const o of orders) counts[orderStatusTab(o.status)] += 1;
+    return counts;
+  }, [orders]);
 
   const listViewTitle =
     listView === 'all' ? 'Barcha buyurtmalar'
@@ -1502,6 +1513,9 @@ function MarketingOrdersPanel({
           listView={listView}
           onListViewChange={setListView}
           segmentCounts={segmentCounts}
+          statusCards={buildStatusCards(hubStatusCounts)}
+          activeStatus={hubView}
+          onStatusChange={id => setListView(id as OrderListView)}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
           resultCount={matchingOrders.length}
@@ -1548,7 +1562,7 @@ function MarketingOrdersPanel({
               </p>
             </div>
           ) : (
-            renderOrderList(matchingOrders, listView)
+            renderOrderList(matchingOrders, hubView)
           )}
         </MarketingOrdersHome>
       ) : (
@@ -1563,32 +1577,7 @@ function MarketingOrdersPanel({
           onCreate={startNew}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          statusCards={[
-            {
-              id: 'faol',
-              label: 'Ijroda',
-              hint: 'Tasdiqlangan, yuklanayotgan buyurtmalar',
-              count: statusTabCounts.faol,
-              icon: Truck,
-              tone: 'blue',
-            },
-            {
-              id: 'tasdiq',
-              label: 'Kelishuvda',
-              hint: 'Buxgalteriya, o‘rinbosar va ICHDX kelishuvida',
-              count: statusTabCounts.tasdiq,
-              icon: Hourglass,
-              tone: 'amber',
-            },
-            {
-              id: 'yakun',
-              label: 'Yakunlangan',
-              hint: 'To‘liq bajarilgan buyurtmalar',
-              count: statusTabCounts.yakun,
-              icon: CheckCircle2,
-              tone: 'green',
-            },
-          ]}
+          statusCards={buildStatusCards(statusTabCounts)}
           activeStatus={statusTab}
           onStatusChange={id => setStatusTab(id as StatusTab)}
           toolbarActions={
