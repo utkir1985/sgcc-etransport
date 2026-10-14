@@ -11,6 +11,8 @@ export interface TablePaginationProps {
   unitLabel?: string;
   pageSizeOptions?: number[];
   className?: string;
+  /** `kpi` — KPI tizimi andozasi: chapda soni, markazda sahifalar, o‘ngda «Sahifada». */
+  variant?: 'default' | 'kpi';
 }
 
 /**
@@ -26,11 +28,80 @@ export function TablePagination({
   unitLabel = 'yozuv',
   pageSizeOptions = [10, 20, 25, 50],
   className = '',
+  variant = 'default',
 }: TablePaginationProps) {
   const calculatedTotalPages = Math.max(1, Math.ceil(total / pageSize));
   const totalPages = propTotalPages ?? calculatedTotalPages;
   const currentPage = Math.min(Math.max(1, page), totalPages);
   const pageItems = buildPageItems(currentPage, totalPages);
+
+  const changePageSize = (size: number) => {
+    onPageSizeChange(size);
+    onPageChange(1);
+  };
+
+  const pagination = (
+    <div className="admin-pagination">
+      <button
+        type="button"
+        className="admin-pagination__btn"
+        disabled={currentPage <= 1}
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        aria-label="Oldingi sahifa"
+      >
+        <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
+      </button>
+      {pageItems.map((item, idx) => {
+        if (item === 'dots-left' || item === 'dots-right') {
+          return (
+            <span key={`${item}-${idx}`} className="px-1 text-slate-400 select-none text-xs">
+              …
+            </span>
+          );
+        }
+        return (
+          <button
+            key={item}
+            type="button"
+            className={`admin-pagination__btn${item === currentPage ? ' admin-pagination__btn--active' : ''}`}
+            onClick={() => onPageChange(item)}
+          >
+            {item}
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        className="admin-pagination__btn"
+        disabled={currentPage >= totalPages}
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        aria-label="Keyingi sahifa"
+      >
+        <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
+      </button>
+    </div>
+  );
+
+  if (variant === 'kpi') {
+    return (
+      <div className={`kpi-pagination${className ? ` ${className}` : ''}`}>
+        <p className="kpi-pagination__count">
+          <strong>{total}</strong> ta {unitLabel}
+        </p>
+        {pagination}
+        <label className="kpi-pagination__size">
+          <span>Sahifada:</span>
+          <select value={pageSize} onChange={e => changePageSize(Number(e.target.value))}>
+            {pageSizeOptions.map(opt => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    );
+  }
 
   return (
     <div className={`admin-table-footer${className ? ` ${className}` : ''}`}>
@@ -42,10 +113,7 @@ export function TablePagination({
           <span>Sahifadagi qatorlar:</span>
           <select
             value={pageSize}
-            onChange={e => {
-              onPageSizeChange(Number(e.target.value));
-              onPageChange(1);
-            }}
+            onChange={e => changePageSize(Number(e.target.value))}
           >
             {pageSizeOptions.map(opt => (
               <option key={opt} value={opt}>
@@ -54,45 +122,7 @@ export function TablePagination({
             ))}
           </select>
         </label>
-        <div className="admin-pagination">
-          <button
-            type="button"
-            className="admin-pagination__btn"
-            disabled={currentPage <= 1}
-            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-            aria-label="Oldingi sahifa"
-          >
-            <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
-          </button>
-          {pageItems.map((item, idx) => {
-            if (item === 'dots-left' || item === 'dots-right') {
-              return (
-                <span key={`${item}-${idx}`} className="px-1 text-slate-400 select-none text-xs">
-                  …
-                </span>
-              );
-            }
-            return (
-              <button
-                key={item}
-                type="button"
-                className={`admin-pagination__btn${item === currentPage ? ' admin-pagination__btn--active' : ''}`}
-                onClick={() => onPageChange(item)}
-              >
-                {item}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className="admin-pagination__btn"
-            disabled={currentPage >= totalPages}
-            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-            aria-label="Keyingi sahifa"
-          >
-            <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
-          </button>
-        </div>
+        {pagination}
       </div>
     </div>
   );

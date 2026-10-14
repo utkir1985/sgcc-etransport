@@ -414,7 +414,7 @@ export default function UsersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
@@ -827,7 +827,7 @@ export default function UsersPage() {
                               title="Tahrirlash"
                               onClick={() => openEdit(user)}
                             >
-                              <Pencil className="w-4 h-4" strokeWidth={2} />
+                              <Pencil className="w-[15px] h-[15px]" strokeWidth={1.9} />
                             </button>
                           )}
                           {canUsersUpdate && (
@@ -837,7 +837,7 @@ export default function UsersPage() {
                               title="Parolni tiklash"
                               onClick={() => openReset(user)}
                             >
-                              <KeyRound className="w-4 h-4" strokeWidth={2} />
+                              <KeyRound className="w-[15px] h-[15px]" strokeWidth={1.9} />
                             </button>
                           )}
                           {canUsersDelete && (
@@ -847,7 +847,7 @@ export default function UsersPage() {
                               title="O‘chirish"
                               onClick={() => openBlock(user)}
                             >
-                              <Trash2 className="w-4 h-4" strokeWidth={2} />
+                              <Trash2 className="w-[15px] h-[15px]" strokeWidth={1.9} />
                             </button>
                           )}
                           {!canUsersUpdate && !canUsersDelete && (
@@ -862,18 +862,19 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
-
-        <TablePagination
-          total={filteredUsers.length}
-          page={currentPage}
-          pageSize={pageSize}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          onPageSizeChange={setPageSize}
-          unitLabel="foydalanuvchi"
-          pageSizeOptions={[5, 10, 20]}
-        />
       </div>
+
+      <TablePagination
+        variant="kpi"
+        total={filteredUsers.length}
+        page={currentPage}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        unitLabel="foydalanuvchi"
+        pageSizeOptions={[10, 20, 50]}
+      />
 
       {(action === 'create' || action === 'edit') && (
         <div className="confirm-dialog-root" role="presentation">
