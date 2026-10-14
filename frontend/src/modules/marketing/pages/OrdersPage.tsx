@@ -1024,10 +1024,6 @@ function MarketingOrdersPanel({
         logisticsType={logisticsType}
         activeOrderId={viewOrderId}
         onSelect={openOrderView}
-        onEdit={startEditOrder}
-        onDelete={openDeleteDialog}
-        canEditOrder={canEditOrderEntity}
-        canDeleteOrder={canDeleteOrderEntity}
       />
     </>
   );
