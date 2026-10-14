@@ -18756,3 +18756,37 @@ html.dark .order-progress-track,
     justify-content: center;
   }
 }
+
+/* Telefon: «Dan/Gacha» yorliqlari bir xil kenglikda va o‘rtada, sana maydoni qolgan kenglikni egallaydi */
+@media (max-width: 640px) {
+  .thub-date > span,
+  .rhub-date > span,
+  .period-range__fields .thub-date > span {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    min-width: 3.5rem;
+  }
+
+  .period-range__fields {
+    width: 100%;
+  }
+
+  .period-range__fields .thub-date {
+    display: flex;
+    width: 100%;
+  }
+
+  .period-range__fields .thub-date .date-picker,
+  .thub-date .date-picker--compact,
+  .rhub-date .date-picker--compact {
+    flex: 1 1 auto;
+    width: 100% !important;
+  }
+
+  .thub-date .date-picker--compact .date-picker-trigger,
+  .rhub-date .date-picker--compact .date-picker-trigger {
+    width: 100% !important;
+    justify-content: space-between;
+  }
+}
