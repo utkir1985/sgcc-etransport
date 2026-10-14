@@ -121,7 +121,7 @@ export function getTableHeaders(logisticsType: LogisticsType, wagonPlan = false)
     '№',
     'Korxona (kontragent) nomi',
     wagonPlan ? cfg.unitLabel : 'Markasi',
-    cfg.tonLabel,
+    wagonPlan ? cfg.tonLabel : 'Reja (t)',
     ...(wagonPlan ? [] : ['Buyurtma №']),
     'Shartnoma raqami',
     cfg.destinationLabel,

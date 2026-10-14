@@ -172,16 +172,17 @@ export function OrderSheetView({
                           >
                             {isTonDone ? (
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                ✓ To‘liq jo‘natildi{!wagonPlan ? ` · ${line.fulfilledWagonCount ?? 0} ta` : ''}
+                                {wagonPlan ? '✓ To‘liq jo‘natildi' : '✓ Yopildi'}
                               </span>
-                            ) : (
+                            ) : wagonPlan ? (
                               <span className="font-semibold">
-                                <span className="text-emerald-600 dark:text-emerald-400">
-                                  Jo‘natildi: {!wagonPlan ? `${line.fulfilledWagonCount ?? 0} ta · ` : ''}{formatTons(lineDoneT)} t
-                                </span>
+                                <span className="text-emerald-600 dark:text-emerald-400">Jo‘natildi: {formatTons(lineDoneT)} t</span>
                                 <span className="text-slate-400"> · </span>
                                 <span className="text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                               </span>
+                            ) : (
+                              // Yangi buyurtma: jo‘natilgan miqdor stansiya ustunida — bu yerda faqat qoldiq
+                              <span className="font-semibold text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                             )}
                           </div>
                         );
@@ -219,11 +220,12 @@ export function OrderSheetView({
                   </tr>
                 );
               })}
+              {(wagonPlan || lines.length > 1) && (
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
                   {wagonPlan ? <div>{totals.wagonTotal}</div> : null}
-                  {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
+                  {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
                       {wagonPlan
                         ? `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`
@@ -238,16 +240,23 @@ export function OrderSheetView({
                     const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
                     return (
                       <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
-                        Jo‘natildi: {formatTons(totalDoneT)} t · Qoldiq: {formatTons(totalRemT)} t
+                        {wagonPlan ? `Jo‘natildi: ${formatTons(totalDoneT)} t · ` : ''}Qoldiq: {formatTons(totalRemT)} t
                       </div>
                     );
                   })()}
                 </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 {!wagonPlan && <td className="order-sheet-contract order-sheet-center" />}
-                <td className="order-sheet-destination" />
+                <td className="order-sheet-destination">
+                  {!wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') ? (
+                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      Jo‘natildi: {lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta · {formatTons(lines.reduce((s, l) => s + getLineFulfilledTons(l), 0))} t
+                    </span>
+                  ) : null}
+                </td>
                 {showDeadline && <td className="order-sheet-center" />}
               </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -346,16 +355,17 @@ export function OrderSheetView({
                           >
                             {isTonDone ? (
                               <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                ✓ To‘liq jo‘natildi{!wagonPlan ? ` · ${line.fulfilledWagonCount ?? 0} ta` : ''}
+                                {wagonPlan ? '✓ To‘liq jo‘natildi' : '✓ Yopildi'}
                               </span>
-                            ) : (
+                            ) : wagonPlan ? (
                               <span className="font-semibold">
-                                <span className="text-emerald-600 dark:text-emerald-400">
-                                  Jo‘natildi: {!wagonPlan ? `${line.fulfilledWagonCount ?? 0} ta · ` : ''}{formatTons(lineDoneT)} t
-                                </span>
+                                <span className="text-emerald-600 dark:text-emerald-400">Jo‘natildi: {formatTons(lineDoneT)} t</span>
                                 <span className="text-slate-400"> · </span>
                                 <span className="text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                               </span>
+                            ) : (
+                              // Yangi buyurtma: jo‘natilgan miqdor stansiya ustunida — bu yerda faqat qoldiq
+                              <span className="font-semibold text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                             )}
                           </div>
                         );
@@ -393,11 +403,12 @@ export function OrderSheetView({
                   </tr>
                 );
               })}
+              {(wagonPlan || lines.length > 1) && (
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
                   {wagonPlan ? <div>{totals.wagonTotal}</div> : null}
-                  {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
+                  {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
                       {wagonPlan
                         ? `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`
@@ -412,16 +423,23 @@ export function OrderSheetView({
                     const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
                     return (
                       <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
-                        Jo‘natildi: {formatTons(totalDoneT)} t · Qoldiq: {formatTons(totalRemT)} t
+                        {wagonPlan ? `Jo‘natildi: ${formatTons(totalDoneT)} t · ` : ''}Qoldiq: {formatTons(totalRemT)} t
                       </div>
                     );
                   })()}
                 </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 {!wagonPlan && <td className="order-sheet-contract order-sheet-center" />}
-                <td className="order-sheet-destination" />
+                <td className="order-sheet-destination">
+                  {!wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') ? (
+                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      Jo‘natildi: {lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta · {formatTons(lines.reduce((s, l) => s + getLineFulfilledTons(l), 0))} t
+                    </span>
+                  ) : null}
+                </td>
                 {showDeadline && <td className="order-sheet-center" />}
               </tr>
+              )}
             </tbody>
           </table>
         </div>

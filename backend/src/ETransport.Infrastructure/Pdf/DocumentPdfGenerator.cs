@@ -1064,7 +1064,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             H("№");
                             H("Korxona (kontragent) nomi");
                             H(wagonPlan ? "Vagon soni" : "Markasi");
-                            H("Og'irligi (t)");
+                            H(wagonPlan ? "Og'irligi (t)" : "Reja (t)");
                             H("Shartnoma raqami");
                             H("Yetkazib berish joyi (stansiya)");
                         });
