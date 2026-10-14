@@ -18121,3 +18121,10 @@ html.dark .order-progress-track,
 .dark .order-sheet-station-shipments__meta {
   color: #94a3b8;
 }
+
+/* Buyurtma hujjati — bir nechta stansiya bo‘lsa, har biri alohida qatorda */
+.product-order-document .product-order-dest__item + .product-order-dest__item {
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px dashed #cbd5e1;
+}

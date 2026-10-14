@@ -1002,6 +1002,19 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                                     t.Span("Mahsulot turi: ").Bold().FontSize(9.5f);
                                     t.Span(model.ProductType ?? "—").FontSize(9.5f);
                                 });
+                                // Hujjatdagi buyurtma raqamlari (yangi buyurtmalarda qator bo‘yicha kiritiladi)
+                                var customerOrderNumbers = string.Join(", ", model.Lines
+                                    .Select(l => l.CustomerOrderNumber?.Trim() ?? "")
+                                    .Where(x => x.Length > 0)
+                                    .Distinct(StringComparer.OrdinalIgnoreCase));
+                                if (!model.Lines.Any(l => l.WagonCount > 0))
+                                {
+                                    mc.Item().Text(t =>
+                                    {
+                                        t.Span("Buyurtma №: ").Bold().FontSize(9.5f);
+                                        t.Span(customerOrderNumbers.Length > 0 ? customerOrderNumbers : "—").FontSize(9.5f);
+                                    });
+                                }
                             });
                         });
 
@@ -1041,7 +1054,6 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             columns.RelativeColumn(3.5f);
                             columns.RelativeColumn(1.2f);
                             columns.RelativeColumn(1.2f);
-                            if (!wagonPlan) columns.RelativeColumn(1.8f);
                             columns.RelativeColumn(2f);
                             columns.RelativeColumn(2.5f);
                         });
@@ -1053,7 +1065,6 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             H("Korxona (kontragent) nomi");
                             H(wagonPlan ? "Vagon soni" : "Markasi");
                             H("Og'irligi (t)");
-                            if (!wagonPlan) H("Buyurtma №");
                             H("Shartnoma raqami");
                             H("Yetkazib berish joyi (stansiya)");
                         });
@@ -1076,7 +1087,6 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             }
                             else
                             {
-                                tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.CustomerOrderNumber) ? "—" : line.CustomerOrderNumber).FontSize(10.5f);
                                 tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.ContractNumber) ? "—" : line.ContractNumber).FontSize(10.5f);
                             }
 
@@ -1088,7 +1098,6 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(model.TotalWagons > 0 ? model.TotalWagons.ToString() : "—").Bold().FontSize(10.5f);
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(model.TotalTons > 0 ? model.TotalTons.ToString("0.###") : "—").Bold().FontSize(10.5f);
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).Text("");
-                        if (!wagonPlan) tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).Text("");
                         tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).Text("");
                     });
 

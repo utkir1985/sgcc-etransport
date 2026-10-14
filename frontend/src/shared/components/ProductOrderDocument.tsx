@@ -86,7 +86,11 @@ export function ProductOrderDocument({
   preview?: boolean;
 }) {
   const wagonPlan = isWagonPlanOrder(order.lines);
-  const headers = getTableHeaders(logisticsType, wagonPlan);
+  // Hujjatdagi buyurtma raqami jadvalda emas, sarlavhadagi ma’lumotlarda ko‘rsatiladi.
+  const headers = getTableHeaders(logisticsType, wagonPlan).filter(h => h !== 'Buyurtma №');
+  const customerOrderNumbers = Array.from(new Set(order.lines
+    .map(l => l.customerOrderNumber?.trim())
+    .filter((n): n is string => Boolean(n)))).join(', ');
   const rows = buildOrderTableRows(order.lines);
   const totals = summarizeOrderQuantities(order.lines);
   const rawProductLabel = getProductLabel(order.productType, logisticsType);
@@ -137,6 +141,7 @@ export function ProductOrderDocument({
               <div><b>Hujjat holati:</b> {statusText}</div>
               <div><b>Tasdiqlangan sana/vaqt:</b> {approvedAt ? fmtXizmat(approvedAt) : '—'}</div>
               <div><b>Mahsulot turi:</b> {productLabel}</div>
+              {!wagonPlan ? <div><b>Buyurtma №:</b> {customerOrderNumbers || '—'}</div> : null}
             </div>
           </div>
 
@@ -190,12 +195,17 @@ export function ProductOrderDocument({
                 {wagonPlan ? (isFirstInTable ? (
                   <td className="product-order-contract" rowSpan={totalRows}>{order.contractNumber || '—'}</td>
                 ) : null) : (
-                  <>
-                    <td className="product-order-contract">{line.customerOrderNumber || '—'}</td>
-                    <td className="product-order-contract">{line.contractNumber || '—'}</td>
-                  </>
+                  <td className="product-order-contract">{line.contractNumber || '—'}</td>
                 )}
-                <td className="product-order-dest">{line.destinationStation || '—'}</td>
+                <td className="product-order-dest">
+                  {line.destinationStation?.trim()
+                    ? line.destinationStation
+                    : (line.stationShipments?.length
+                      ? line.stationShipments.map(item => (
+                        <div key={item.station || '—'} className="product-order-dest__item">{item.station || '—'}</div>
+                      ))
+                      : '—')}
+                </td>
               </tr>
             ))}
             <tr className="product-order-total">
@@ -203,7 +213,6 @@ export function ProductOrderDocument({
               <td className="product-order-qty">{wagonPlan ? totals.wagonTotal : ''}</td>
               <td className="product-order-qty">{totals.tonTotal}</td>
               <td className="product-order-contract" />
-              {!wagonPlan && <td className="product-order-contract" />}
               <td className="product-order-dest" />
             </tr>
           </tbody>
