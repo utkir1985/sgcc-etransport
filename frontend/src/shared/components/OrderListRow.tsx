@@ -14,8 +14,13 @@ import { summarizeOrderQuantities } from '../utils/orderQuantity';
 import { computeOrderFulfillment, isOrderFulfilled, isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import { TablePagination } from './TablePagination';
 
+/** Tonna: mingliklar probel bilan, kasr nuqta bilan (masalan, 8 301.26) — brauzer locale'iga bog‘liq emas. */
 function formatTons(value: number): string {
-  return (Math.round(value * 100) / 100).toLocaleString('uz-UZ', { maximumFractionDigits: 2 });
+  const rounded = Math.round(value * 100) / 100;
+  const [int, frac] = Math.abs(rounded).toFixed(2).split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  const decimals = frac.replace(/0+$/, '');
+  return `${rounded < 0 ? '-' : ''}${grouped}${decimals ? `.${decimals}` : ''}`;
 }
 
 function renderDateTimeCell(iso?: string | null) {
@@ -277,7 +282,7 @@ export function OrderList({
                     </div>
                   </td>
                   {has('wagons') && <td className="text-center font-semibold tabular-nums text-xs whitespace-nowrap">{fulfillment.fulfilledWagons} ta</td>}
-                  <td className="text-center font-semibold tabular-nums text-xs">{tonTotal}</td>
+                  <td className="text-center font-semibold tabular-nums text-xs whitespace-nowrap">{formatTons(tonTotal)}</td>
 
                   {has('stage') && (
                     <td className="text-center text-xs">
