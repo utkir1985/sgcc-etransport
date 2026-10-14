@@ -5,8 +5,8 @@ import { buildCalendarDays, MONTH_NAMES_UZ, parseIsoDate, todayIso, toIsoDate } 
 
 /** Ikki harfli hafta kunlari — ikki oylik ixcham kalendar uchun. */
 const WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
-const MENU_WIDTH = 700;
-const MENU_HEIGHT = 380;
+const MENU_WIDTH = 480;
+const MENU_HEIGHT = 290;
 
 interface DateRangePickerProps {
   from: string;
@@ -136,7 +136,7 @@ export function DateRangePicker({
     let left = rect.left;
     if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - width - 8);
     let top = rect.bottom + 6;
-    const height = width < 560 ? MENU_HEIGHT * 2 : MENU_HEIGHT;
+    const height = width < 440 ? MENU_HEIGHT * 2 : MENU_HEIGHT;
     if (top + height > window.innerHeight - 8 && rect.top - height - 6 > 8) top = rect.top - height - 6;
     setLayout({ top, left, width });
   };
@@ -180,7 +180,7 @@ export function DateRangePicker({
   const menu = open && layout ? (
     <div
       ref={menuRef}
-      className={`date-range__menu${layout.width < 560 ? ' date-range__menu--stacked' : ''}`}
+      className={`date-range__menu${layout.width < 440 ? ' date-range__menu--stacked' : ''}`}
       style={{ top: layout.top, left: layout.left, width: layout.width }}
       role="dialog"
       aria-label="Davrni tanlash"
