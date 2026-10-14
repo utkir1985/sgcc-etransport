@@ -18057,3 +18057,20 @@ html.dark .order-progress-track,
   background: rgb(34 197 94 / 0.1);
   color: #86efac;
 }
+
+/* Qoldiq — tungi rejimda xiraroq: yumshoq sariq matn, deyarli ko‘rinmas fon */
+.dark .order-remain {
+  border-color: rgb(217 160 70 / 0.28);
+  background: rgb(217 160 70 / 0.06);
+  color: #d9b36c;
+}
+
+.dark .marketing-orders-table .order-remain small {
+  color: #a8875a;
+}
+
+.dark .order-remain--done {
+  border-color: rgb(74 222 128 / 0.25);
+  background: rgb(74 222 128 / 0.06);
+  color: #7fcf9b;
+}
