@@ -11,7 +11,7 @@ import type { LogisticsType } from '../constants/logisticsTypes';
 import type { MonthlyOrder } from '../types';
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/dates';
 import { summarizeOrderQuantities } from '../utils/orderQuantity';
-import { computeOrderFulfillment, isOrderFulfilled } from './OrderFulfillmentStatus';
+import { computeOrderFulfillment, isOrderFulfilled, isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import { TablePagination } from './TablePagination';
 
 function getOrderStationsTotal(order: MonthlyOrder): number {
@@ -29,12 +29,6 @@ function getOrderStationsTotal(order: MonthlyOrder): number {
 
 function formatTons(value: number): string {
   return (Math.round(value * 100) / 100).toLocaleString('uz-UZ', { maximumFractionDigits: 2 });
-}
-
-function isPolyethyleneOverdue(order: MonthlyOrder): boolean {
-  const product = order.productType?.toLowerCase() ?? '';
-  if (!product.includes('polietilen') && !product.includes('полиэтилен')) return false;
-  return order.deadline ? new Date(order.deadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
 }
 
 function renderDateTimeCell(iso?: string | null) {
@@ -112,7 +106,7 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
             )}
           </span>
           <OrderStatusBadge status={order.status} />
-          {isPolyethyleneOverdue(order) ? (
+          {isOrderLoadingOverdue(order) ? (
             <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
           ) : null}
         </div>
@@ -364,7 +358,7 @@ export function OrderList({
                   <td className="text-center text-xs">
                     <div className="marketing-orders-table__status">
                       <OrderStatusBadge status={order.status} />
-                      {isPolyethyleneOverdue(order) ? (
+                      {isOrderLoadingOverdue(order) ? (
                         <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
                       ) : null}
                     </div>

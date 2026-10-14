@@ -1178,10 +1178,8 @@ function MarketingOrdersPanel({
                     {h === 'Shartnoma raqami' && !/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
                   </th>
                 ))}
-                {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (
-                  <th className="order-sheet-center w-40">Yuklash oxirgi sanasi</th>
-                )}
-                <th className="order-sheet-actions-col" />
+                <th className="order-sheet-center w-40">Yuklash oxirgi sanasi</th>
+                {lines.length > 1 && <th className="order-sheet-actions-col" />}
               </tr>
             </thead>
             <tbody>
@@ -1261,7 +1259,7 @@ function MarketingOrdersPanel({
                       line.destinationStation || '—'
                     )}
                   </td>
-                  {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (() => {
+                  {(() => {
                     const lineDeadline = line.lastLoadingDate?.slice(0, 10) || '';
                     const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
                     return (
@@ -1298,13 +1296,15 @@ function MarketingOrdersPanel({
                       </td>
                     );
                   })()}
-                  <td className="order-sheet-actions-col">
-                    {editable && lines.length > 1 && (
-                      <button type="button" onClick={() => removeLine(idx)} className="order-sheet-remove" aria-label="Qatorni o'chirish">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </td>
+                  {lines.length > 1 && (
+                    <td className="order-sheet-actions-col">
+                      {editable && (
+                        <button type="button" onClick={() => removeLine(idx)} className="order-sheet-remove" aria-label="Qatorni o'chirish">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
                 );
               })}
@@ -1312,7 +1312,7 @@ function MarketingOrdersPanel({
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total" />
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
-                <td colSpan={(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) ? 4 : 3} />
+                <td colSpan={lines.length > 1 ? 4 : 3} />
               </tr>
             </tbody>
           </table>

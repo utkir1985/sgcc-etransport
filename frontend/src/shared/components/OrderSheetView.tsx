@@ -1,4 +1,5 @@
 import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
+import { isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import type { MonthlyOrder } from '../types';
 import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
@@ -52,7 +53,9 @@ export function OrderSheetView({
     || order.productType?.toLowerCase().includes('полиэтилен');
   const wagonPlan = isWagonPlanOrder(order.lines);
   const baseHeaders = getTableHeaders(logisticsType, wagonPlan);
-  const headers = isPolyethylene
+  // Yangi buyurtmalarda muddat ustuni har doim (ixtiyoriy); eski buyurtmalarda — polietilenda yoki sana bo‘lsa.
+  const showDeadline = isPolyethylene || !wagonPlan || order.lines.some(l => Boolean(l.lastLoadingDate));
+  const headers = showDeadline
     ? [...baseHeaders, 'Yuklash oxirgi sanasi']
     : baseHeaders;
   const targetOrder = signatureOrder ?? order;
@@ -157,7 +160,7 @@ export function OrderSheetView({
                         <span>{line.destinationStation || '—'}</span>
                       </span>
                     </td>
-                    {isPolyethylene && (() => {
+                    {showDeadline && (() => {
                       const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
                       const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
                       return (
@@ -202,7 +205,7 @@ export function OrderSheetView({
                 </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />
-                {isPolyethylene && <td className="order-sheet-center" />}
+                {showDeadline && <td className="order-sheet-center" />}
               </tr>
             </tbody>
           </table>
@@ -329,7 +332,7 @@ export function OrderSheetView({
                         <span>{line.destinationStation || '—'}</span>
                       </span>
                     </td>
-                    {isPolyethylene && (() => {
+                    {showDeadline && (() => {
                       const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
                       const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
                       return (
@@ -374,7 +377,7 @@ export function OrderSheetView({
                 </td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />
-                {isPolyethylene && <td className="order-sheet-center" />}
+                {showDeadline && <td className="order-sheet-center" />}
               </tr>
             </tbody>
           </table>
@@ -402,10 +405,8 @@ export function OrderSheetView({
                 ) : null}
               </span>
               <OrderStatusBadge status={order.status} />
-              {isPolyethylene && (() => {
-                const orderDeadline = order.deadline;
-                const isOverdue = orderDeadline ? new Date(orderDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
-                if (!isOverdue) return null;
+              {(() => {
+                if (!isOrderLoadingOverdue(order)) return null;
                 return (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700 shadow-sm animate-pulse">
                     ⛔ Yuklash muddati o‘tgan (Taqiq)

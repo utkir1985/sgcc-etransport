@@ -597,17 +597,15 @@ public class DocumentsController(
                     && !string.Equals(selectedOrder.ProductType.Trim(), unitProduct, StringComparison.OrdinalIgnoreCase))
                     return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
                         $"{unit.WagonNumber}: buyurtma mahsuloti yuklangan mahsulotga mos emas"));
-                var isPe = selectedOrder.ProductType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
-                    || selectedOrder.ProductType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
-                // Muddat faqat qatorda belgilangan bo‘lsa cheklaydi (ixtiyoriy maydon).
+                // Muddat ixtiyoriy: qatorda belgilangan bo‘lsa, istalgan mahsulot uchun cheklaydi.
                 var effectiveDeadline = selectedLine.LastLoadingDate;
-                if (isPe && effectiveDeadline.HasValue)
+                if (effectiveDeadline.HasValue)
                 {
                     var today = DateTime.UtcNow.Date;
                     if (today > effectiveDeadline.Value.Date)
                     {
                         return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
-                            $"{unit.WagonNumber}: «{selectedLine.Contractor}» korxonasi uchun polietilenni yuklashning oxirgi sanasi ({effectiveDeadline.Value:dd.MM.yyyy}) o‘tib ketgan! Shartnoma muddati tugagani sababli yuk xati rasmiylashtirish va yuklash taqiqlanadi."));
+                            $"{unit.WagonNumber}: «{selectedLine.Contractor}» korxonasi uchun yuklashning oxirgi sanasi ({effectiveDeadline.Value:dd.MM.yyyy}) o‘tib ketgan! Shartnoma muddati tugagani sababli yuk xati rasmiylashtirish va yuklash taqiqlanadi."));
                     }
                 }
                 var routeStation = ResolveRouteStation(selectedLine, requested.DestinationStation);

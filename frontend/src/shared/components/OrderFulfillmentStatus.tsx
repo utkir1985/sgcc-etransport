@@ -52,6 +52,25 @@ export function isOrderFulfilled(order: MonthlyOrder): boolean {
       : l.wagonCount <= 0 || (l.fulfilledWagonCount ?? 0) >= l.wagonCount);
 }
 
+/**
+ * Yuklash muddati o‘tganmi: qatorda sana bo‘lsa — bajarilmagan qator muddati,
+ * eski polietilen buyurtmasida — buyurtma muddati.
+ */
+export function isOrderLoadingOverdue(order: MonthlyOrder): boolean {
+  if (order.status === 'Completed' || order.status === 'Cancelled') return false;
+  const today = new Date().setHours(0, 0, 0, 0);
+  const passed = (iso?: string | null) => Boolean(iso) && new Date(iso as string).getTime() < today;
+  const lines = order.lines ?? [];
+  if (lines.some(l => l.lastLoadingDate)) {
+    return lines.some(l => passed(l.lastLoadingDate)
+      && !(l.tonCount > 0 ? Number(l.fulfilledNetWeight ?? 0) >= l.tonCount : (l.fulfilledWagonCount ?? 0) >= l.wagonCount));
+  }
+  const product = order.productType?.toLowerCase() ?? '';
+  const isPolyethylene = product.includes('polietilen') || product.includes('полиэтилен');
+  const legacyWagonPlan = lines.some(l => l.wagonCount > 0) && !lines.some(l => l.productGrade || l.contractNumber);
+  return isPolyethylene && legacyWagonPlan && passed(order.deadline);
+}
+
 function fmtTon(n: number): string {
   if (n <= 0) return '0';
   return n.toLocaleString('uz-UZ', { maximumFractionDigits: 1 });
