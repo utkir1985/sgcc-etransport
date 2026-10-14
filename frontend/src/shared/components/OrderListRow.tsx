@@ -213,7 +213,7 @@ export function OrderList({
   // Sarlavhalar bir qatorda — qisqa nomlar, to‘liq ma’no title'da
   const COLUMN_HEADER: Record<OrderColumnKey, { label: ReactNode; className: string; title?: string }> = {
     num: { label: '№', className: 'text-center' },
-    order: { label: 'Buyurtma ID', className: 'text-center', title: 'Tizimdagi ichki buyurtma raqami' },
+    order: { label: 'Hujjat raqami', className: 'text-center', title: 'Tizimdagi buyurtma hujjati raqami' },
     product: { label: 'Mahsulot', className: 'text-left' },
     wagons: { label: 'Vagon soni', className: 'text-center', title: 'Yuklangan vagonlar soni' },
     tons: { label: 'Reja (t)', className: 'text-center', title: 'Buyurtma bo‘yicha reja, tonna' },

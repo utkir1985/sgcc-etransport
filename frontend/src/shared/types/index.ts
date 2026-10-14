@@ -143,7 +143,7 @@ export interface MonthlyOrderLine {
   contractNumber?: string;
   /** Ixtiyoriy: mahsulot markasi */
   productGrade?: string;
-  /** Hujjatdagi (kontragent) buyurtma raqami — tizimdagi Buyurtma ID dan alohida */
+  /** Hujjatdagi (kontragent) buyurtma raqami — tizimdagi hujjat raqamidan alohida */
   customerOrderNumber?: string;
 }
 

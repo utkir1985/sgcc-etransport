@@ -59,7 +59,7 @@ export function ProductsReferencePanel() {
       return;
     }
     if (!/^[A-Z0-9]{2,10}$/.test(orderPrefix)) {
-      setError('Buyurtma ID prefiksi 2–10 ta lotin harfi yoki raqamdan iborat bo‘lsin');
+      setError('Hujjat raqami prefiksi 2–10 ta lotin harfi yoki raqamdan iborat bo‘lsin');
       return;
     }
 
@@ -134,7 +134,7 @@ export function ProductsReferencePanel() {
             <thead>
               <tr>
                 <th>Mahsulot</th>
-                <th>Buyurtma ID</th>
+                <th>Hujjat raqami prefiksi</th>
                 <th>Holat</th>
                 <th className="admin-table__actions">Amallar</th>
               </tr>
@@ -238,7 +238,7 @@ export function ProductsReferencePanel() {
                 />
               </label>
               <label className="admin-field">
-                <span>Buyurtma ID prefiksi</span>
+                <span>Hujjat raqami prefiksi</span>
                 <input
                   required
                   minLength={2}

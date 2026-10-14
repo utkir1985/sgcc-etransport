@@ -1007,7 +1007,7 @@ function MarketingOrdersPanel({
   /** Ro'yxatdagi buyurtmalar satrlar darajasida Excelga chiqadi. */
   const exportOrdersExcel = (sectionOrders: MonthlyOrder[]) => {
     exportSheet(`buyurtmalar_${logisticsType}_${todayStamp()}.xlsx`, 'Buyurtmalar', [
-      ['Buyurtma ID', 'Shartnoma', 'Buyurtma №', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
+      ['Hujjat raqami', 'Shartnoma', 'Buyurtma №', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
        'Kontragent', 'Jo‘natish stansiyasi', 'Reja, vagon', 'Reja, tonna',
        'Bajarilgan, vagon', 'Bajarilgan, tonna'],
       ...sectionOrders.flatMap(order => {
@@ -1128,7 +1128,7 @@ function MarketingOrdersPanel({
             />
 
             <div className="marketing-order-contract-field">
-              <span className="marketing-order-contract-field__label">Buyurtma ID</span>
+              <span className="marketing-order-contract-field__label">Hujjat raqami</span>
               <div
                 className="marketing-order-contract-field__input marketing-order-id-field"
                 title="Tizimdagi ichki raqam — avtomatik beriladi"
