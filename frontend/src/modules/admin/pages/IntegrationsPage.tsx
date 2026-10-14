@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { AdminSectionDetail, AdminSectionHub } from '../../../shared/components/AdminSectionHub';
 import { HubZoneTabs, type HubZoneTone } from '../../../shared/components/HubZoneTabs';
-import { DatePicker } from '../../../shared/components/DatePicker';
+import { DateRangePicker } from '../../../shared/components/DateRangePicker';
 import { api } from '../../../shared/services/api';
 import type { OneCCredentialsView, OneCWeighingItem, OneCWeighingsResult } from '../../../shared/types';
 import { toLatinProductName, toPersonNameCase, toPersonShortName } from '../../../shared/utils/cyrillicToLatin';
@@ -452,24 +452,7 @@ function OneCWeighingsPanel() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3 justify-between">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="thub-date">
-            <span>Dan</span>
-            <DatePicker
-              value={date1}
-              onChange={setDate1}
-              placeholder="dd.mm.yyyy"
-              variant="compact"
-            />
-          </label>
-          <label className="thub-date">
-            <span>Gacha</span>
-            <DatePicker
-              value={date2}
-              onChange={setDate2}
-              placeholder="dd.mm.yyyy"
-              variant="compact"
-            />
-          </label>
+          <DateRangePicker from={date1} to={date2} onFromChange={setDate1} onToChange={setDate2} disableFuture />
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5 text-right">
           <p>Avto-yangilanish: har 30 soniya</p>

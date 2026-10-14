@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react';
-import { DatePicker } from './DatePicker';
+import { DateRangePicker } from './DateRangePicker';
 import { ProductTypeFilter, type ProductTypeFilterOption } from './ProductTypeFilter';
 import { DOCS_PERIOD_PRESETS, type DocsPeriodPreset } from '../utils/docsHubFilter';
 
@@ -77,12 +77,7 @@ export function DocsHubToolbar({
         />
       ) : null}
 
-      <div className="thub-date">
-        <span className="thub-date__lbl">Dan</span>
-        <DatePicker value={from} onChange={onFromChange} variant="compact" placeholder="dd.mm.yyyy" />
-        <span className="thub-date__lbl">Gacha</span>
-        <DatePicker value={to} onChange={onToChange} variant="compact" placeholder="dd.mm.yyyy" />
-      </div>
+      <DateRangePicker from={from} to={to} onFromChange={onFromChange} onToChange={onToChange} disableFuture />
 
       {actions ? (
         <div className="docs-hub-toolbar__actions sm:ml-auto flex items-center gap-2">

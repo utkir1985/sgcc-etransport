@@ -1,4 +1,4 @@
-import { DatePicker } from './DatePicker';
+import { DateRangePicker } from './DateRangePicker';
 
 interface OrderPeriodPickerProps {
   from: string;
@@ -25,7 +25,7 @@ interface OrderPeriodPickerProps {
 }
 
 /**
- * Davr filtri — Dan / Gacha (Tarix andozasi: tashqi yorliq + dd.mm.yyyy | 📅).
+ * Davr filtri — «Boshlanish → Tugash» oraliq tanlagichi.
  * Ikkala maydon ham bo‘sh → barcha davrlar.
  */
 export function OrderPeriodPicker({
@@ -45,28 +45,13 @@ export function OrderPeriodPicker({
       }`}
     >
       {!isEmbedded ? <span className="filter-field-label">Davr</span> : null}
-      <div className="period-range__fields">
-        <label className="thub-date">
-          <span>Dan</span>
-          <DatePicker
-            value={from}
-            disabled={disabled}
-            placeholder="dd.mm.yyyy"
-            variant="compact"
-            onChange={onFromChange}
-          />
-        </label>
-        <label className="thub-date">
-          <span>Gacha</span>
-          <DatePicker
-            value={to}
-            disabled={disabled}
-            placeholder="dd.mm.yyyy"
-            variant="compact"
-            onChange={onToChange}
-          />
-        </label>
-      </div>
+      <DateRangePicker
+        from={from}
+        to={to}
+        onFromChange={onFromChange}
+        onToChange={onToChange}
+        disabled={disabled}
+      />
     </div>
   );
 }

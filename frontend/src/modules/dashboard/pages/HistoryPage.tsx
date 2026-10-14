@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 import type { EmptyWagonArrival, LoadingRegistry } from '../../../shared/types';
-import { DatePicker } from '../../../shared/components/DatePicker';
+import { DateRangePicker } from '../../../shared/components/DateRangePicker';
 import { HubZoneTabs, type HubZoneTone } from '../../../shared/components/HubZoneTabs';
 import { ReportsHistoryTabs } from '../components/ReportsHistoryTabs';
 import { isOneCArrival } from '../../../shared/utils/oneCSources';
@@ -831,12 +831,7 @@ export default function HistoryPage() {
               ) : null}
             </label>
 
-            <div className="thub-date">
-              <span className="thub-date__lbl">Dan</span>
-              <DatePicker value={from} onChange={onFromChange} variant="compact" placeholder="dd.mm.yyyy" />
-              <span className="thub-date__lbl">Gacha</span>
-              <DatePicker value={to} onChange={onToChange} variant="compact" placeholder="dd.mm.yyyy" />
-            </div>
+            <DateRangePicker from={from} to={to} onFromChange={onFromChange} onToChange={onToChange} disableFuture />
 
             <span className="thub-history__meta">
               {loading ? '…' : (
