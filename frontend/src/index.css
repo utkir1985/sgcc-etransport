@@ -18532,3 +18532,9 @@ html.dark .order-progress-track,
 .marketing-orders-table__number {
   white-space: nowrap;
 }
+
+/* Buyurtmalar jadvali — tor ekranda ham raqam va sarlavhalar to‘liq sig‘adi (aks holda gorizontal aylantirish) */
+.marketing-orders-table,
+.reestr-table.marketing-orders-table {
+  min-width: 82rem !important;
+}
