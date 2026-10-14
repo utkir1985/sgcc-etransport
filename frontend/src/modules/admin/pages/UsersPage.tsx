@@ -4,11 +4,11 @@ import * as XLSX from 'xlsx';
 import {
   ArrowDown,
   ArrowUp,
-  ArrowUpDown,
   BriefcaseBusiness,
   Building2,
   Calculator,
   ChevronDown,
+  ChevronsUpDown,
   Crown,
   Eye,
   EyeOff,
@@ -19,6 +19,7 @@ import {
   Pencil,
   Plus,
   Scale,
+  Search,
   Shield,
   TrainFront,
   Trash2,
@@ -40,13 +41,17 @@ type UserAction = 'create' | 'edit' | 'block' | 'reset' | null;
 type SortField = 'username' | 'fullName' | 'role' | 'department';
 type SortOrder = 'asc' | 'desc';
 
-function DepartmentFilter({
+function FilterSelect({
   value,
   options,
+  allLabel,
+  getLabel = option => option,
   onChange,
 }: {
   value: string;
   options: string[];
+  allLabel: string;
+  getLabel?: (option: string) => string;
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -63,25 +68,19 @@ function DepartmentFilter({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const display = value || 'Barcha bo‘limlar';
+  const display = value ? getLabel(value) : allLabel;
 
   return (
-    <div className="flex flex-col gap-1.5" ref={ref}>
-      <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
-        Bo‘lim
-      </label>
+    <div ref={ref}>
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen(o => !o)}
-          className={`flex w-[290px] items-center justify-between gap-2 rounded-lg border bg-white px-3.5 py-1.5 text-left transition-colors shadow-sm dark:bg-slate-800 ${
-            open
-              ? 'border-blue-500 ring-2 ring-blue-500/15 dark:border-blue-400'
-              : 'border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-750'
+          className={`users-toolbar__control flex w-full sm:w-[260px] items-center justify-between gap-2 text-left ${
+            open ? 'users-toolbar__control--open' : ''
           }`}
-          style={{ minHeight: '42px' }}
         >
-          <span className="line-clamp-2 text-[13.5px] leading-tight text-slate-800 dark:text-slate-100 break-words flex-1">
+          <span className="line-clamp-1 text-sm text-slate-800 dark:text-slate-100 break-words flex-1">
             {display}
           </span>
           <ChevronDown
@@ -91,7 +90,7 @@ function DepartmentFilter({
         </button>
 
         {open && (
-          <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-[290px] max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-850">
+          <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-full sm:w-[290px] max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-850">
             <button
               type="button"
               onClick={() => {
@@ -104,23 +103,23 @@ function DepartmentFilter({
                   : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
               }`}
             >
-              Barcha bo‘limlar
+              {allLabel}
             </button>
-            {options.map(dept => (
+            {options.map(option => (
               <button
-                key={dept}
+                key={option}
                 type="button"
                 onClick={() => {
-                  onChange(dept);
+                  onChange(option);
                   setOpen(false);
                 }}
                 className={`flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-[13px] leading-snug break-words transition-colors ${
-                  value === dept
+                  value === option
                     ? 'bg-blue-50 font-semibold text-blue-600 dark:bg-blue-500/15 dark:text-blue-300'
                     : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
-                {dept}
+                {getLabel(option)}
               </button>
             ))}
           </div>
@@ -370,11 +369,34 @@ function loginFromName(lastName: string, firstName: string, middleName?: string)
   return `${l}${f}${m}`;
 }
 
-function initials(name: string, username: string): string {
-  const source = (name || username || '?').trim();
-  const parts = source.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return source.slice(0, 1).toUpperCase();
+function SortHeader({
+  field,
+  label,
+  activeField,
+  order,
+  onSort,
+}: {
+  field: SortField;
+  label: string;
+  activeField: SortField | null;
+  order: SortOrder;
+  onSort: (field: SortField) => void;
+}) {
+  const isActive = activeField === field;
+  return (
+    <th className="users-table__sortable" onClick={() => onSort(field)} title={`${label} bo‘yicha tartiblash`}>
+      <div className="flex items-center justify-between gap-2">
+        <span>{label}</span>
+        <span className={`inline-flex shrink-0 ${isActive ? 'text-blue-600 dark:text-sky-400' : 'text-slate-400'}`}>
+          {isActive ? (
+            order === 'asc' ? <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} /> : <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
+          ) : (
+            <ChevronsUpDown className="w-3.5 h-3.5" strokeWidth={2} />
+          )}
+        </span>
+      </div>
+    </th>
+  );
 }
 
 export default function UsersPage() {
@@ -459,16 +481,32 @@ export default function UsersPage() {
   }, [users, sortField, sortOrder]);
 
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [search, setSearch] = useState('');
 
   const departmentOptions = useMemo(() => {
     const list = users.map(u => u.department).filter(Boolean);
     return Array.from(new Set(list)).sort((a, b) => a.localeCompare(b, 'uz'));
   }, [users]);
 
+  const filterRoleOptions = useMemo(() => {
+    const present = new Set(users.map(u => u.role));
+    return roleOptions.filter(role => present.has(role));
+  }, [users, roleOptions]);
+
+  const filteredUsers = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase('uz');
+    return sortedUsers.filter(u => {
+      if (departmentFilter && u.department !== departmentFilter) return false;
+      if (roleFilter && u.role !== roleFilter) return false;
+      if (!query) return true;
+      return [u.fullName, u.username, ROLE_LABELS[u.role] ?? u.role]
+        .some(value => (value || '').toLocaleLowerCase('uz').includes(query));
+    });
+  }, [sortedUsers, departmentFilter, roleFilter, search]);
+
   const handleExportExcel = () => {
-    const listToExport = departmentFilter
-      ? sortedUsers.filter(u => u.department === departmentFilter)
-      : sortedUsers;
+    const listToExport = filteredUsers;
 
     const rows = [
       ['№', 'Bo‘lim', 'F.I.O.', 'Lavozim', 'Login', 'Parol'],
@@ -504,18 +542,13 @@ export default function UsersPage() {
     XLSX.writeFile(wb, filename);
   };
 
-  const filteredUsers = useMemo(() => {
-    if (!departmentFilter) return sortedUsers;
-    return sortedUsers.filter(u => u.department === departmentFilter);
-  }, [sortedUsers, departmentFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [pageSize, sortField, sortOrder, departmentFilter]);
+  }, [pageSize, sortField, sortOrder, departmentFilter, roleFilter, search]);
 
   const closeDialog = () => {
     setAction(null);
@@ -683,28 +716,47 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <DepartmentFilter
-          value={departmentFilter}
-          options={departmentOptions}
-          onChange={setDepartmentFilter}
-        />
+      <div className="ui-card users-toolbar">
+        <div className="users-toolbar__filters">
+          <label className="users-toolbar__search">
+            <Search aria-hidden className="w-4 h-4" strokeWidth={2} />
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Ism, login yoki rol bo‘yicha qidirish..."
+            />
+          </label>
+          <FilterSelect
+            value={roleFilter}
+            options={filterRoleOptions}
+            allLabel="Barcha rollar"
+            getLabel={role => ROLE_LABELS[role] ?? role}
+            onChange={setRoleFilter}
+          />
+          <FilterSelect
+            value={departmentFilter}
+            options={departmentOptions}
+            allLabel="Barcha bo‘limlar"
+            onChange={setDepartmentFilter}
+          />
+        </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="users-toolbar__actions">
           <button
             type="button"
-            className="btn-secondary flex items-center gap-1.5"
+            className="users-toolbar__excel"
             onClick={handleExportExcel}
-            title={departmentFilter ? `${departmentFilter} bo‘yicha Excel yuklab olish` : "Barcha foydalanuvchilarni Excel formatida yuklab olish"}
+            title="Ko‘rinib turgan ro‘yxatni Excel formatida yuklab olish"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Excel yuklash</span>
+            <FileSpreadsheet className="w-4 h-4" strokeWidth={2} />
+            <span>Excel</span>
           </button>
 
           {canUsersCreate && (
             <button
               type="button"
-              className="btn-primary flex items-center gap-1.5"
+              className="btn-primary users-toolbar__primary"
               onClick={() => {
                 setSelected(null);
                 setForm(EMPTY_FORM);
@@ -716,7 +768,7 @@ export default function UsersPage() {
                 setAction('create');
               }}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" strokeWidth={2.2} />
               <span>Yangi foydalanuvchi</span>
             </button>
           )}
@@ -728,71 +780,10 @@ export default function UsersPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th className="admin-table__col-num">№</th>
-                <th
-                  className="cursor-pointer select-none transition-colors hover:bg-[#c9e1f5] dark:hover:bg-slate-800"
-                  onClick={() => handleSort('username')}
-                  title="Login bo‘yicha tartiblash"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>Login</span>
-                    <span className={`inline-flex shrink-0 ${sortField === 'username' ? 'text-primary-600 dark:text-sky-400' : 'text-slate-400 opacity-40 hover:opacity-100'}`}>
-                      {sortField === 'username' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} /> : <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3" />
-                      )}
-                    </span>
-                  </div>
-                </th>
-                <th
-                  className="cursor-pointer select-none transition-colors hover:bg-[#c9e1f5] dark:hover:bg-slate-800"
-                  onClick={() => handleSort('fullName')}
-                  title="F.I.O. bo‘yicha tartiblash"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>F.I.O.</span>
-                    <span className={`inline-flex shrink-0 ${sortField === 'fullName' ? 'text-primary-600 dark:text-sky-400' : 'text-slate-400 opacity-40 hover:opacity-100'}`}>
-                      {sortField === 'fullName' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} /> : <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3" />
-                      )}
-                    </span>
-                  </div>
-                </th>
-                <th
-                  className="cursor-pointer select-none transition-colors hover:bg-[#c9e1f5] dark:hover:bg-slate-800"
-                  onClick={() => handleSort('role')}
-                  title="Rol bo‘yicha tartiblash"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>Rol</span>
-                    <span className={`inline-flex shrink-0 ${sortField === 'role' ? 'text-primary-600 dark:text-sky-400' : 'text-slate-400 opacity-40 hover:opacity-100'}`}>
-                      {sortField === 'role' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} /> : <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3" />
-                      )}
-                    </span>
-                  </div>
-                </th>
-                <th
-                  className="cursor-pointer select-none transition-colors hover:bg-[#c9e1f5] dark:hover:bg-slate-800"
-                  onClick={() => handleSort('department')}
-                  title="Bo‘lim bo‘yicha tartiblash"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>Bo&apos;lim</span>
-                    <span className={`inline-flex shrink-0 ${sortField === 'department' ? 'text-primary-600 dark:text-sky-400' : 'text-slate-400 opacity-40 hover:opacity-100'}`}>
-                      {sortField === 'department' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5" strokeWidth={2.2} /> : <ArrowDown className="w-3.5 h-3.5" strokeWidth={2.2} />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3" />
-                      )}
-                    </span>
-                  </div>
-                </th>
+                <th className="admin-table__col-num">T/r</th>
+                <SortHeader field="fullName" label="F.I.O" activeField={sortField} order={sortOrder} onSort={handleSort} />
+                <SortHeader field="role" label="Rol" activeField={sortField} order={sortOrder} onSort={handleSort} />
+                <SortHeader field="department" label="Bo‘lim / yo‘nalish" activeField={sortField} order={sortOrder} onSort={handleSort} />
                 <th>Lavozim</th>
                 <th className="admin-table__actions">Amallar</th>
               </tr>
@@ -800,69 +791,63 @@ export default function UsersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="admin-table__empty">Yuklanmoqda...</td>
+                  <td colSpan={6} className="admin-table__empty">Yuklanmoqda...</td>
                 </tr>
               ) : pageUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="admin-table__empty">Foydalanuvchilar topilmadi</td>
+                  <td colSpan={6} className="admin-table__empty">Foydalanuvchilar topilmadi</td>
                 </tr>
               ) : (
                 pageUsers.map((user, index) => {
                   const roleMeta = ROLE_META[user.role] ?? { tone: hashTone(user.role), icon: Shield };
-                  const RoleIcon = roleMeta.icon;
-                  const avatarTone = hashTone(user.username || user.id);
-                  const rowNumber = (page - 1) * pageSize + index + 1;
+                  const rowNumber = (currentPage - 1) * pageSize + index + 1;
 
                   return (
                     <tr key={user.id}>
                       <td className="admin-table__col-num">{rowNumber}</td>
                       <td>
-                        <div className="admin-user-cell">
-                          <span className={`admin-user-avatar admin-user-avatar--${avatarTone}`}>
-                            {initials(user.fullName, user.username)}
-                          </span>
-                          <span className="admin-user-cell__login">{user.username}</span>
+                        <div className="users-table__person">
+                          <span className="users-table__name">{user.fullName || '—'}</span>
+                          <span className="users-table__login">{user.username}</span>
                         </div>
                       </td>
-                      <td className="admin-user-fullname">{user.fullName || '—'}</td>
                       <td>
-                        <span className={`admin-role-badge admin-role-badge--${roleMeta.tone}`}>
-                          <RoleIcon className="w-3.5 h-3.5" strokeWidth={2} />
+                        <span className={`users-role-pill users-role-pill--${roleMeta.tone}`}>
                           {ROLE_LABELS[user.role] ?? user.role}
                         </span>
                       </td>
-                      <td>{user.department}</td>
+                      <td className="users-table__department">{user.department || '—'}</td>
                       <td className="admin-user-position">{user.position || '—'}</td>
                       <td>
-                        <div className="admin-table__action-group">
+                        <div className="users-table__actions">
                           {canUsersUpdate && (
                             <button
                               type="button"
-                              className="p-1.5 rounded-lg border border-blue-200/80 bg-blue-50/80 text-blue-600 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
+                              className="users-action-btn users-action-btn--blue"
                               title="Tahrirlash"
                               onClick={() => openEdit(user)}
                             >
-                              <Pencil className="w-4 h-4 stroke-[2]" />
+                              <Pencil className="w-4 h-4" strokeWidth={2} />
                             </button>
                           )}
                           {canUsersUpdate && (
                             <button
                               type="button"
-                              className="p-1.5 rounded-lg border border-amber-200/80 bg-amber-50/80 text-amber-600 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/50 dark:text-amber-400 dark:hover:bg-amber-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
+                              className="users-action-btn users-action-btn--amber"
                               title="Parolni tiklash"
                               onClick={() => openReset(user)}
                             >
-                              <KeyRound className="w-4 h-4 stroke-[2]" />
+                              <KeyRound className="w-4 h-4" strokeWidth={2} />
                             </button>
                           )}
                           {canUsersDelete && (
                             <button
                               type="button"
-                              className="p-1.5 rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
-                              title="Bloklash"
+                              className="users-action-btn users-action-btn--rose"
+                              title="O‘chirish"
                               onClick={() => openBlock(user)}
                             >
-                              <Trash2 className="w-4 h-4 stroke-[2]" />
+                              <Trash2 className="w-4 h-4" strokeWidth={2} />
                             </button>
                           )}
                           {!canUsersUpdate && !canUsersDelete && (
