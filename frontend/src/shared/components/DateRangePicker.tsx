@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, MoveRight, X } from 'lucide-react';
-import { buildCalendarDays, MONTH_NAMES_UZ, parseIsoDate, todayIso, toIsoDate } from '../utils/dates';
+import { buildCalendarDays, MONTH_NAMES_UZ, MONTH_SHORT_UZ, parseIsoDate, todayIso, toIsoDate } from '../utils/dates';
 
 /** Ikki harfli hafta kunlari — ikki oylik ixcham kalendar uchun. */
 const WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
@@ -32,11 +32,13 @@ function shiftMonth(year: number, month: number, delta: number): { year: number;
   return { year: Math.floor(index / 12), month: (index % 12) + 1 };
 }
 
+const YEAR_SPAN = 12;
+
 interface MonthPaneProps {
   title: string;
   year: number;
   month: number;
-  onNavigate: (delta: number) => void;
+  onViewChange: (view: { year: number; month: number }) => void;
   selected: string;
   from: string;
   to: string;
@@ -44,48 +46,132 @@ interface MonthPaneProps {
   onPick: (iso: string) => void;
 }
 
-function MonthPane({ title, year, month, onNavigate, selected, from, to, isDisabled, onPick }: MonthPaneProps) {
+type PaneMode = 'days' | 'months' | 'years';
+
+function MonthPane({ title, year, month, onViewChange, selected, from, to, isDisabled, onPick }: MonthPaneProps) {
   const today = todayIso();
+  const todayParsed = parseIsoDate(today)!;
+  const [mode, setMode] = useState<PaneMode>('days');
+  const [yearPage, setYearPage] = useState(() => Math.floor(year / YEAR_SPAN) * YEAR_SPAN);
   const days = buildCalendarDays(year, month);
+
+  const navigate = (delta: number) => {
+    if (mode === 'years') setYearPage(p => p + delta * YEAR_SPAN);
+    else if (mode === 'months') onViewChange({ year: year + delta, month });
+    else onViewChange(shiftMonth(year, month, delta));
+  };
+
+  const onTitleClick = () => {
+    if (mode === 'days') setMode('months');
+    else if (mode === 'months') {
+      setYearPage(Math.floor(year / YEAR_SPAN) * YEAR_SPAN);
+      setMode('years');
+    }
+  };
+
+  const titleText = mode === 'years'
+    ? `${yearPage} – ${yearPage + YEAR_SPAN - 1}`
+    : mode === 'months'
+      ? String(year)
+      : `${MONTH_NAMES_UZ[month - 1]} ${year}`;
+
+  const prevLabel = mode === 'years' ? 'Oldingi yillar' : mode === 'months' ? 'Oldingi yil' : 'Oldingi oy';
+  const nextLabel = mode === 'years' ? 'Keyingi yillar' : mode === 'months' ? 'Keyingi yil' : 'Keyingi oy';
+
   return (
     <div className="date-range__pane">
       <div className="date-range__pane-title">{title}</div>
       <div className="date-range__nav">
-        <button type="button" className="date-range__nav-btn" onClick={() => onNavigate(-1)} aria-label="Oldingi oy">
+        <button type="button" className="date-range__nav-btn" onClick={() => navigate(-1)} aria-label={prevLabel}>
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <strong>{MONTH_NAMES_UZ[month - 1]} {year}</strong>
-        <button type="button" className="date-range__nav-btn" onClick={() => onNavigate(1)} aria-label="Keyingi oy">
+        <button
+          type="button"
+          className="date-range__title-btn"
+          onClick={onTitleClick}
+          disabled={mode === 'years'}
+          aria-label={mode === 'days' ? 'Oyni tanlash' : mode === 'months' ? 'Yilni tanlash' : undefined}
+        >
+          {titleText}
+        </button>
+        <button type="button" className="date-range__nav-btn" onClick={() => navigate(1)} aria-label={nextLabel}>
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-      <div className="date-range__grid" role="grid">
-        {WEEKDAYS.map(day => <span key={day} className="date-range__weekday">{day}</span>)}
-        {days.map(cell => {
-          if (!cell.currentMonth) return <span key={`${cell.year}-${cell.month}-${cell.day}`} />;
-          const iso = toIsoDate(cell.year, cell.month, cell.day);
-          const disabled = isDisabled(iso);
-          const inRange = Boolean(from && to && iso > from && iso < to);
-          const isEdge = iso === from || iso === to;
-          return (
+      {mode === 'days' ? (
+        <div className="date-range__grid" role="grid">
+          {WEEKDAYS.map(day => <span key={day} className="date-range__weekday">{day}</span>)}
+          {days.map(cell => {
+            if (!cell.currentMonth) return <span key={`${cell.year}-${cell.month}-${cell.day}`} />;
+            const iso = toIsoDate(cell.year, cell.month, cell.day);
+            const disabled = isDisabled(iso);
+            const inRange = Boolean(from && to && iso > from && iso < to);
+            const isEdge = iso === from || iso === to;
+            return (
+              <button
+                key={iso}
+                type="button"
+                disabled={disabled}
+                className={[
+                  'date-range__day',
+                  inRange ? 'is-in-range' : '',
+                  isEdge ? 'is-edge' : '',
+                  iso === selected ? 'is-selected' : '',
+                  iso === today ? 'is-today' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => onPick(iso)}
+              >
+                {cell.day}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      {mode === 'months' ? (
+        <div className="date-range__picker-grid" role="listbox" aria-label="Oy tanlash">
+          {MONTH_SHORT_UZ.map((label, index) => {
+            const m = index + 1;
+            return (
+              <button
+                key={label}
+                type="button"
+                className={[
+                  'date-range__picker-btn',
+                  m === month ? 'is-active' : '',
+                  todayParsed.year === year && todayParsed.month === m && m !== month ? 'is-today' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => {
+                  onViewChange({ year, month: m });
+                  setMode('days');
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      {mode === 'years' ? (
+        <div className="date-range__picker-grid" role="listbox" aria-label="Yil tanlash">
+          {Array.from({ length: YEAR_SPAN }, (_, i) => yearPage + i).map(y => (
             <button
-              key={iso}
+              key={y}
               type="button"
-              disabled={disabled}
               className={[
-                'date-range__day',
-                inRange ? 'is-in-range' : '',
-                isEdge ? 'is-edge' : '',
-                iso === selected ? 'is-selected' : '',
-                iso === today ? 'is-today' : '',
+                'date-range__picker-btn',
+                y === year ? 'is-active' : '',
+                todayParsed.year === y && y !== year ? 'is-today' : '',
               ].filter(Boolean).join(' ')}
-              onClick={() => onPick(iso)}
+              onClick={() => {
+                onViewChange({ year: y, month });
+                setMode('months');
+              }}
             >
-              {cell.day}
+              {y}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -190,7 +276,7 @@ export function DateRangePicker({
           title="Boshlanish"
           year={leftView.year}
           month={leftView.month}
-          onNavigate={delta => setLeftView(v => shiftMonth(v.year, v.month, delta))}
+          onViewChange={setLeftView}
           selected={from}
           from={from}
           to={to}
@@ -201,7 +287,7 @@ export function DateRangePicker({
           title="Tugash"
           year={rightView.year}
           month={rightView.month}
-          onNavigate={delta => setRightView(v => shiftMonth(v.year, v.month, delta))}
+          onViewChange={setRightView}
           selected={to}
           from={from}
           to={to}
