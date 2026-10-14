@@ -372,12 +372,14 @@ function loginFromName(lastName: string, firstName: string, middleName?: string)
 function SortHeader({
   field,
   label,
+  center = false,
   activeField,
   order,
   onSort,
 }: {
   field: SortField;
   label: string;
+  center?: boolean;
   activeField: SortField | null;
   order: SortOrder;
   onSort: (field: SortField) => void;
@@ -386,6 +388,7 @@ function SortHeader({
   return (
     <th className="users-table__sortable" onClick={() => onSort(field)} title={`${label} bo‘yicha tartiblash`}>
       <div className="flex items-center justify-between gap-2">
+        {center && <span className="w-3.5 shrink-0" aria-hidden />}
         <span>{label}</span>
         <span className={`inline-flex shrink-0 ${isActive ? 'text-blue-600 dark:text-sky-400' : 'text-slate-400'}`}>
           {isActive ? (
@@ -716,165 +719,167 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="ui-card users-toolbar">
-        <div className="users-toolbar__filters">
-          <label className="users-toolbar__search">
-            <Search aria-hidden className="w-4 h-4" strokeWidth={2} />
-            <input
-              type="search"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Ism, login yoki rol bo‘yicha qidirish..."
+      <div className="users-panel">
+        <div className="users-toolbar">
+          <div className="users-toolbar__filters">
+            <label className="users-toolbar__search">
+              <Search aria-hidden className="w-4 h-4" strokeWidth={2} />
+              <input
+                type="search"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Ism, login yoki rol bo‘yicha qidirish..."
+              />
+            </label>
+            <FilterSelect
+              value={roleFilter}
+              options={filterRoleOptions}
+              allLabel="Barcha rollar"
+              getLabel={role => ROLE_LABELS[role] ?? role}
+              onChange={setRoleFilter}
             />
-          </label>
-          <FilterSelect
-            value={roleFilter}
-            options={filterRoleOptions}
-            allLabel="Barcha rollar"
-            getLabel={role => ROLE_LABELS[role] ?? role}
-            onChange={setRoleFilter}
-          />
-          <FilterSelect
-            value={departmentFilter}
-            options={departmentOptions}
-            allLabel="Barcha bo‘limlar"
-            onChange={setDepartmentFilter}
-          />
-        </div>
+            <FilterSelect
+              value={departmentFilter}
+              options={departmentOptions}
+              allLabel="Barcha bo‘limlar"
+              onChange={setDepartmentFilter}
+            />
+          </div>
 
-        <div className="users-toolbar__actions">
-          <button
-            type="button"
-            className="users-toolbar__excel"
-            onClick={handleExportExcel}
-            title="Ko‘rinib turgan ro‘yxatni Excel formatida yuklab olish"
-          >
-            <FileSpreadsheet className="w-4 h-4" strokeWidth={2} />
-            <span>Excel</span>
-          </button>
-
-          {canUsersCreate && (
+          <div className="users-toolbar__actions">
             <button
               type="button"
-              className="btn-primary users-toolbar__primary"
-              onClick={() => {
-                setSelected(null);
-                setForm(EMPTY_FORM);
-                setIsCustomPosition(false);
-                setIsPositionOpen(false);
-                setIsRoleOpen(false);
-                setShowPassword(false);
-                setMessage('');
-                setAction('create');
-              }}
+              className="users-toolbar__excel"
+              onClick={handleExportExcel}
+              title="Ko‘rinib turgan ro‘yxatni Excel formatida yuklab olish"
             >
-              <Plus className="w-4 h-4" strokeWidth={2.2} />
-              <span>Yangi foydalanuvchi</span>
+              <FileSpreadsheet className="w-4 h-4" strokeWidth={2} />
+              <span>Excel</span>
             </button>
-          )}
+
+            {canUsersCreate && (
+              <button
+                type="button"
+                className="btn-primary users-toolbar__primary"
+                onClick={() => {
+                  setSelected(null);
+                  setForm(EMPTY_FORM);
+                  setIsCustomPosition(false);
+                  setIsPositionOpen(false);
+                  setIsRoleOpen(false);
+                  setShowPassword(false);
+                  setMessage('');
+                  setAction('create');
+                }}
+              >
+                <Plus className="w-4 h-4" strokeWidth={2.2} />
+                <span>Yangi foydalanuvchi</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="ui-card admin-users-card overflow-hidden">
-        <div className="admin-table-scroll">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th className="admin-table__col-num">T/r</th>
-                <SortHeader field="fullName" label="F.I.O" activeField={sortField} order={sortOrder} onSort={handleSort} />
-                <SortHeader field="role" label="Rol" activeField={sortField} order={sortOrder} onSort={handleSort} />
-                <SortHeader field="department" label="Bo‘lim / yo‘nalish" activeField={sortField} order={sortOrder} onSort={handleSort} />
-                <th>Lavozim</th>
-                <th className="admin-table__actions">Amallar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+        <div className="admin-users-card">
+          <div className="admin-table-scroll">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="admin-table__empty">Yuklanmoqda...</td>
+                  <th className="admin-table__col-num">T/r</th>
+                  <SortHeader field="fullName" label="F.I.O" activeField={sortField} order={sortOrder} onSort={handleSort} />
+                  <SortHeader field="role" label="Rol" center activeField={sortField} order={sortOrder} onSort={handleSort} />
+                  <SortHeader field="department" label="Bo‘lim / yo‘nalish" activeField={sortField} order={sortOrder} onSort={handleSort} />
+                  <th>Lavozim</th>
+                  <th className="admin-table__actions">Amallar</th>
                 </tr>
-              ) : pageUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="admin-table__empty">Foydalanuvchilar topilmadi</td>
-                </tr>
-              ) : (
-                pageUsers.map((user, index) => {
-                  const roleMeta = ROLE_META[user.role] ?? { tone: hashTone(user.role), icon: Shield };
-                  const rowNumber = (currentPage - 1) * pageSize + index + 1;
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="admin-table__empty">Yuklanmoqda...</td>
+                  </tr>
+                ) : pageUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="admin-table__empty">Foydalanuvchilar topilmadi</td>
+                  </tr>
+                ) : (
+                  pageUsers.map((user, index) => {
+                    const roleMeta = ROLE_META[user.role] ?? { tone: hashTone(user.role), icon: Shield };
+                    const rowNumber = (currentPage - 1) * pageSize + index + 1;
 
-                  return (
-                    <tr key={user.id}>
-                      <td className="admin-table__col-num">{rowNumber}</td>
-                      <td>
-                        <div className="users-table__person">
-                          <span className="users-table__name">{user.fullName || user.username}</span>
-                          {user.fullName && <span className="users-table__login">{user.username}</span>}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`users-role-pill users-role-pill--${roleMeta.tone}`}>
-                          {ROLE_LABELS[user.role] ?? user.role}
-                        </span>
-                      </td>
-                      <td className="users-table__department">{user.department || '—'}</td>
-                      <td className="admin-user-position">{user.position || '—'}</td>
-                      <td>
-                        <div className="users-table__actions">
-                          {canUsersUpdate && (
-                            <button
-                              type="button"
-                              className="users-action-btn users-action-btn--blue"
-                              title="Tahrirlash"
-                              onClick={() => openEdit(user)}
-                            >
-                              <Pencil className="w-[15px] h-[15px]" strokeWidth={1.9} />
-                            </button>
-                          )}
-                          {canUsersUpdate && (
-                            <button
-                              type="button"
-                              className="users-action-btn users-action-btn--amber"
-                              title="Parolni tiklash"
-                              onClick={() => openReset(user)}
-                            >
-                              <KeyRound className="w-[15px] h-[15px]" strokeWidth={1.9} />
-                            </button>
-                          )}
-                          {canUsersDelete && (
-                            <button
-                              type="button"
-                              className="users-action-btn users-action-btn--rose"
-                              title="O‘chirish"
-                              onClick={() => openBlock(user)}
-                            >
-                              <Trash2 className="w-[15px] h-[15px]" strokeWidth={1.9} />
-                            </button>
-                          )}
-                          {!canUsersUpdate && !canUsersDelete && (
-                            <span className="text-slate-400 text-xs">—</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                    return (
+                      <tr key={user.id}>
+                        <td className="admin-table__col-num">{rowNumber}</td>
+                        <td>
+                          <div className="users-table__person">
+                            <span className="users-table__name">{user.fullName || user.username}</span>
+                            {user.fullName && <span className="users-table__login">{user.username}</span>}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`users-role-pill users-role-pill--${roleMeta.tone}`}>
+                            {ROLE_LABELS[user.role] ?? user.role}
+                          </span>
+                        </td>
+                        <td className="users-table__department">{user.department || '—'}</td>
+                        <td className="admin-user-position">{user.position || '—'}</td>
+                        <td>
+                          <div className="users-table__actions">
+                            {canUsersUpdate && (
+                              <button
+                                type="button"
+                                className="users-action-btn users-action-btn--blue"
+                                title="Tahrirlash"
+                                onClick={() => openEdit(user)}
+                              >
+                                <Pencil className="w-[15px] h-[15px]" strokeWidth={1.9} />
+                              </button>
+                            )}
+                            {canUsersUpdate && (
+                              <button
+                                type="button"
+                                className="users-action-btn users-action-btn--amber"
+                                title="Parolni tiklash"
+                                onClick={() => openReset(user)}
+                              >
+                                <KeyRound className="w-[15px] h-[15px]" strokeWidth={1.9} />
+                              </button>
+                            )}
+                            {canUsersDelete && (
+                              <button
+                                type="button"
+                                className="users-action-btn users-action-btn--rose"
+                                title="O‘chirish"
+                                onClick={() => openBlock(user)}
+                              >
+                                <Trash2 className="w-[15px] h-[15px]" strokeWidth={1.9} />
+                              </button>
+                            )}
+                            {!canUsersUpdate && !canUsersDelete && (
+                              <span className="text-slate-400 text-xs">—</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <TablePagination
-        variant="kpi"
-        total={filteredUsers.length}
-        page={currentPage}
-        pageSize={pageSize}
-        totalPages={totalPages}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        unitLabel="foydalanuvchi"
-        pageSizeOptions={[10, 20, 50]}
-      />
+        <TablePagination
+          variant="kpi"
+          total={filteredUsers.length}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          unitLabel="foydalanuvchi"
+          pageSizeOptions={[10, 20, 50]}
+        />
+      </div>
 
       {(action === 'create' || action === 'edit') && (
         <div className="confirm-dialog-root" role="presentation">
