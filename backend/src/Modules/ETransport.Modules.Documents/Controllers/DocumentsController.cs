@@ -574,7 +574,7 @@ public class DocumentsController(
             if (selectedOrders.Any(x => x.Status != OrderStatus.Active))
                 return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null, "Faqat tasdiqlangan buyurtmaga biriktirish mumkin"));
 
-            var assignments = new Dictionary<string, (MonthlyOrder Order, MonthlyOrderLine Line)>(StringComparer.OrdinalIgnoreCase);
+            var assignments = new Dictionary<string, (MonthlyOrder Order, MonthlyOrderLine Line, string Station)>(StringComparer.OrdinalIgnoreCase);
             foreach (var requested in requestedRoutes)
             {
                 var unit = unitsByNumber[requested.WagonNumber];
@@ -599,7 +599,8 @@ public class DocumentsController(
                         $"{unit.WagonNumber}: buyurtma mahsuloti yuklangan mahsulotga mos emas"));
                 var isPe = selectedOrder.ProductType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
                     || selectedOrder.ProductType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
-                var effectiveDeadline = selectedLine.LastLoadingDate ?? (isPe ? selectedOrder.Deadline : (DateTime?)null);
+                // Muddat faqat qatorda belgilangan bo‘lsa cheklaydi (ixtiyoriy maydon).
+                var effectiveDeadline = selectedLine.LastLoadingDate;
                 if (isPe && effectiveDeadline.HasValue)
                 {
                     var today = DateTime.UtcNow.Date;
@@ -609,7 +610,11 @@ public class DocumentsController(
                             $"{unit.WagonNumber}: «{selectedLine.Contractor}» korxonasi uchun polietilenni yuklashning oxirgi sanasi ({effectiveDeadline.Value:dd.MM.yyyy}) o‘tib ketgan! Shartnoma muddati tugagani sababli yuk xati rasmiylashtirish va yuklash taqiqlanadi."));
                     }
                 }
-                assignments[requested.WagonNumber] = (selectedOrder, selectedLine);
+                var routeStation = ResolveRouteStation(selectedLine, requested.DestinationStation);
+                if (routeStation.Length == 0 && unit.Status != EmptyWagonUnitStatuses.Returned)
+                    return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
+                        $"{requested.WagonNumber}: «{selectedLine.Contractor}» uchun jo‘natish stansiyasini tanlang"));
+                assignments[requested.WagonNumber] = (selectedOrder, selectedLine, routeStation);
             }
             var routeSnapshots = requestedRoutes.Select(x =>
             {
@@ -623,7 +628,7 @@ public class DocumentsController(
                             x.WagonNumber,
                             defectiveAssignment.Line.Id,
                             defectiveAssignment.Line.Contractor,
-                            defectiveAssignment.Line.DestinationStation,
+                            defectiveAssignment.Station,
                             true,
                             unit.LoadingComment,
                             string.IsNullOrWhiteSpace(unit.DefectActNumber) ? unit.DefectActFileName : unit.DefectActNumber,
@@ -655,7 +660,7 @@ public class DocumentsController(
                     x.WagonNumber,
                     routeLine.Id,
                     routeLine.Contractor,
-                    routeLine.DestinationStation,
+                    assignment.Station,
                     false,
                     "",
                     "",
@@ -725,14 +730,14 @@ public class DocumentsController(
                 {
                     var excess = orderLine.FulfilledWagonCount + wagonDelta - orderLine.WagonCount;
                     limitWarnings.Add(
-                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.WagonCount} ta) to‘lgan, ortiqcha {excess} ta vagon biriktirildi");
+                        $"{DescribeOrderLine(orderLine)}: limit ({orderLine.WagonCount} ta) to‘lgan, ortiqcha {excess} ta vagon biriktirildi");
                 }
                 if (orderLine.WagonCount <= 0 && orderLine.TonCount > 0
                     && orderLine.FulfilledNetWeight + netDelta > orderLine.TonCount)
                 {
                     var excess = orderLine.FulfilledNetWeight + netDelta - orderLine.TonCount;
                     limitWarnings.Add(
-                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.TonCount:0.###} t) to‘lgan, ortiqcha {excess:0.###} t yuk biriktirildi");
+                        $"{DescribeOrderLine(orderLine)}: limit ({orderLine.TonCount:0.###} t) to‘lgan, ortiqcha {excess:0.###} t yuk biriktirildi");
                 }
             }
 
@@ -756,13 +761,11 @@ public class DocumentsController(
                 MonthlyOrderId = selectedOrders.Count == 1 ? selectedOrders[0].Id : null,
                 MonthlyOrderLineId = fulfilledRoutes.Select(x => x.MonthlyOrderLineId).Distinct().Count() == 1 ? primaryLine?.Id : null,
                 OrderNumber = selectedOrders.Count == 0 ? "Nomuvofiq" : selectedOrders.Count == 1 ? selectedOrders[0].OrderNumber : string.Join(", ", selectedOrders.Select(x => x.OrderNumber).Distinct()),
-                ContractNumber = selectedOrders.Select(x => x.ContractNumber).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().Count() > 0
-                    ? string.Join(", ", selectedOrders.Select(x => x.ContractNumber).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
-                    : "",
+                ContractNumber = ResolveRegistryContract(assignments.Values, selectedOrders),
                 DestinationStation = fulfilledRoutes.Count == 0
                     ? "Nomuvofiq"
                     : fulfilledRoutes.Select(x => x.DestinationStation).Distinct().Count() == 1
-                        ? primaryLine?.DestinationStation ?? ""
+                        ? primaryRoute?.DestinationStation ?? ""
                         : "Bir nechta stansiya",
                 ContractorName = fulfilledRoutes.Count == 0
                     ? "Nomuvofiq"
@@ -825,7 +828,7 @@ public class DocumentsController(
                 {
                     assignments.TryGetValue(unit.WagonNumber, out var unitAssignment);
                     receiverStation = unitAssignment.Line is not null
-                        ? $"{unitAssignment.Line.Contractor} — {unitAssignment.Line.DestinationStation}"
+                        ? $"{unitAssignment.Line.Contractor} — {unitAssignment.Station}"
                         : (registry.ContractorName ?? registry.DestinationStation ?? "—");
                 }
 
@@ -1362,7 +1365,7 @@ public class DocumentsController(
             if (selectedOrders.Count != requestedOrderIds.Count)
                 return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null, "Tanlangan buyurtmalardan biri topilmadi"));
 
-            var assignments = new Dictionary<string, (MonthlyOrder Order, MonthlyOrderLine Line)>(StringComparer.OrdinalIgnoreCase);
+            var assignments = new Dictionary<string, (MonthlyOrder Order, MonthlyOrderLine Line, string Station)>(StringComparer.OrdinalIgnoreCase);
             foreach (var requested in requestedRoutes)
             {
                 var unit = unitsByNumber[requested.WagonNumber];
@@ -1376,7 +1379,11 @@ public class DocumentsController(
                 var unitProduct = !string.IsNullOrWhiteSpace(unit.ProductType) ? unit.ProductType.Trim() : unit.Arrival?.ProductType?.Trim() ?? "";
                 if (!string.IsNullOrWhiteSpace(unitProduct) && !string.Equals(selectedOrder.ProductType.Trim(), unitProduct, StringComparison.OrdinalIgnoreCase))
                     return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null, $"{unit.WagonNumber}: buyurtma mahsuloti yuklangan mahsulotga mos emas"));
-                assignments[requested.WagonNumber] = (selectedOrder, selectedLine);
+                var routeStation = ResolveRouteStation(selectedLine, requested.DestinationStation);
+                if (routeStation.Length == 0 && unit.Status != EmptyWagonUnitStatuses.Returned)
+                    return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
+                        $"{requested.WagonNumber}: «{selectedLine.Contractor}» uchun jo‘natish stansiyasini tanlang"));
+                assignments[requested.WagonNumber] = (selectedOrder, selectedLine, routeStation);
             }
 
             var routeSnapshots = requestedRoutes.Select(x =>
@@ -1391,7 +1398,7 @@ public class DocumentsController(
                             x.WagonNumber,
                             defectiveAssignment.Line.Id,
                             defectiveAssignment.Line.Contractor,
-                            defectiveAssignment.Line.DestinationStation,
+                            defectiveAssignment.Station,
                             true,
                             unit.LoadingComment,
                             string.IsNullOrWhiteSpace(unit.DefectActNumber) ? unit.DefectActFileName : unit.DefectActNumber,
@@ -1423,7 +1430,7 @@ public class DocumentsController(
                     x.WagonNumber,
                     routeLine.Id,
                     routeLine.Contractor,
-                    routeLine.DestinationStation,
+                    assignment.Station,
                     false,
                     "",
                     "",
@@ -1467,14 +1474,14 @@ public class DocumentsController(
                 {
                     var excess = orderLine.FulfilledWagonCount + wagonDelta - orderLine.WagonCount;
                     limitWarnings.Add(
-                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.WagonCount} ta) to‘lgan, ortiqcha {excess} ta vagon biriktirildi");
+                        $"{DescribeOrderLine(orderLine)}: limit ({orderLine.WagonCount} ta) to‘lgan, ortiqcha {excess} ta vagon biriktirildi");
                 }
                 if (orderLine.WagonCount <= 0 && orderLine.TonCount > 0
                     && orderLine.FulfilledNetWeight + netDelta > orderLine.TonCount)
                 {
                     var excess = orderLine.FulfilledNetWeight + netDelta - orderLine.TonCount;
                     limitWarnings.Add(
-                        $"{orderLine.Contractor} ({orderLine.DestinationStation}): limit ({orderLine.TonCount:0.###} t) to‘lgan, ortiqcha {excess:0.###} t yuk biriktirildi");
+                        $"{DescribeOrderLine(orderLine)}: limit ({orderLine.TonCount:0.###} t) to‘lgan, ortiqcha {excess:0.###} t yuk biriktirildi");
                 }
 
                 orderLine.FulfilledWagonCount += wagonDelta;
@@ -1492,13 +1499,11 @@ public class DocumentsController(
             registry.MonthlyOrderId = selectedOrders.Count == 1 ? selectedOrders[0].Id : null;
             registry.MonthlyOrderLineId = fulfilledRoutes.Select(x => x.MonthlyOrderLineId).Distinct().Count() == 1 ? primaryLine?.Id : null;
             registry.OrderNumber = selectedOrders.Count == 0 ? "Nomuvofiq" : selectedOrders.Count == 1 ? selectedOrders[0].OrderNumber : string.Join(", ", selectedOrders.Select(x => x.OrderNumber).Distinct());
-            registry.ContractNumber = selectedOrders.Select(x => x.ContractNumber).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().Count() > 0
-                ? string.Join(", ", selectedOrders.Select(x => x.ContractNumber).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
-                : "";
+            registry.ContractNumber = ResolveRegistryContract(assignments.Values, selectedOrders);
             registry.DestinationStation = fulfilledRoutes.Count == 0
                 ? "Nomuvofiq"
                 : fulfilledRoutes.Select(x => x.DestinationStation).Distinct().Count() == 1
-                    ? primaryLine?.DestinationStation ?? ""
+                    ? primaryRoute?.DestinationStation ?? ""
                     : "Bir nechta stansiya";
             registry.ContractorName = fulfilledRoutes.Count == 0
                 ? "Nomuvofiq"
@@ -1532,7 +1537,7 @@ public class DocumentsController(
                     {
                         assignments.TryGetValue(unit.WagonNumber, out var unitAssignment);
                         receiverStation = unitAssignment.Line is not null
-                            ? $"{unitAssignment.Line.Contractor} — {unitAssignment.Line.DestinationStation}"
+                            ? $"{unitAssignment.Line.Contractor} — {unitAssignment.Station}"
                             : (registry.ContractorName ?? registry.DestinationStation ?? "—");
                     }
 
@@ -2102,8 +2107,9 @@ public class DocumentsController(
                 Contractor: line.Contractor,
                 WagonCount: wagons,
                 TonCount: (decimal)tons,
-                ContractNumber: order.ContractNumber,
-                DestinationStation: line.DestinationStation
+                ContractNumber: string.IsNullOrWhiteSpace(line.ContractNumber) ? order.ContractNumber : line.ContractNumber,
+                DestinationStation: line.DestinationStation,
+                ProductGrade: line.ProductGrade ?? ""
             ));
         }
 
@@ -2229,6 +2235,32 @@ public class DocumentsController(
 
         return File(pdfBytes, "application/pdf", $"Dalolatnoma_{unit.DefectActNumber}_{unit.WagonNumber}.pdf");
     }
+
+    /// <summary>Buyurtma qatoridagi stansiya; bo‘sh bo‘lsa yuk xatida tanlangani olinadi.</summary>
+    private static string ResolveRouteStation(MonthlyOrderLine line, string? requestedStation) =>
+        !string.IsNullOrWhiteSpace(line.DestinationStation)
+            ? line.DestinationStation.Trim()
+            : requestedStation?.Trim() ?? "";
+
+    /// <summary>Yuk xatidagi vagonlar biriktirilgan qatorlar shartnomalari (qatorda bo‘lmasa — buyurtmaniki).</summary>
+    private static string ResolveRegistryContract(
+        IEnumerable<(MonthlyOrder Order, MonthlyOrderLine Line, string Station)> assignments,
+        IEnumerable<MonthlyOrder> selectedOrders)
+    {
+        var contracts = assignments
+            .Select(a => string.IsNullOrWhiteSpace(a.Line.ContractNumber) ? a.Order.ContractNumber : a.Line.ContractNumber)
+            .Concat(assignments.Any() ? [] : selectedOrders.Select(o => o.ContractNumber))
+            .Select(x => x?.Trim() ?? "")
+            .Where(x => x.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return string.Join(", ", contracts);
+    }
+
+    private static string DescribeOrderLine(MonthlyOrderLine line) =>
+        string.IsNullOrWhiteSpace(line.DestinationStation)
+            ? line.Contractor
+            : $"{line.Contractor} ({line.DestinationStation})";
 
     private static string DescribeUnfinishedPendingAction(LoadingRegistry r)
     {

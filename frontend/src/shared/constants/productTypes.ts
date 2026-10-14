@@ -106,12 +106,21 @@ export function getTableConfig(logisticsType: LogisticsType) {
   };
 }
 
-export function getTableHeaders(logisticsType: LogisticsType): string[] {
+/**
+ * Eski (vagon rejali) buyurtma: qatorlarda vagon soni bor, marka/shartnoma esa yo‘q.
+ * Yangi buyurtmalarda vagon soni o‘rnida «Markasi», shartnoma esa har qatorda alohida.
+ */
+export function isWagonPlanOrder(lines: Array<{ wagonCount?: number | null; productGrade?: string | null; contractNumber?: string | null }>): boolean {
+  return lines.some(l => (l.wagonCount ?? 0) > 0)
+    && !lines.some(l => Boolean(l.productGrade?.trim() || l.contractNumber?.trim()));
+}
+
+export function getTableHeaders(logisticsType: LogisticsType, wagonPlan = false): string[] {
   const cfg = getTableConfig(logisticsType);
   return [
     '№',
     'Korxona (kontragent) nomi',
-    cfg.unitLabel,
+    wagonPlan ? cfg.unitLabel : 'Markasi',
     cfg.tonLabel,
     'Shartnoma raqami',
     cfg.destinationLabel,

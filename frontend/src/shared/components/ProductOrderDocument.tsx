@@ -1,7 +1,7 @@
 import { BadgeCheck } from 'lucide-react';
 import type { MonthlyOrder } from '../types';
 import { ApprovalQrCode } from './ApprovalQrCode';
-import { getProductLabel, getTableHeaders } from '../constants/productTypes';
+import { getProductLabel, getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import { LOGISTICS_TYPES, type LogisticsType } from '../constants/logisticsTypes';
 import { ORDER_STATUS_LABELS } from '../constants/orderStatuses';
 import { buildOrderTableRows } from '../../modules/marketing/utils/orderTable';
@@ -85,7 +85,8 @@ export function ProductOrderDocument({
   logisticsType?: LogisticsType;
   preview?: boolean;
 }) {
-  const headers = getTableHeaders(logisticsType);
+  const wagonPlan = isWagonPlanOrder(order.lines);
+  const headers = getTableHeaders(logisticsType, wagonPlan);
   const rows = buildOrderTableRows(order.lines);
   const totals = summarizeOrderQuantities(order.lines);
   const rawProductLabel = getProductLabel(order.productType, logisticsType);
@@ -184,17 +185,19 @@ export function ProductOrderDocument({
                 {isFirstInGroup ? (
                   <td className="product-order-contractor" rowSpan={groupRowSpan}>{line.contractor}</td>
                 ) : null}
-                <td className="product-order-qty">{lineWagonCount(line)}</td>
+                <td className="product-order-qty">{wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}</td>
                 <td className="product-order-qty">{lineTonCount(line)}</td>
-                {isFirstInTable ? (
+                {wagonPlan ? (isFirstInTable ? (
                   <td className="product-order-contract" rowSpan={totalRows}>{order.contractNumber || '—'}</td>
-                ) : null}
-                <td className="product-order-dest">{line.destinationStation}</td>
+                ) : null) : (
+                  <td className="product-order-contract">{line.contractNumber || '—'}</td>
+                )}
+                <td className="product-order-dest">{line.destinationStation || '—'}</td>
               </tr>
             ))}
             <tr className="product-order-total">
               <td colSpan={2} className="product-order-contractor text-center !text-center font-bold">JAMI</td>
-              <td className="product-order-qty">{totals.wagonTotal}</td>
+              <td className="product-order-qty">{wagonPlan ? totals.wagonTotal : ''}</td>
               <td className="product-order-qty">{totals.tonTotal}</td>
               <td className="product-order-contract" />
               <td className="product-order-dest" />

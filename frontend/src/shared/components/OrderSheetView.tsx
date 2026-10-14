@@ -1,6 +1,6 @@
 import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { MonthlyOrder } from '../types';
-import { getTableHeaders } from '../constants/productTypes';
+import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
 import { buildOrderTableRows } from '../../modules/marketing/utils/orderTable';
 import {
@@ -50,7 +50,8 @@ export function OrderSheetView({
 }: OrderSheetViewProps) {
   const isPolyethylene = order.productType?.toLowerCase().includes('polietilen')
     || order.productType?.toLowerCase().includes('полиэтилен');
-  const baseHeaders = getTableHeaders(logisticsType);
+  const wagonPlan = isWagonPlanOrder(order.lines);
+  const baseHeaders = getTableHeaders(logisticsType, wagonPlan);
   const headers = isPolyethylene
     ? [...baseHeaders, 'Yuklash oxirgi sanasi']
     : baseHeaders;
@@ -104,8 +105,8 @@ export function OrderSheetView({
                       </td>
                     )}
                     <td className="order-sheet-center order-sheet-qty">
-                      <div className="font-semibold">{lineWagonCount(line)}</div>
-                      {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
+                      <div className="font-semibold">{wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}</div>
+                      {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                         <div className="text-[10px] whitespace-nowrap mt-0.5">
                           {line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount ? (
                             <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
@@ -143,19 +144,21 @@ export function OrderSheetView({
                         );
                       })()}
                     </td>
-                    {isFirstInTable && (
+                    {wagonPlan ? (isFirstInTable && (
                       <td rowSpan={totalRows} className="order-sheet-contract order-sheet-center">
                         {order.contractNumber}
                       </td>
+                    )) : (
+                      <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
                     )}
                     <td className="order-sheet-destination">
                       <span className="order-sheet-destination__inner">
                         <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-                        <span>{line.destinationStation}</span>
+                        <span>{line.destinationStation || '—'}</span>
                       </span>
                     </td>
                     {isPolyethylene && (() => {
-                      const lineDeadline = line.lastLoadingDate || order.deadline;
+                      const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
                       const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
                       return (
                         <td className="order-sheet-center px-2 py-1">
@@ -176,10 +179,12 @@ export function OrderSheetView({
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
-                  <div>{totals.wagonTotal}</div>
+                  {wagonPlan ? <div>{totals.wagonTotal}</div> : null}
                   {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
-                      Yuklandi: {lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} · Qoldiq: {Math.max(0, totals.wagonTotal - lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0))} ta
+                      {wagonPlan
+                        ? `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} · Qoldiq: ${Math.max(0, totals.wagonTotal - lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0))} ta`
+                        : `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} vagon`}
                     </div>
                   )}
                 </td>
@@ -272,8 +277,8 @@ export function OrderSheetView({
                       </td>
                     )}
                     <td className="order-sheet-center order-sheet-qty">
-                      <div className="font-semibold">{lineWagonCount(line)}</div>
-                      {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
+                      <div className="font-semibold">{wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}</div>
+                      {wagonPlan && (targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                         <div className="text-[10px] whitespace-nowrap mt-0.5">
                           {line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount ? (
                             <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
@@ -311,19 +316,21 @@ export function OrderSheetView({
                         );
                       })()}
                     </td>
-                    {isFirstInTable && (
+                    {wagonPlan ? (isFirstInTable && (
                       <td rowSpan={totalRows} className="order-sheet-contract order-sheet-center">
                         {order.contractNumber}
                       </td>
+                    )) : (
+                      <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
                     )}
                     <td className="order-sheet-destination">
                       <span className="order-sheet-destination__inner">
                         <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-                        <span>{line.destinationStation}</span>
+                        <span>{line.destinationStation || '—'}</span>
                       </span>
                     </td>
                     {isPolyethylene && (() => {
-                      const lineDeadline = line.lastLoadingDate || order.deadline;
+                      const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
                       const isOverdue = lineDeadline ? new Date(lineDeadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
                       return (
                         <td className="order-sheet-center px-2 py-1">
@@ -344,10 +351,12 @@ export function OrderSheetView({
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">
-                  <div>{totals.wagonTotal}</div>
+                  {wagonPlan ? <div>{totals.wagonTotal}</div> : null}
                   {(targetOrder.status === 'Active' || targetOrder.status === 'Completed') && (
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
-                      Yuklandi: {lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} · Qoldiq: {Math.max(0, totals.wagonTotal - lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0))} ta
+                      {wagonPlan
+                        ? `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} · Qoldiq: ${Math.max(0, totals.wagonTotal - lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0))} ta`
+                        : `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} vagon`}
                     </div>
                   )}
                 </td>

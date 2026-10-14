@@ -11,7 +11,7 @@ import type { LogisticsType } from '../constants/logisticsTypes';
 import type { MonthlyOrder } from '../types';
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/dates';
 import { summarizeOrderQuantities } from '../utils/orderQuantity';
-import { computeOrderFulfillment } from './OrderFulfillmentStatus';
+import { computeOrderFulfillment, isOrderFulfilled } from './OrderFulfillmentStatus';
 import { TablePagination } from './TablePagination';
 
 function getOrderStationsTotal(order: MonthlyOrder): number {
@@ -25,6 +25,10 @@ function getOrderStationsTotal(order: MonthlyOrder): number {
   const rawStations = (order.lines ?? []).map(l => l.destinationStation?.trim()).filter(Boolean) as string[];
   const uniqueStations = Array.from(new Set(rawStations));
   return rawStations.length || uniqueStations.length;
+}
+
+function formatTons(value: number): string {
+  return (Math.round(value * 100) / 100).toLocaleString('uz-UZ', { maximumFractionDigits: 2 });
 }
 
 function isPolyethyleneOverdue(order: MonthlyOrder): boolean {
@@ -57,7 +61,6 @@ interface OrderListRowProps {
 }
 
 export function OrderListRow({ order, logisticsType, active = false, onClick, onEdit, canEdit }: OrderListRowProps) {
-  const { wagonTotal } = summarizeOrderQuantities(order.lines);
   const productLabel = getProductLabel(order.productType, logisticsType);
   const deadlineLabel = formatDateDisplay(order.deadline?.slice(0, 10) || '') || '—';
   const fulfillment = computeOrderFulfillment(order);
@@ -72,15 +75,15 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
     stationText = `${uniqueStations.slice(0, 2).join(", ")}${rem > 0 ? ` (+${rem})` : ""}`;
   }
 
-  const isCompleted = order.status === 'Completed';
-  const remainText = isCompleted || fulfillment.remainingWagons === 0
+  const isCompleted = order.status === 'Completed' || isOrderFulfilled(order);
+  const remainText = isCompleted
     ? 'Ijro holati: 100%'
-    : `${fulfillment.remainingWagons} ta ijroda / ${fulfillment.fulfilledWagons} ta yakunlangan`;
+    : `${formatTons(fulfillment.remainingTons)} t qoldi / ${fulfillment.fulfilledWagons} vagon yuklandi`;
 
   const meta = [
     order.orderNumber,
     stationText ? `📍 ${stationText}` : null,
-    wagonTotal > 0 ? `${wagonTotal} vagon` : null,
+    `${formatTons(summarizeOrderQuantities(order.lines).tonTotal)} t`,
     remainText,
     deadlineLabel !== '—' ? deadlineLabel : null,
   ].filter(Boolean).join(' • ');
@@ -216,7 +219,7 @@ export function OrderList({
               <th className="text-center">№</th>
               <th className="text-center">Buyurtma</th>
               <th className="text-left">Mahsulot</th>
-              <th className="text-center leading-tight">Reja<br />vagon</th>
+              <th className="text-center leading-tight">Yuklangan<br />vagon</th>
               <th className="text-center leading-tight">Og‘irligi<br />(t)</th>
               <th className="text-center leading-tight">Yetkazib berish<br />stansiyasi</th>
               <th className="text-center leading-tight">Bajarilish /<br />Qoldiq</th>
@@ -230,7 +233,7 @@ export function OrderList({
           </thead>
           <tbody>
             {pageOrders.map((order, index) => {
-              const { wagonTotal, tonTotal } = summarizeOrderQuantities(order.lines);
+              const { tonTotal } = summarizeOrderQuantities(order.lines);
               const productLabel = getProductLabel(order.productType, logisticsType);
               const active = activeOrderId === order.id;
               const approvedAt = order.dispatchApprovedAt || null;
@@ -239,7 +242,10 @@ export function OrderList({
               const uniqueStations = Array.from(new Set(rawStations));
               const totalStationsCount = getOrderStationsTotal(order);
               const remainingStationsCount = Math.max(0, totalStationsCount - 2);
-              const isCompleted = order.status === 'Completed';
+              const isCompleted = order.status === 'Completed' || isOrderFulfilled(order);
+              const tonPct = fulfillment.orderedTons > 0
+                ? Math.min(100, Math.round((fulfillment.fulfilledTons / fulfillment.orderedTons) * 100))
+                : 0;
 
               return (
                 <tr
@@ -279,7 +285,7 @@ export function OrderList({
                       </strong>
                     </div>
                   </td>
-                  <td className="text-center font-semibold tabular-nums text-xs">{wagonTotal}</td>
+                  <td className="text-center font-semibold tabular-nums text-xs">{fulfillment.fulfilledWagons}</td>
                   <td className="text-center font-semibold tabular-nums text-xs">{tonTotal}</td>
 
                   {/* Yetkazib berish stansiyasi */}
@@ -317,7 +323,7 @@ export function OrderList({
 
                   {/* Bajarilish / Qoldiq */}
                   <td className="whitespace-nowrap text-[11px] text-center px-1.5">
-                    {isCompleted || fulfillment.remainingWagons === 0 ? (
+                    {isCompleted ? (
                       <div className="flex items-center justify-center">
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
@@ -328,17 +334,17 @@ export function OrderList({
                       <div className="flex flex-col items-center justify-center gap-0.5 min-w-0 mx-auto">
                         <div className="flex flex-col items-center text-center text-[11px] leading-tight font-mono">
                           <span className="font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                            {fulfillment.remainingWagons} ta ijroda
+                            {formatTons(fulfillment.remainingTons)} t qoldi
                           </span>
                           <span className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                            {fulfillment.fulfilledWagons} ta yakunlangan
+                            {formatTons(fulfillment.fulfilledTons)} t yuklandi
                           </span>
                         </div>
                         <div className="w-full max-w-[7.5rem] h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
                           <div
                             className="h-full bg-blue-500 rounded-full transition-all"
                             style={{
-                              width: `${Math.min(100, Math.round((fulfillment.fulfilledWagons / (fulfillment.orderedWagons || 1)) * 100))}%`
+                              width: `${tonPct}%`
                             }}
                           />
                         </div>

@@ -17,7 +17,8 @@ public record MonthlyOrderLineDto(
     string DestinationStation, DateTime? LastLoadingDate, bool AccountantSigned, bool WeigherSigned,
     string QuantityUnit, string AccountingStatus, bool? AccountingReviewChecked,
     int FulfilledWagonCount = 0, decimal FulfilledNetWeight = 0,
-    int RemainingWagonCount = 0, decimal RemainingTonCount = 0);
+    int RemainingWagonCount = 0, decimal RemainingTonCount = 0,
+    string ContractNumber = "", string ProductGrade = "");
 
 public record MonthlyOrderDto(
     Guid Id, string OrderNumber, string LogisticsType, string ContractNumber, string ProductType,
@@ -44,7 +45,7 @@ public record OrderAttachmentDto(
 public record MonthlyOrderLineInput(
     int SortOrder, string Contractor, int WagonCount, string WagonNumbers,
     string DestinationStation, DateTime? LastLoadingDate, string QuantityUnit = "wagon",
-    Guid? Id = null, decimal TonCount = 0);
+    Guid? Id = null, decimal TonCount = 0, string? ContractNumber = null, string? ProductGrade = null);
 
 public record AccountingReviewSelection(string Contractor, bool Checked);
 
@@ -52,11 +53,13 @@ public record SaveAccountingReviewRequest(List<AccountingReviewSelection> Select
 
 public record CreateMonthlyOrderRequest(
     string LogisticsType, string ContractNumber, string ProductType, int Year, int Month,
-    DateTime Deadline, List<MonthlyOrderLineInput> Lines, string ProductGrade = "");
+    DateTime Deadline, List<MonthlyOrderLineInput> Lines, string ProductGrade = "",
+    /// <summary>Qo‘lda kiritilgan buyurtma raqami; bo‘sh bo‘lsa tizim o‘zi beradi.</summary>
+    string? OrderNumber = null);
 
 public record UpdateMonthlyOrderRequest(
     string ContractNumber, string ProductType, DateTime Deadline, List<MonthlyOrderLineInput> Lines,
-    string EditComment, string ProductGrade = "");
+    string EditComment, string ProductGrade = "", string? OrderNumber = null);
 public record DailyPlanLineDto(
     Guid Id, Guid MonthlyOrderLineId, string Contractor, string DestinationStation, int PlannedWagons);
 
@@ -178,7 +181,9 @@ public record CreateLoadingRegistryWagonRouteRequest(
     bool IncludeDefective = false,
     Guid? MonthlyOrderId = null,
     Guid? SourceArrivalId = null,
-    bool IsDefective = false);
+    bool IsDefective = false,
+    /// <summary>Buyurtma qatorida stansiya yo‘q bo‘lsa, yuk xatida tanlangan stansiya.</summary>
+    string? DestinationStation = null);
 public record CreateLoadingRegistryRequest(
     Guid EmptyWagonArrivalId,
     string RegistryNumber,

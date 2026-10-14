@@ -504,6 +504,7 @@ class ApiClient {
 
   createOrder(data: {
     logisticsType: string;
+    orderNumber?: string;
     contractNumber: string;
     productType: string;
     productGrade?: string;
@@ -520,12 +521,15 @@ class ApiClient {
       wagonNumbers: string;
       destinationStation: string;
       lastLoadingDate?: string | null;
+      contractNumber?: string;
+      productGrade?: string;
     }[];
   }) {
     return this.request<{ success: boolean; data: MonthlyOrder }>('/orders', { method: 'POST', body: JSON.stringify(data) });
   }
 
   updateOrder(id: string, data: {
+    orderNumber?: string;
     contractNumber: string;
     productType: string;
     productGrade?: string;
@@ -541,6 +545,8 @@ class ApiClient {
       wagonNumbers: string;
       destinationStation: string;
       lastLoadingDate?: string | null;
+      contractNumber?: string;
+      productGrade?: string;
     }[];
   }) {
     return this.request(`/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) });
@@ -1519,6 +1525,7 @@ class ApiClient {
       wagonNumber: string;
       monthlyOrderId?: string | null;
       monthlyOrderLineId?: string | null;
+      destinationStation?: string;
       includeDefective?: boolean;
       sourceArrivalId?: string | null;
     }>;

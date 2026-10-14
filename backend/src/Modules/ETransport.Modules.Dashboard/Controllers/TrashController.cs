@@ -328,6 +328,9 @@ public class TrashController(AppDbContext db, IFileStorageService fileStorage) :
                         TonCount = lineElem.TryGetProperty("TonCount", out var tc) && tc.TryGetDecimal(out var tVal) ? tVal : 0,
                         QuantityUnit = lineElem.TryGetProperty("QuantityUnit", out var qu) ? (qu.GetString() ?? OrderQuantityUnits.Wagon) : OrderQuantityUnits.Wagon,
                         DestinationStation = lineElem.TryGetProperty("DestinationStation", out var ds) ? (ds.GetString() ?? "") : "",
+                        ContractNumber = lineElem.TryGetProperty("ContractNumber", out var lcn) ? (lcn.GetString() ?? "") : "",
+                        ProductGrade = lineElem.TryGetProperty("ProductGrade", out var lpg) ? (lpg.GetString() ?? "") : "",
+                        LastLoadingDate = lineElem.TryGetProperty("LastLoadingDate", out var lld) && lld.ValueKind == JsonValueKind.String && lld.TryGetDateTime(out var lldDate) ? lldDate : null,
                         AccountingStatus = lineElem.TryGetProperty("AccountingStatus", out var acs) ? (acs.GetString() ?? LineAccountingStatuses.Pending) : LineAccountingStatuses.Pending
                     };
                     order.Lines.Add(line);

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, FileDown, MapPin, AlertCircle } from 'lucide-react';
 import type { MonthlyOrder } from '../types';
-import { getTableHeaders } from '../constants/productTypes';
+import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
 import { buildOrderTableRows } from '../../modules/marketing/utils/orderTable';
 import {
@@ -50,7 +50,8 @@ export function OrderAccountingSheet({
   onFinalizeReview,
   menuItems = [],
 }: OrderAccountingSheetProps) {
-  const headers = [...getTableHeaders(logisticsType), 'Kelishish'];
+  const wagonPlan = isWagonPlanOrder(order.lines);
+  const headers = [...getTableHeaders(logisticsType, wagonPlan), 'Kelishish'];
   const groups = useMemo(() => getPendingContractorGroups(order), [order]);
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>(() => initCheckedMap(groups));
   const [finalizing, setFinalizing] = useState(false);
@@ -150,20 +151,22 @@ export function OrderAccountingSheet({
                       <td rowSpan={groupRowSpan} className="order-sheet-contractor">{line.contractor}</td>
                     )}
                     <td className="order-sheet-center order-sheet-qty">
-                      {lineWagonCount(line)}
+                      {wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}
                     </td>
                     <td className="order-sheet-center order-sheet-qty">
                       {lineTonCount(line)}
                     </td>
-                    {isFirstInTable && (
+                    {wagonPlan ? (isFirstInTable && (
                       <td rowSpan={totalRows} className="order-sheet-contract order-sheet-center">
                         {order.contractNumber}
                       </td>
+                    )) : (
+                      <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
                     )}
                     <td className="order-sheet-destination">
                       <span className="order-sheet-destination__inner">
                         <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-                        <span>{line.destinationStation}</span>
+                        <span>{line.destinationStation || '—'}</span>
                       </span>
                     </td>
                     {isFirstInGroup && (
@@ -199,7 +202,7 @@ export function OrderAccountingSheet({
               })}
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
-                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.wagonTotal}</td>
+                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{wagonPlan ? quantityTotals.wagonTotal : ''}</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
                 <td colSpan={3} />
               </tr>

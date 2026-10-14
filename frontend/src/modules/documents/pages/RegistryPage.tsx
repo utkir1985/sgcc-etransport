@@ -53,6 +53,7 @@ import {
   getRegistryPendingActionInfo,
 } from '../../../shared/utils/registryWorkflow';
 import { LOGISTICS_TYPES } from '../../../shared/constants/logisticsTypes';
+import { StationSelect } from '../../../shared/components/StationSelect';
 import { excludeOneCOrders } from '../../../shared/utils/oneCSources';
 import { defectActDisplayName, hasDefectAct, resolveDefectActType, type DefectActType } from '../../../shared/constants/defectActTypes';
 import { DefectActView } from '../../../shared/components/DefectActView';
@@ -461,6 +462,43 @@ function WagonUnitsPanel({ rows, compact = false }: { rows: WagonRow[]; compact?
   );
 }
 
+
+type OrderLineLike = MonthlyOrder['lines'][number];
+
+/** Buyurtma qatori nomi: stansiya bo‘lmasa — u yuk xatida tanlanadi. */
+function orderLineLabel(line: OrderLineLike): string {
+  const station = line.destinationStation?.trim();
+  return station
+    ? `${station} — ${line.contractor || 'Kontragent'}`
+    : `${line.contractor || 'Kontragent'} — stansiya yuk xatida tanlanadi`;
+}
+
+/** Tanlov ro‘yxati uchun: qator nomi + tonna bo‘yicha qoldiq (eski qatorlarda vagon). */
+function orderLineOptionLabel(line: OrderLineLike): string {
+  const head = orderLineLabel(line);
+  const planTons = Number(line.tonCount || 0);
+  if (planTons > 0) {
+    const doneTons = Number(line.fulfilledNetWeight ?? 0);
+    const left = Math.max(0, Math.round((planTons - doneTons) * 100) / 100);
+    return doneTons >= planTons
+      ? `${head} [Limit to‘lgan ⚠️]`
+      : `${head} (Qoldiq: ${left.toLocaleString('uz-UZ', { maximumFractionDigits: 2 })} t)`;
+  }
+  if (line.wagonCount > 0) {
+    const done = line.fulfilledWagonCount ?? 0;
+    return done >= line.wagonCount
+      ? `${head} [Limit to‘lgan: ${done}/${line.wagonCount} ⚠️]`
+      : `${head} (Qoldiq: ${line.wagonCount - done} ta)`;
+  }
+  return head;
+}
+
+function isOrderLineOverLimit(line: OrderLineLike): boolean {
+  const planTons = Number(line.tonCount || 0);
+  if (planTons > 0) return Number(line.fulfilledNetWeight ?? 0) >= planTons;
+  return line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount;
+}
+
 export default function RegistryPage() {
   const { user } = useAuth();
   const { can, role: rbacRole } = useRbacPermission();
@@ -499,6 +537,34 @@ export default function RegistryPage() {
   const [registryNumber, setRegistryNumber] = useState('');
   const [wagonOrderIds, setWagonOrderIds] = useState<Record<string, string>>({});
   const [wagonRouteLines, setWagonRouteLines] = useState<Record<string, string>>({});
+  /** Buyurtma qatorida stansiya bo‘lmasa — yuk xatida tanlangan stansiya (vagon kaliti bo‘yicha). */
+  const [wagonRouteStations, setWagonRouteStations] = useState<Record<string, string>>({});
+
+  const routeLineFor = (formKey: string) =>
+    orders.find(o => o.id === wagonOrderIds[formKey])?.lines.find(l => l.id === wagonRouteLines[formKey]);
+
+  /** Qatorda stansiya bor bo‘lsa — o‘sha, aks holda yuk xatida tanlangani. */
+  const chosenRouteStation = (formKey: string): string | undefined => {
+    const line = routeLineFor(formKey);
+    if (line?.destinationStation?.trim()) return undefined;
+    return wagonRouteStations[formKey]?.trim() || undefined;
+  };
+
+  const renderRouteStationPicker = (formKey: string) => {
+    const line = routeLineFor(formKey);
+    if (!line || line.destinationStation?.trim()) return null;
+    return (
+      <div className="registry-route-station-picker">
+        <StationSelect
+          value={wagonRouteStations[formKey] || ''}
+          onChange={station => setWagonRouteStations(prev => ({ ...prev, [formKey]: station }))}
+          contractorName={line.contractor}
+          logisticsType={LOGISTICS_TYPES.Railway}
+          required
+        />
+      </div>
+    );
+  };
   const [selectedWagons, setSelectedWagons] = useState<Record<string, boolean>>({});
   const [modalWagonKeys, setModalWagonKeys] = useState<string[]>([]);
   const [securityApproved, setSecurityApproved] = useState(true);
@@ -536,6 +602,7 @@ export default function RegistryPage() {
   const [dualRightSelectedKeys, setDualRightSelectedKeys] = useState<string[]>([]);
   const [batchAssignOrderId, setBatchAssignOrderId] = useState('');
   const [batchAssignLineId, setBatchAssignLineId] = useState('');
+  const [batchAssignStation, setBatchAssignStation] = useState('');
   const userClosedDraft = useRef(false);
 
   const [previewModel, setPreviewModel] = useState<YukXatiModel | null>(null);
@@ -1650,15 +1717,18 @@ export default function RegistryPage() {
     if (!orderId) return;
     const nextOrderIds = { ...wagonOrderIds };
     const nextRouteLines = { ...wagonRouteLines };
+    const nextStations = { ...wagonRouteStations };
     selectedDraftRows.forEach(r => {
       const k = pooledWagonKey(r);
       nextOrderIds[k] = orderId;
       if (lineId) {
         nextRouteLines[k] = lineId;
+        if (batchAssignStation.trim()) nextStations[k] = batchAssignStation.trim();
       }
     });
     setWagonOrderIds(nextOrderIds);
     setWagonRouteLines(nextRouteLines);
+    setWagonRouteStations(nextStations);
     setDraftActionError('');
   };
 
@@ -1774,6 +1844,17 @@ export default function RegistryPage() {
         return;
       }
 
+      const missingStation = healthyRows.find(r => {
+        const k = pooledWagonKey(r);
+        const line = routeLineFor(k);
+        return line && !line.destinationStation?.trim() && !wagonRouteStations[k]?.trim();
+      });
+      if (missingStation) {
+        setDraftActionError(`${missingStation.wagonNumber} vagoni uchun jo‘natish stansiyasini tanlang`);
+        setIsDraftSubmitting(false);
+        return;
+      }
+
       const now = new Date();
       const period = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getFullYear()).slice(2)}`;
       const prefix = `WB-${period}-`;
@@ -1803,6 +1884,7 @@ export default function RegistryPage() {
             wagonNumber: row.wagonNumber,
             monthlyOrderId: wagonOrderIds[formKey] || null,
             monthlyOrderLineId: wagonRouteLines[formKey] || null,
+            destinationStation: chosenRouteStation(formKey),
             includeDefective: row.status === 'Returned',
             sourceArrivalId: row.arrivalId,
           };
@@ -1852,6 +1934,7 @@ export default function RegistryPage() {
     setRegistryNumber(defaultRegNumber);
     setWagonOrderIds({});
     setWagonRouteLines({});
+    setWagonRouteStations({});
     setModalWagonKeys(sourceRows.map(pooledWagonKey));
     setSelectedWagons(Object.fromEntries(sourceRows.map(row => [pooledWagonKey(row), true])));
     setComment('');
@@ -1869,6 +1952,7 @@ export default function RegistryPage() {
 
     const initialOrderIds: Record<string, string> = {};
     const initialRouteLines: Record<string, string> = {};
+    const initialRouteStations: Record<string, string> = {};
     const initialSelected: Record<string, boolean> = {};
 
     (registry.wagonRoutes ?? []).forEach(route => {
@@ -1877,6 +1961,7 @@ export default function RegistryPage() {
       initialSelected[key] = true;
       if (route.monthlyOrderId) initialOrderIds[key] = route.monthlyOrderId;
       if (route.monthlyOrderLineId) initialRouteLines[key] = route.monthlyOrderLineId;
+      if (route.destinationStation) initialRouteStations[key] = route.destinationStation;
     });
 
     setExpandedId(`reg:${registry.id}`);
@@ -1886,6 +1971,7 @@ export default function RegistryPage() {
     setEditActionError('');
     setWagonOrderIds(prev => ({ ...prev, ...initialOrderIds }));
     setWagonRouteLines(prev => ({ ...prev, ...initialRouteLines }));
+    setWagonRouteStations(prev => ({ ...prev, ...initialRouteStations }));
     setSelectedEditWagonKeys(initialSelected);
     setEditAttachedDefectKeys([]);
     setEditAttachedBufferKeys([]);
@@ -1943,6 +2029,7 @@ export default function RegistryPage() {
         sourceArrivalId: r.arrivalId || undefined,
         monthlyOrderId: defective ? (defectiveHasOrder ? ord?.id : undefined) : ord?.id,
         monthlyOrderLineId: defective ? (defectiveHasOrder ? line?.id : undefined) : line?.id,
+        destinationStation: chosenRouteStation(k),
         productType: r.product,
         nettoWeight: Number(r.netto) || 0,
         includeDefective: defective,
@@ -2008,6 +2095,7 @@ export default function RegistryPage() {
     setRegistryNumber('');
     setWagonOrderIds({});
     setWagonRouteLines({});
+    setWagonRouteStations({});
     setModalWagonKeys([]);
     setSelectedWagons({});
     setComment('');
@@ -2190,6 +2278,7 @@ export default function RegistryPage() {
         wagonNumber: row.wagonNumber,
         monthlyOrderId: wagonOrderIds[pooledWagonKey(row)] || null,
         monthlyOrderLineId: wagonRouteLines[pooledWagonKey(row)] || null,
+        destinationStation: chosenRouteStation(pooledWagonKey(row)),
         includeDefective: row.status === 'Returned',
         sourceArrivalId: row.arrivalId,
       })),
@@ -2246,6 +2335,7 @@ export default function RegistryPage() {
           wagonNumber: row.wagonNumber,
           monthlyOrderId: wagonOrderIds[pooledWagonKey(row)] || null,
           monthlyOrderLineId: wagonRouteLines[pooledWagonKey(row)] || null,
+          destinationStation: chosenRouteStation(pooledWagonKey(row)),
           includeDefective: row.status === 'Returned',
           sourceArrivalId: row.arrivalId,
         })),
@@ -3575,21 +3665,33 @@ export default function RegistryPage() {
                   <div className="sm:col-span-6">
                     <select
                       value={batchAssignLineId}
-                      onChange={e => setBatchAssignLineId(e.target.value)}
+                      onChange={e => {
+                        setBatchAssignLineId(e.target.value);
+                        setBatchAssignStation('');
+                      }}
                       disabled={!batchAssignOrderId}
                       className="w-full py-1 px-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white disabled:opacity-50"
                     >
                       <option value="">— Stansiya va kontragent —</option>
-                      {(orders.find(o => o.id === batchAssignOrderId)?.lines || []).map(line => {
-                        const isOverLimit = line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount;
-                        const remaining = line.wagonCount > 0 ? Math.max(0, line.wagonCount - (line.fulfilledWagonCount ?? 0)) : 0;
-                        return (
-                          <option key={line.id} value={line.id}>
-                            {line.destinationStation} — {line.contractor || 'Kontragent'} {line.wagonCount > 0 ? (isOverLimit ? `[Limit to‘lgan: ${line.fulfilledWagonCount}/${line.wagonCount} ⚠️]` : `(Qoldiq: ${remaining} ta)`) : ''}
-                          </option>
-                        );
-                      })}
+                      {(orders.find(o => o.id === batchAssignOrderId)?.lines || []).map(line => (
+                                  <option key={line.id} value={line.id}>{orderLineOptionLabel(line)}</option>
+                                ))}
                     </select>
+                    {(() => {
+                      const batchLine = orders.find(o => o.id === batchAssignOrderId)?.lines.find(l => l.id === batchAssignLineId);
+                      if (!batchLine || batchLine.destinationStation?.trim()) return null;
+                      return (
+                        <div className="registry-route-station-picker">
+                          <StationSelect
+                            value={batchAssignStation}
+                            onChange={setBatchAssignStation}
+                            contractorName={batchLine.contractor}
+                            logisticsType={LOGISTICS_TYPES.Railway}
+                            required
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="sm:col-span-2">
                     <button
@@ -3605,12 +3707,12 @@ export default function RegistryPage() {
                 {(() => {
                   const selectedLine = orders.find(o => o.id === batchAssignOrderId)?.lines.find(l => l.id === batchAssignLineId);
                   if (!selectedLine) return null;
-                  const isOver = selectedLine.wagonCount > 0 && (selectedLine.fulfilledWagonCount ?? 0) >= selectedLine.wagonCount;
+                  const isOver = isOrderLineOverLimit(selectedLine);
                   if (isOver) {
                     return (
                       <div className="mt-2 text-[11px] text-amber-800 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg p-2 flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                        <span><strong>Ogohlantirish (Limit to‘lgan):</strong> {selectedLine.destinationStation} ({selectedLine.contractor}) bo‘yicha reja {selectedLine.wagonCount} ta, bajarilgan {selectedLine.fulfilledWagonCount} ta. Vagonlar ogohlantirish bilan biriktiriladi va yuk xati shakllantiriladi.</span>
+                        <span><strong>Ogohlantirish (Limit to‘lgan):</strong> {orderLineLabel(selectedLine)} bo‘yicha reja to‘lgan. Vagonlar ogohlantirish bilan biriktiriladi va yuk xati shakllantiriladi.</span>
                       </div>
                     );
                   }
@@ -3786,16 +3888,11 @@ export default function RegistryPage() {
                               }`}
                             >
                               <option value="">— Stansiya / Kontragent —</option>
-                              {(selectedOrder?.lines || []).map(line => {
-                                const isOverLimit = line.wagonCount > 0 && (line.fulfilledWagonCount ?? 0) >= line.wagonCount;
-                                const remaining = line.wagonCount > 0 ? Math.max(0, line.wagonCount - (line.fulfilledWagonCount ?? 0)) : 0;
-                                return (
-                                  <option key={line.id} value={line.id}>
-                                    {line.destinationStation} — {line.contractor || 'Kontragent'} {line.wagonCount > 0 ? (isOverLimit ? `[Limit to‘lgan: ${line.fulfilledWagonCount}/${line.wagonCount} ⚠️]` : `(Qoldiq: ${remaining} ta)`) : ''}
-                                  </option>
-                                );
-                              })}
+                              {(selectedOrder?.lines || []).map(line => (
+                                  <option key={line.id} value={line.id}>{orderLineOptionLabel(line)}</option>
+                                ))}
                             </select>
+                            {renderRouteStationPicker(formKey)}
                           </div>
                         </div>
                       ) : (
@@ -4280,11 +4377,12 @@ export default function RegistryPage() {
                                       Nomuvofiqlik dalolatnomasi
                                     </span>
                                   ) : (
+                                    <>
                                     <select
                                       className="w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[14px] text-left font-medium text-slate-900 shadow-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed"
                                       value={wagonRouteLines[formKey] || ''}
                                       disabled={!isChecked || !selectedOrderForWagon}
-                                      title={selectedOrderForWagon?.lines.find(line => line.id === wagonRouteLines[formKey]) ? `${selectedOrderForWagon.lines.find(line => line.id === wagonRouteLines[formKey])?.destinationStation || ''} — ${selectedOrderForWagon.lines.find(line => line.id === wagonRouteLines[formKey])?.contractor || ''}` : ''}
+                                      title={(() => { const l = selectedOrderForWagon?.lines.find(line => line.id === wagonRouteLines[formKey]); return l ? orderLineLabel(l) : ''; })()}
                                       onChange={e => {
                                         setWagonRouteLines(prev => ({ ...prev, [formKey]: e.target.value }));
                                         setDraftActionError('');
@@ -4294,11 +4392,13 @@ export default function RegistryPage() {
                                         {selectedOrderForWagon ? 'Stansiya va kontragentni tanlang' : 'Avval buyurtmani tanlang'}
                                       </option>
                                       {selectedOrderForWagon?.lines.map(line => (
-                                        <option key={line.id} value={line.id} title={`${line.destinationStation || 'Stansiya ko‘rsatilmagan'} — ${line.contractor}`}>
-                                          {line.destinationStation || 'Stansiya ko‘rsatilmagan'} — {line.contractor}
+                                        <option key={line.id} value={line.id} title={orderLineLabel(line)}>
+                                          {orderLineOptionLabel(line)}
                                         </option>
                                       ))}
                                     </select>
+                                    {renderRouteStationPicker(formKey)}
+                                    </>
                                   )}
                                 </td>
                                 <td className="text-center px-1">
@@ -4496,11 +4596,12 @@ export default function RegistryPage() {
                                       Nomuvofiqlik dalolatnomasi
                                     </span>
                                   ) : (
+                                    <>
                                     <select
                                       className="w-full min-w-0 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[14px] text-left font-medium text-slate-900 shadow-xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed"
                                       value={wagonRouteLines[formKey] || ''}
                                       disabled={!isChecked || !selectedOrderForWagon}
-                                      title={selectedOrderForWagon?.lines.find(line => line.id === wagonRouteLines[formKey]) ? `${selectedOrderForWagon.lines.find(line => line.id === wagonRouteLines[formKey])?.destinationStation || ''} — ${selectedOrderForWagon.lines.find(line => line.id === wagonRouteLines[formKey])?.contractor || ''}` : ''}
+                                      title={(() => { const l = selectedOrderForWagon?.lines.find(line => line.id === wagonRouteLines[formKey]); return l ? orderLineLabel(l) : ''; })()}
                                       onChange={e => {
                                         setWagonRouteLines(prev => ({ ...prev, [formKey]: e.target.value }));
                                         setEditActionError('');
@@ -4510,11 +4611,13 @@ export default function RegistryPage() {
                                         {selectedOrderForWagon ? 'Stansiya va kontragentni tanlang' : 'Avval buyurtmani tanlang'}
                                       </option>
                                       {selectedOrderForWagon?.lines.map(line => (
-                                        <option key={line.id} value={line.id} title={`${line.destinationStation || 'Stansiya ko‘rsatilmagan'} — ${line.contractor}`}>
-                                          {line.destinationStation || 'Stansiya ko‘rsatilmagan'} — {line.contractor}
+                                        <option key={line.id} value={line.id} title={orderLineLabel(line)}>
+                                          {orderLineOptionLabel(line)}
                                         </option>
                                       ))}
                                     </select>
+                                    {renderRouteStationPicker(formKey)}
+                                    </>
                                   )}
                                 </td>
                                 <td className="text-center px-1">
@@ -5235,7 +5338,7 @@ export default function RegistryPage() {
                                     <div className="registry-route-table__route-picker">
                                       <span className={`registry-route-table__route-display${assignedLine ? '' : ' is-placeholder'}`}>
                                         {assignedLine
-                                          ? `${assignedLine.destinationStation || 'Stansiya ko‘rsatilmagan'} — ${assignedLine.contractor}`
+                                          ? orderLineLabel(assignedLine)
                                           : selectedOrderForWagon
                                             ? 'Stansiya va kontragentni tanlang'
                                             : 'Avval buyurtmani tanlang'}
@@ -5255,10 +5358,11 @@ export default function RegistryPage() {
                                         </option>
                                         {selectedOrderForWagon?.lines.map(route => (
                                           <option key={route.id} value={route.id}>
-                                            {route.destinationStation || 'Stansiya ko‘rsatilmagan'} — {route.contractor}
+                                            {orderLineOptionLabel(route)}
                                           </option>
                                         ))}
                                       </select>
+                                      {renderRouteStationPicker(formKey)}
                                     </div>
                                   </td>
                                   <td>

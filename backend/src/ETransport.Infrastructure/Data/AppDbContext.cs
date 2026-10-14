@@ -81,6 +81,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(l => l.DestinationStation).HasMaxLength(200);
             e.Property(l => l.WagonNumbers).HasMaxLength(500);
             e.Property(l => l.QuantityUnit).HasMaxLength(20);
+            e.Property(l => l.ContractNumber).HasMaxLength(100);
+            e.Property(l => l.ProductGrade).HasMaxLength(100);
             e.Property(l => l.AccountingStatus).HasMaxLength(30);
             e.Property(l => l.FulfilledNetWeight).HasPrecision(18, 3);
         });

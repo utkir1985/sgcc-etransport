@@ -1362,6 +1362,8 @@ public static class DbSeeder
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "FulfilledWagonCount" integer NOT NULL DEFAULT 0;
             ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "FulfilledNetWeight" numeric(18,3) NOT NULL DEFAULT 0;
+            ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "ContractNumber" character varying(100) NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "ProductGrade" character varying(100) NOT NULL DEFAULT '';
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "OrderDeductedWagons" integer NOT NULL DEFAULT 0;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "OrderDeductedNetWeight" numeric(18,3) NOT NULL DEFAULT 0;
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "DefectActNumber" character varying(40) NOT NULL DEFAULT '';

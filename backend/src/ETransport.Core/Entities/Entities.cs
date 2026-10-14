@@ -134,8 +134,14 @@ public class MonthlyOrderLine
     public decimal FulfilledNetWeight { get; set; }
     public string QuantityUnit { get; set; } = Constants.OrderQuantityUnits.Wagon;
     public string WagonNumbers { get; set; } = string.Empty;
+    /// <summary>Ixtiyoriy: bo‘sh bo‘lsa stansiya yuk xati tuzilganda tanlanadi.</summary>
     public string DestinationStation { get; set; } = string.Empty;
+    /// <summary>Ixtiyoriy: bo‘sh bo‘lsa yuklash muddati cheklanmaydi.</summary>
     public DateTime? LastLoadingDate { get; set; }
+    /// <summary>Ixtiyoriy: shu kontragent bilan tuzilgan shartnoma raqami.</summary>
+    public string ContractNumber { get; set; } = string.Empty;
+    /// <summary>Ixtiyoriy: mahsulot markasi (masalan, polietilen B-Y250).</summary>
+    public string ProductGrade { get; set; } = string.Empty;
     public string AccountingStatus { get; set; } = Constants.LineAccountingStatuses.Pending;
     public bool? AccountingReviewChecked { get; set; }
     public bool AccountantSigned { get; set; }

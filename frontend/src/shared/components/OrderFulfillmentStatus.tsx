@@ -43,12 +43,13 @@ export function computeOrderFulfillment(order: MonthlyOrder): OrderFulfillmentTo
   };
 }
 
+/** Ijro tonna bo‘yicha: qatorda tonna bo‘lsa — tonna, faqat vagon bo‘lsa (eski buyurtma) — vagon. */
 export function isOrderFulfilled(order: MonthlyOrder): boolean {
   const lines = order.lines ?? [];
   return lines.some(l => l.wagonCount > 0 || l.tonCount > 0)
-    && lines.every(l => l.wagonCount > 0
-      ? (l.fulfilledWagonCount ?? 0) >= l.wagonCount
-      : l.tonCount <= 0 || Number(l.fulfilledNetWeight ?? 0) >= l.tonCount);
+    && lines.every(l => l.tonCount > 0
+      ? Number(l.fulfilledNetWeight ?? 0) >= l.tonCount
+      : l.wagonCount <= 0 || (l.fulfilledWagonCount ?? 0) >= l.wagonCount);
 }
 
 function fmtTon(n: number): string {
@@ -71,6 +72,8 @@ export function OrderFulfillmentStatus({ order, className = '' }: Props) {
   const t = computeOrderFulfillment(order);
   const wagonPct = pct(t.fulfilledWagons, t.orderedWagons);
   const tonPct = pct(t.fulfilledTons, t.orderedTons);
+  // Yangi buyurtmalarda vagon rejasi yo‘q — faqat yuklangan vagonlar soni ko‘rsatiladi.
+  const hasWagonPlan = t.orderedWagons > 0;
   const done = isOrderFulfilled(order);
 
   return (
@@ -95,22 +98,23 @@ export function OrderFulfillmentStatus({ order, className = '' }: Props) {
       <div className="order-fulfillment__metrics">
         <div className="order-fulfillment__metric">
           <em>Buyurtma</em>
-          <strong className="tabular-nums">{t.orderedWagons}</strong>
-          <span className="order-fulfillment__unit">vagon · {fmtTon(t.orderedTons)} t</span>
+          <strong className="tabular-nums">{fmtTon(t.orderedTons)}</strong>
+          <span className="order-fulfillment__unit">t{hasWagonPlan ? ` · ${t.orderedWagons} vagon` : ''}</span>
         </div>
         <div className="order-fulfillment__metric order-fulfillment__metric--sent">
           <em>Jo‘natildi</em>
-          <strong className="tabular-nums">{t.fulfilledWagons}</strong>
-          <span className="order-fulfillment__unit">vagon · {fmtTon(t.fulfilledTons)} t</span>
+          <strong className="tabular-nums">{fmtTon(t.fulfilledTons)}</strong>
+          <span className="order-fulfillment__unit">t · {t.fulfilledWagons} vagon</span>
         </div>
         <div className="order-fulfillment__metric order-fulfillment__metric--remain">
           <em>Qoldiq</em>
-          <strong className="tabular-nums">{t.remainingWagons}</strong>
-          <span className="order-fulfillment__unit">vagon · {fmtTon(t.remainingTons)} t</span>
+          <strong className="tabular-nums">{fmtTon(t.remainingTons)}</strong>
+          <span className="order-fulfillment__unit">t{hasWagonPlan ? ` · ${t.remainingWagons} vagon` : ''}</span>
         </div>
       </div>
 
       <div className="order-fulfillment__bars">
+        {hasWagonPlan ? (
         <div className="order-fulfillment__bar-row">
           <div className="order-fulfillment__bar-label">
             <TrainFront strokeWidth={1.75} aria-hidden />
@@ -127,6 +131,7 @@ export function OrderFulfillmentStatus({ order, className = '' }: Props) {
             <i style={{ width: `${wagonPct}%` }} />
           </div>
         </div>
+        ) : null}
         <div className="order-fulfillment__bar-row">
           <div className="order-fulfillment__bar-label">
             <Scale strokeWidth={1.75} aria-hidden />

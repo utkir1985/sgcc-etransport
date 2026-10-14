@@ -1042,18 +1042,20 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             columns.RelativeColumn(2.5f);
                         });
 
+                        // Eski buyurtmalar vagon rejali; yangilarida vagon o‘rnida marka, shartnoma esa har qatorda.
+                        var wagonPlan = model.Lines.Any(l => l.WagonCount > 0);
                         tbl.Header(h =>
                         {
                             void H(string text) => h.Cell().Border(0.6f).BorderColor(Colors.Black).Background(Colors.Grey.Lighten4).PaddingVertical(7f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(text).Bold().FontSize(10.5f);
                             H("№");
                             H("Korxona (kontragent) nomi");
-                            H("Vagon soni");
+                            H(wagonPlan ? "Vagon soni" : "Markasi");
                             H("Og'irligi (t)");
                             H("Shartnoma raqami");
                             H("Yetkazib berish joyi (stansiya)");
                         });
 
-                        var contractNo = !string.IsNullOrWhiteSpace(model.ContractNumber) ? model.ContractNumber : (model.Lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l.ContractNumber))?.ContractNumber ?? "1231234");
+                        var contractNo = !string.IsNullOrWhiteSpace(model.ContractNumber) ? model.ContractNumber : (model.Lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l.ContractNumber))?.ContractNumber ?? "—");
 
                         for (int i = 0; i < model.Lines.Count; i++)
                         {
@@ -1061,15 +1063,20 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
 
                             tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text((i + 1).ToString()).FontSize(10.5f);
                             tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(6).AlignLeft().AlignMiddle().Text(line.Contractor).FontSize(10.5f);
-                            tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(line.WagonCount > 0 ? line.WagonCount.ToString() : "—").FontSize(10.5f);
+                            tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(wagonPlan ? (line.WagonCount > 0 ? line.WagonCount.ToString() : "—") : (string.IsNullOrWhiteSpace(line.ProductGrade) ? "—" : line.ProductGrade)).FontSize(10.5f);
                             tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(line.TonCount > 0 ? line.TonCount.ToString("0.###") : "—").FontSize(10.5f);
 
-                            if (i == 0)
+                            if (wagonPlan)
                             {
-                                tbl.Cell().RowSpan((uint)Math.Max(1, model.Lines.Count)).Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(contractNo).FontSize(10.5f);
+                                if (i == 0)
+                                    tbl.Cell().RowSpan((uint)Math.Max(1, model.Lines.Count)).Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(contractNo).FontSize(10.5f);
+                            }
+                            else
+                            {
+                                tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.ContractNumber) ? "—" : line.ContractNumber).FontSize(10.5f);
                             }
 
-                            tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(line.DestinationStation ?? "—").FontSize(10.5f);
+                            tbl.Cell().Border(0.6f).BorderColor(Colors.Black).PaddingVertical(8f).PaddingHorizontal(4).AlignCenter().AlignMiddle().Text(string.IsNullOrWhiteSpace(line.DestinationStation) ? "—" : line.DestinationStation).FontSize(10.5f);
                         }
 
                         // JAMI row

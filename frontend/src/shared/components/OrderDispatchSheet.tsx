@@ -1,7 +1,7 @@
 import { FileDown, Package } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { MonthlyOrder } from '../types';
-import { getTableHeaders } from '../constants/productTypes';
+import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
 import { buildOrderTableRows } from '../../modules/marketing/utils/orderTable';
 import {
@@ -40,7 +40,8 @@ export function OrderDispatchSheet({
   metaExtra,
   signatureFooterActions,
 }: OrderDispatchSheetProps) {
-  const headers = getTableHeaders(logisticsType);
+  const wagonPlan = isWagonPlanOrder(order.lines);
+  const headers = getTableHeaders(logisticsType, wagonPlan);
   const dispatchLines = order.lines.filter(line => {
     const status = normalizeLineAccountingStatus(line.accountingStatus);
     return status === LINE_ACCOUNTING_STATUSES.PendingDispatch
@@ -93,22 +94,24 @@ export function OrderDispatchSheet({
                     <td rowSpan={groupRowSpan} className="order-sheet-contractor">{line.contractor}</td>
                   )}
                   <td className="order-sheet-center order-sheet-qty">
-                    {lineWagonCount(line)}
+                    {wagonPlan ? lineWagonCount(line) : (line.productGrade || '—')}
                   </td>
                   <td className="order-sheet-center order-sheet-qty">
                     {lineTonCount(line)}
                   </td>
-                  {isFirstInTable && (
+                  {wagonPlan ? (isFirstInTable && (
                     <td rowSpan={totalRows} className="order-sheet-contract order-sheet-center">
                       {order.contractNumber}
                     </td>
+                  )) : (
+                    <td className="order-sheet-contract order-sheet-center">{line.contractNumber || '—'}</td>
                   )}
-                  <td className="order-sheet-destination">{line.destinationStation}</td>
+                  <td className="order-sheet-destination">{line.destinationStation || '—'}</td>
                 </tr>
               ))}
               <tr className="order-sheet-total">
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
-                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.wagonTotal}</td>
+                <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{wagonPlan ? quantityTotals.wagonTotal : ''}</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
                 <td className="order-sheet-contract order-sheet-center" />
                 <td className="order-sheet-destination" />

@@ -70,16 +70,17 @@ public class OrderService(
 
     public async Task<MonthlyOrderDto> CreateAsync(CreateMonthlyOrderRequest request, Guid userId)
     {
-        await ValidateRequestAsync(request.LogisticsType, request.ProductType, request.ProductGrade, request.ContractNumber, request.Lines, userId);
+        var contractNumber = ResolveOrderContract(request.ContractNumber, request.Lines);
+        await ValidateRequestAsync(request.LogisticsType, request.ProductType, contractNumber, request.Lines, userId);
 
         var creator = await db.Users.FindAsync(userId);
         var order = new MonthlyOrder
         {
-            OrderNumber = await GenerateNextOrderNumberAsync(request.LogisticsType, request.ProductType),
+            OrderNumber = await ResolveOrderNumberAsync(request.OrderNumber, request.LogisticsType, request.ProductType, null),
             LogisticsType = request.LogisticsType,
-            ContractNumber = request.ContractNumber.Trim(),
+            ContractNumber = contractNumber,
             ProductType = request.ProductType,
-            ProductGrade = request.ProductGrade?.Trim() ?? "",
+            ProductGrade = ResolveOrderGrade(request.ProductGrade, request.Lines),
             Year = request.Year,
             Month = request.Month,
             Deadline = ToUtcDate(request.Deadline),
@@ -96,7 +97,7 @@ public class OrderService(
             Action = "OrderCreated",
             EntityType = nameof(MonthlyOrder),
             EntityId = order.Id.ToString(),
-            Details = $"Yangi buyurtma yaratildi: #{order.OrderNumber} ({order.ProductType}, {order.Lines.Sum(l => l.WagonCount)} ta vagon)",
+            Details = $"Yangi buyurtma yaratildi: #{order.OrderNumber} ({order.ProductType}, {order.Lines.Sum(l => l.TonCount):0.###} t)",
             Category = "Order",
             Status = "Success",
             CreatedAt = DateTime.UtcNow
@@ -124,34 +125,50 @@ public class OrderService(
         if (string.IsNullOrWhiteSpace(request.EditComment))
             throw new ArgumentException("Tahrirlash izohini kiriting");
 
-        await ValidateRequestAsync(order.LogisticsType, request.ProductType, request.ProductGrade, request.ContractNumber, request.Lines, userId);
+        var contractNumber = ResolveOrderContract(request.ContractNumber, request.Lines);
+        await ValidateRequestAsync(order.LogisticsType, request.ProductType, contractNumber, request.Lines, userId);
 
         var changes = new List<string>();
+        var requestedNumber = request.OrderNumber?.Trim() ?? "";
+        if (requestedNumber.Length > 0 && !string.Equals(requestedNumber, order.OrderNumber, StringComparison.Ordinal))
+        {
+            if (order.Status == OrderStatus.Active || order.DispatchApprovedAt != null
+                || order.Lines.Any(l => l.FulfilledWagonCount > 0 || l.FulfilledNetWeight > 0))
+                throw new ArgumentException("Tasdiqlangan yoki ijroga olingan buyurtmaning raqamini o‘zgartirib bo‘lmaydi");
+            var oldNumber = order.OrderNumber;
+            order.OrderNumber = await ResolveOrderNumberAsync(requestedNumber, order.LogisticsType, request.ProductType, order.Id);
+            changes.Add($"Buyurtma raqami: {oldNumber} → {order.OrderNumber}");
+        }
         if (!string.Equals(order.ProductType, request.ProductType, StringComparison.Ordinal))
         {
             if (order.Status == OrderStatus.Active || order.ApprovedAt != null || order.DispatchApprovedAt != null)
                 throw new ArgumentException("Tasdiqlangan buyurtmaning mahsulot turini o‘zgartirish mumkin emas");
 
-            var oldNumber = order.OrderNumber;
-            order.OrderNumber = await GenerateNextOrderNumberAsync(order.LogisticsType, request.ProductType);
             changes.Add($"Mahsulot turi: {order.ProductType} → {request.ProductType}");
-            changes.Add($"Buyurtma raqami mahsulot prefiksiga moslab yangilandi: {oldNumber} → {order.OrderNumber}");
+            // Qo‘lda raqam berilmagan bo‘lsa, raqam yangi mahsulot prefiksiga moslanadi.
+            if (requestedNumber.Length == 0)
+            {
+                var oldNumber = order.OrderNumber;
+                order.OrderNumber = await GenerateNextOrderNumberAsync(order.LogisticsType, request.ProductType);
+                changes.Add($"Buyurtma raqami mahsulot prefiksiga moslab yangilandi: {oldNumber} → {order.OrderNumber}");
+            }
         }
-        if (!string.Equals(order.ContractNumber, request.ContractNumber.Trim(), StringComparison.Ordinal))
-            changes.Add($"Shartnoma: {order.ContractNumber} → {request.ContractNumber.Trim()}");
+        if (!string.Equals(order.ContractNumber, contractNumber, StringComparison.Ordinal))
+            changes.Add($"Shartnoma: {order.ContractNumber} → {contractNumber}");
         if (order.Deadline.Date != request.Deadline.Date)
             changes.Add($"Muddat: {order.Deadline:dd.MM.yyyy} → {request.Deadline:dd.MM.yyyy}");
         var oldLines = string.Join("|", order.Lines.OrderBy(l => l.SortOrder)
-            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation}"));
+            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation}:{l.ContractNumber}:{l.ProductGrade}"));
         var newLines = string.Join("|", request.Lines.OrderBy(l => l.SortOrder)
-            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation}"));
+            .Select(l => $"{l.Contractor}:{l.WagonCount}:{l.TonCount}:{l.DestinationStation?.Trim() ?? ""}:{l.ContractNumber?.Trim() ?? ""}:{l.ProductGrade?.Trim() ?? ""}"));
         if (!string.Equals(oldLines, newLines, StringComparison.Ordinal))
             changes.Add("Buyurtma qatorlari o‘zgartirildi");
 
-        order.ContractNumber = request.ContractNumber.Trim();
-        if (!string.Equals(order.ProductGrade, request.ProductGrade?.Trim() ?? "", StringComparison.Ordinal))
-            changes.Add($"Mahsulot markasi: {order.ProductGrade} → {request.ProductGrade?.Trim()}");
-        order.ProductGrade = request.ProductGrade?.Trim() ?? "";
+        order.ContractNumber = contractNumber;
+        var productGrade = ResolveOrderGrade(request.ProductGrade, request.Lines);
+        if (!string.Equals(order.ProductGrade, productGrade, StringComparison.Ordinal))
+            changes.Add($"Mahsulot markasi: {order.ProductGrade} → {productGrade}");
+        order.ProductGrade = productGrade;
         order.ProductType = request.ProductType;
         order.Deadline = ToUtcDate(request.Deadline);
 
@@ -624,6 +641,7 @@ public class OrderService(
             LogisticsType = source.LogisticsType,
             ContractNumber = source.ContractNumber,
             ProductType = source.ProductType,
+            ProductGrade = source.ProductGrade,
             Year = source.Year,
             Month = source.Month,
             Deadline = source.Deadline,
@@ -689,8 +707,10 @@ public class OrderService(
                 existing.TonCount = Math.Max(0, input.TonCount);
                 existing.QuantityUnit = OrderQuantityUnits.Normalize(input.QuantityUnit);
                 existing.WagonNumbers = input.WagonNumbers?.Trim() ?? "";
-                existing.DestinationStation = input.DestinationStation.Trim();
+                existing.DestinationStation = input.DestinationStation?.Trim() ?? "";
                 existing.LastLoadingDate = ToUtcDate(input.LastLoadingDate);
+                existing.ContractNumber = input.ContractNumber?.Trim() ?? "";
+                existing.ProductGrade = input.ProductGrade?.Trim() ?? "";
                 keptIds.Add(existing.Id);
                 continue;
             }
@@ -705,8 +725,10 @@ public class OrderService(
                 TonCount = Math.Max(0, input.TonCount),
                 QuantityUnit = OrderQuantityUnits.Normalize(input.QuantityUnit),
                 WagonNumbers = input.WagonNumbers?.Trim() ?? "",
-                DestinationStation = input.DestinationStation.Trim(),
+                DestinationStation = input.DestinationStation?.Trim() ?? "",
                 LastLoadingDate = ToUtcDate(input.LastLoadingDate),
+                ContractNumber = input.ContractNumber?.Trim() ?? "",
+                ProductGrade = input.ProductGrade?.Trim() ?? "",
                 AccountingStatus = LineAccountingStatuses.Pending,
             };
             order.Lines.Add(created);
@@ -738,8 +760,10 @@ public class OrderService(
             line.TonCount = Math.Max(0, input.TonCount);
             line.QuantityUnit = OrderQuantityUnits.Normalize(input.QuantityUnit);
             line.WagonNumbers = input.WagonNumbers?.Trim() ?? "";
-            line.DestinationStation = input.DestinationStation.Trim();
+            line.DestinationStation = input.DestinationStation?.Trim() ?? "";
             line.LastLoadingDate = ToUtcDate(input.LastLoadingDate);
+            line.ContractNumber = input.ContractNumber?.Trim() ?? "";
+            line.ProductGrade = input.ProductGrade?.Trim() ?? "";
         }
     }
 
@@ -785,7 +809,6 @@ public class OrderService(
     private async Task ValidateRequestAsync(
         string logisticsType,
         string productType,
-        string productGrade,
         string contractNumber,
         List<MonthlyOrderLineInput> lines,
         Guid userId)
@@ -802,15 +825,8 @@ public class OrderService(
         if (user?.Role == UserRoles.DispatchSupervisor && !isCondensate)
             throw new ArgumentException("IChDX boshlig‘i faqat «Tabiiy gaz kondensati» mahsulotini kiritishi mumkin. Boshqa mahsulotlar Marketing bo‘limi tomonidan kiritiladi.");
 
-        var isPe = productType.Contains("polietilen", StringComparison.OrdinalIgnoreCase)
-            || productType.Contains("полиэтилен", StringComparison.OrdinalIgnoreCase);
-        if (isPe)
-        {
-            if (string.IsNullOrWhiteSpace(productGrade))
-                throw new ArgumentException("Polietilen mahsuloti uchun markani kiritish majburiy (ShGKMda har xil turdagi polietilen ishlab chiqariladi)");
-            if (lines.Any(l => !l.LastLoadingDate.HasValue))
-                throw new ArgumentException("Polietilen buyurtmasida har bir firma uchun yuklashning oxirgi sanasini belgilash majburiy");
-        }
+        // Marka, shartnoma, stansiya va yuklash muddati — qator darajasida ixtiyoriy.
+        // Stansiya bo‘sh bo‘lsa, u yuk xati tuzilganda tanlanadi.
 
         var productExists = await db.CatalogProducts.AnyAsync(p =>
             p.LogisticsType == logisticsType
@@ -840,8 +856,46 @@ public class OrderService(
 
         if (lines.Any(l => !OrderQuantityUnits.IsValid(l.QuantityUnit)))
             throw new ArgumentException("Noto'g'ri o'lchov birligi");
-        if (lines.Any(l => string.IsNullOrWhiteSpace(l.DestinationStation)))
-            throw new ArgumentException("Yetkazib berish manzili kiritilishi kerak");
+        if (lines.Any(l => (l.ContractNumber?.Trim().Length ?? 0) > 100 || (l.ProductGrade?.Trim().Length ?? 0) > 100))
+            throw new ArgumentException("Shartnoma raqami va marka 100 belgidan oshmasligi kerak");
+    }
+
+    private static readonly Regex ManualOrderNumber = new(@"^[\p{L}\p{N}][\p{L}\p{N}\-/_.№ ]{0,49}$", RegexOptions.Compiled);
+
+    /// <summary>Qo‘lda berilgan raqamni tekshiradi; bo‘sh bo‘lsa avtomatik raqam beradi.</summary>
+    private async Task<string> ResolveOrderNumberAsync(string? requested, string logisticsType, string productType, Guid? excludeOrderId)
+    {
+        var number = requested?.Trim() ?? "";
+        if (number.Length == 0)
+            return await GenerateNextOrderNumberAsync(logisticsType, productType);
+        if (!ManualOrderNumber.IsMatch(number))
+            throw new ArgumentException("Buyurtma raqami 50 belgigacha bo‘lsin: harf, raqam va - / _ . belgilari");
+        var taken = await db.MonthlyOrders.AnyAsync(o => o.OrderNumber == number && o.Id != excludeOrderId);
+        if (taken)
+            throw new ArgumentException($"«{number}» raqamli buyurtma allaqachon mavjud");
+        return number;
+    }
+
+    /// <summary>Buyurtma sarlavhasidagi shartnoma; bo‘sh bo‘lsa qatorlardagi shartnomalar jamlanadi.</summary>
+    private static string ResolveOrderContract(string? headerContract, List<MonthlyOrderLineInput> lines)
+    {
+        var header = headerContract?.Trim() ?? "";
+        if (header.Length > 0) return header;
+        return string.Join(", ", lines
+            .Select(l => l.ContractNumber?.Trim() ?? "")
+            .Where(x => x.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Buyurtma markasi; bo‘sh bo‘lsa qatorlardagi markalar jamlanadi.</summary>
+    private static string ResolveOrderGrade(string? headerGrade, List<MonthlyOrderLineInput> lines)
+    {
+        var header = headerGrade?.Trim() ?? "";
+        if (header.Length > 0) return header;
+        return string.Join(", ", lines
+            .Select(l => l.ProductGrade?.Trim() ?? "")
+            .Where(x => x.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase));
     }
 
     private async Task<string> GenerateNextOrderNumberAsync(string logisticsType, string productType)
@@ -891,8 +945,10 @@ public class OrderService(
                 TonCount = Math.Max(0, l.TonCount),
                 QuantityUnit = OrderQuantityUnits.Normalize(l.QuantityUnit),
                 WagonNumbers = l.WagonNumbers?.Trim() ?? "",
-                DestinationStation = l.DestinationStation.Trim(),
+                DestinationStation = l.DestinationStation?.Trim() ?? "",
                 LastLoadingDate = ToUtcDate(l.LastLoadingDate),
+                ContractNumber = l.ContractNumber?.Trim() ?? "",
+                ProductGrade = l.ProductGrade?.Trim() ?? "",
                 AccountingStatus = LineAccountingStatuses.Pending,
             })
             .ToList();
@@ -941,7 +997,9 @@ public class OrderService(
                     l.FulfilledWagonCount,
                     l.FulfilledNetWeight,
                     Math.Max(0, orderedWagons - l.FulfilledWagonCount),
-                    Math.Max(0, orderedTons - l.FulfilledNetWeight)
+                    Math.Max(0, orderedTons - l.FulfilledNetWeight),
+                    l.ContractNumber ?? "",
+                    l.ProductGrade ?? ""
                 );
             }).ToList(),
             lines.Sum(ResolveWagonCount),
@@ -974,8 +1032,9 @@ public class OrderService(
                 Contractor: line.Contractor,
                 WagonCount: wagons,
                 TonCount: (decimal)tons,
-                ContractNumber: order.ContractNumber,
-                DestinationStation: line.DestinationStation
+                ContractNumber: string.IsNullOrWhiteSpace(line.ContractNumber) ? order.ContractNumber : line.ContractNumber,
+                DestinationStation: line.DestinationStation,
+                ProductGrade: line.ProductGrade ?? ""
             ));
         }
 

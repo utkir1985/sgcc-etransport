@@ -139,6 +139,10 @@ export interface MonthlyOrderLine {
   fulfilledNetWeight?: number;
   remainingWagonCount?: number;
   remainingTonCount?: number;
+  /** Ixtiyoriy: shu qator shartnomasi */
+  contractNumber?: string;
+  /** Ixtiyoriy: mahsulot markasi */
+  productGrade?: string;
 }
 
 export interface OrderAttachment {
@@ -193,6 +197,8 @@ export interface MonthlyOrderLineInput {
   wagonNumbers: string;
   destinationStation: string;
   lastLoadingDate?: string | null;
+  contractNumber?: string;
+  productGrade?: string;
 }
 
 export interface Contractor {
