@@ -146,25 +146,25 @@ interface OrderListProps {
 export type OrderListVariant = 'all' | 'faol' | 'tasdiq' | 'yakun';
 
 type OrderColumnKey =
-  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'done' | 'remain' | 'shipped' | 'stage' | 'waiting'
+  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'done' | 'remain' | 'shipped' | 'stage' | 'waiting' | 'customer'
   | 'contract' | 'created' | 'approved' | 'status' | 'doc' | 'actions';
 
 /** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
 const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
   num: 3, order: 10, product: 15, wagons: 7, tons: 7, done: 11, remain: 8, shipped: 10, stage: 16, waiting: 13,
-  contract: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
+  contract: 9, customer: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
 };
 
 function orderColumns(variant: OrderListVariant, showActions: boolean): OrderColumnKey[] {
   switch (variant) {
     case 'faol':
-      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'created', 'approved', 'doc'];
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'customer', 'created', 'approved', 'doc'];
     case 'tasdiq':
-      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'contract', 'created', 'doc'];
+      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'contract', 'customer', 'created', 'doc'];
     case 'yakun':
-      return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'contract', 'created', 'approved', 'doc'];
+      return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'contract', 'customer', 'created', 'approved', 'doc'];
     default:
-      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'created', 'approved', 'status', 'doc',
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'customer', 'created', 'approved', 'status', 'doc',
         ...(showActions ? ['actions' as const] : [])];
   }
 }
@@ -223,6 +223,7 @@ export function OrderList({
     stage: { label: 'Kelishuv bosqichi', className: 'text-center', title: 'Buyurtma hozir kimning kelishuvida turibdi' },
     waiting: { label: 'Bosqichda', className: 'text-center', title: 'Shu bosqichga qachon kelgani va qancha kutayotgani' },
     contract: { label: 'Shartnoma', className: 'text-center' },
+    customer: { label: 'Buyurtma №', className: 'text-center', title: 'Hujjatdagi (kontragent) buyurtma raqami' },
     created: { label: 'Yaratilgan', className: 'text-center', title: 'Yaratilgan sana va vaqt' },
     approved: { label: 'Tasdiqlangan', className: 'text-center', title: 'Tasdiqlangan sana va vaqt' },
     status: { label: 'Holat', className: 'text-center' },
@@ -378,6 +379,25 @@ export function OrderList({
                   <td className="text-xs text-center leading-snug break-words whitespace-normal px-1" title={order.contractNumber || '—'}>
                     <span className="line-clamp-2">{order.contractNumber || '—'}</span>
                   </td>
+                  {has('customer') && (() => {
+                    const numbers = Array.from(new Set((order.lines ?? [])
+                      .map(l => l.customerOrderNumber?.trim())
+                      .filter((n): n is string => Boolean(n))));
+                    return (
+                      <td className="text-xs text-center whitespace-nowrap px-1" title={numbers.join(', ') || undefined}>
+                        {numbers.length === 0 ? (
+                          <span className="text-slate-400">—</span>
+                        ) : (
+                          <>
+                            {numbers[0]}
+                            {numbers.length > 1 ? (
+                              <span className="ml-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">+{numbers.length - 1}</span>
+                            ) : null}
+                          </>
+                        )}
+                      </td>
+                    );
+                  })()}
                   <td className="whitespace-nowrap text-center text-xs">
                     {renderDateTimeCell(order.createdAt)}
                   </td>
