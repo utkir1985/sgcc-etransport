@@ -18586,3 +18586,173 @@ html.dark .order-progress-track,
     width: 11rem;
   }
 }
+
+/* =============== Planshet va telefon: holat kartochkalari va filtr/tugma joylashuvi =============== */
+
+/* Kartochka: ikonka | nom + son (son nom ostida) — nomlar kesilmaydi */
+@media (max-width: 1023px) {
+  .order-status-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 4px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+
+  .order-status-card__icon {
+    grid-row: 1 / span 2;
+    width: 40px;
+    height: 40px;
+  }
+
+  .order-status-card__text {
+    flex: none;
+  }
+
+  .order-status-card__text strong {
+    font-size: 14px;
+  }
+
+  .order-status-card__count {
+    justify-self: start;
+    padding: 1px 10px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-status-card {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    padding: 10px;
+  }
+
+  .order-status-card__icon {
+    grid-row: auto;
+    width: 32px;
+    height: 32px;
+  }
+
+  .order-status-card__text strong {
+    font-size: 13px;
+  }
+}
+
+/* Buyurtmalar filtrlari: qidiruv + mahsulot bir qatorda, davr alohida, tugmalar teng ustunlarda */
+@media (max-width: 1023px) {
+  .marketing-orders-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .marketing-orders-toolbar__filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  .marketing-orders-toolbar__filters > * {
+    width: 100%;
+    max-width: none;
+  }
+
+  .marketing-orders-toolbar__field--period {
+    grid-column: 1 / -1;
+  }
+
+  .marketing-orders-toolbar .product-type-filter .marketing-product-filter-anchor,
+  .marketing-orders-toolbar .product-type-filter button {
+    width: 100%;
+  }
+
+  .marketing-orders-toolbar__right {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .marketing-orders-toolbar__right > div {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* «Bo‘sh buyurtma» va «Excel» o‘ramini yoyib, uchala tugma teng ustunda turadi */
+  .marketing-orders-toolbar__right > div > div {
+    display: contents;
+  }
+
+  .marketing-orders-toolbar__right button {
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .marketing-orders-toolbar__filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .marketing-orders-toolbar__right > div {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Asosiy amal — to‘liq kenglikda, birinchi */
+  .marketing-orders-toolbar__right .marketing-orders-home__create {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+/* Hujjatlar (yuk xati, kiritish, dalolatnoma) filtrlari: tugmalar to‘liq kenglikda */
+@media (max-width: 1023px) {
+  .docs-hub-toolbar .thub-search {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .docs-hub-toolbar__actions {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .docs-hub-toolbar .thub-pills {
+    width: 100%;
+  }
+
+  .docs-hub-toolbar .thub-pills > button {
+    flex: 1 1 0;
+  }
+
+  .docs-hub-toolbar__actions,
+  .docs-hub-toolbar__actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Foydalanuvchilar paneli */
+@media (max-width: 1023px) {
+  .users-toolbar__filters,
+  .users-toolbar__actions {
+    width: 100%;
+  }
+
+  .users-toolbar__search {
+    flex: 1 1 100%;
+    width: auto;
+  }
+
+  .users-toolbar__actions > * {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}
