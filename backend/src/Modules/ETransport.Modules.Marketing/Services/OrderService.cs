@@ -55,7 +55,8 @@ public class OrderService(
             .ThenByDescending(o => o.CreatedAt)
             .ToListAsync();
 
-        return orders.Select(ToDto).ToList();
+        var shipments = await LoadLineShipmentsAsync(orders.SelectMany(o => o.Lines).Select(l => l.Id));
+        return orders.Select(o => ToDto(o, shipments)).ToList();
     }
 
     public async Task<MonthlyOrderDto?> GetByIdAsync(Guid id)
@@ -65,7 +66,54 @@ public class OrderService(
             .Include(o => o.Lines)
             .Include(o => o.Attachments).ThenInclude(a => a.UploadedBy)
             .FirstOrDefaultAsync(o => o.Id == id);
-        return order is null ? null : ToDto(order);
+        if (order is null) return null;
+        var shipments = await LoadLineShipmentsAsync(order.Lines.Select(l => l.Id));
+        return ToDto(order, shipments);
+    }
+
+    private static readonly JsonSerializerOptions RouteJsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    /// <summary>
+    /// Yuk xatlaridagi vagon yo‘nalishlaridan har bir buyurtma qatori uchun stansiya kesimini yig‘adi.
+    /// Bazada saqlanmaydi — har safar mavjud yuk xatlaridan hisoblanadi (o‘chirish/tahrirlashda o‘zi to‘g‘rilanadi).
+    /// </summary>
+    private async Task<Dictionary<Guid, List<LineStationShipmentDto>>> LoadLineShipmentsAsync(IEnumerable<Guid> lineIds)
+    {
+        var ids = lineIds.ToHashSet();
+        var result = new Dictionary<Guid, List<LineStationShipmentDto>>();
+        if (ids.Count == 0) return result;
+
+        var routeJsons = await db.LoadingRegistries.AsNoTracking()
+            .Select(r => r.WagonRoutesJson)
+            .ToListAsync();
+
+        var totals = new Dictionary<(Guid LineId, string Station), (int Wagons, decimal Net)>();
+        foreach (var json in routeJsons)
+        {
+            if (string.IsNullOrWhiteSpace(json)) continue;
+            List<LoadingRegistryWagonRouteDto>? routes;
+            try { routes = JsonSerializer.Deserialize<List<LoadingRegistryWagonRouteDto>>(json, RouteJsonOptions); }
+            catch (JsonException) { continue; }
+            if (routes is null) continue;
+
+            foreach (var route in routes)
+            {
+                if (route.IsDefective || !ids.Contains(route.MonthlyOrderLineId)) continue;
+                var key = (route.MonthlyOrderLineId, route.DestinationStation?.Trim() ?? "");
+                totals.TryGetValue(key, out var current);
+                totals[key] = (current.Wagons + 1, current.Net + Math.Max(0, route.NetWeight));
+            }
+        }
+
+        foreach (var group in totals.GroupBy(t => t.Key.LineId))
+        {
+            result[group.Key] = group
+                .Select(t => new LineStationShipmentDto(t.Key.Station, t.Value.Wagons, t.Value.Net))
+                .OrderByDescending(x => x.Wagons)
+                .ThenBy(x => x.Station, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        return result;
     }
 
     public async Task<MonthlyOrderDto> CreateAsync(CreateMonthlyOrderRequest request, Guid userId)
@@ -976,7 +1024,9 @@ public class OrderService(
     private static DateTime? ToUtcDate(DateTime? value) =>
         value.HasValue ? ToUtcDate(value.Value) : null;
 
-    private static MonthlyOrderDto ToDto(MonthlyOrder o)
+    private static MonthlyOrderDto ToDto(MonthlyOrder o) => ToDto(o, null);
+
+    private static MonthlyOrderDto ToDto(MonthlyOrder o, IReadOnlyDictionary<Guid, List<LineStationShipmentDto>>? shipments)
     {
         var lines = o.Lines
             .Where(l => l.MonthlyOrderId == o.Id)
@@ -1017,7 +1067,8 @@ public class OrderService(
                     Math.Max(0, orderedTons - l.FulfilledNetWeight),
                     l.ContractNumber ?? "",
                     l.ProductGrade ?? "",
-                    l.CustomerOrderNumber ?? ""
+                    l.CustomerOrderNumber ?? "",
+                    shipments is not null && shipments.TryGetValue(l.Id, out var lineShipments) ? lineShipments : null
                 );
             }).ToList(),
             lines.Sum(ResolveWagonCount),

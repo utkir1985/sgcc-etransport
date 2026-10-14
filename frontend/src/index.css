@@ -18089,3 +18089,35 @@ html.dark .order-progress-track,
   background: #0b1222;
   color: #cbd5e1;
 }
+
+/* Buyurtma varag‘i — yuk xatlaridan shakllangan stansiyalar kesimi */
+.order-sheet-station-shipments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-sheet-station-shipments li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.order-sheet-station-shipments__name {
+  font-weight: 500;
+}
+
+.order-sheet-station-shipments__meta {
+  margin-left: auto;
+  color: #64748b;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dark .order-sheet-station-shipments__meta {
+  color: #94a3b8;
+}

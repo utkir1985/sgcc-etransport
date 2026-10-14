@@ -18,7 +18,11 @@ public record MonthlyOrderLineDto(
     string QuantityUnit, string AccountingStatus, bool? AccountingReviewChecked,
     int FulfilledWagonCount = 0, decimal FulfilledNetWeight = 0,
     int RemainingWagonCount = 0, decimal RemainingTonCount = 0,
-    string ContractNumber = "", string ProductGrade = "", string CustomerOrderNumber = "");
+    string ContractNumber = "", string ProductGrade = "", string CustomerOrderNumber = "",
+    /// <summary>Yuk xatlari bo‘yicha shu qatordan jo‘natilgan vagonlar — stansiya kesimida.</summary>
+    List<LineStationShipmentDto>? StationShipments = null);
+
+public record LineStationShipmentDto(string Station, int Wagons, decimal NetTons);
 
 public record MonthlyOrderDto(
     Guid Id, string OrderNumber, string LogisticsType, string ContractNumber, string ProductType,

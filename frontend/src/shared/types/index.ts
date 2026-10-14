@@ -145,6 +145,8 @@ export interface MonthlyOrderLine {
   productGrade?: string;
   /** Hujjatdagi (kontragent) buyurtma raqami — tizimdagi hujjat raqamidan alohida */
   customerOrderNumber?: string;
+  /** Yuk xatlari bo‘yicha jo‘natilgan vagonlar — stansiya kesimida (serverda hisoblanadi) */
+  stationShipments?: Array<{ station: string; wagons: number; netTons: number }> | null;
 }
 
 export interface OrderAttachment {
