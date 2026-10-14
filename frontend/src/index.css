@@ -18391,3 +18391,123 @@ html.dark .order-progress-track,
 .flow__item--current .flow__node {
   box-shadow: 0 0 0 4px rgb(245 158 11 / 0.16);
 }
+
+/* ===================== Buyurtmalar sahifasi — moslashuvchanlik ===================== */
+
+/* Holat kartochkalari: joy yetmasa keyingi qatorga o‘tadi, matn qisqarib ketmaydi */
+.order-status-cards {
+  grid-template-columns: repeat(auto-fit, minmax(16.5rem, 1fr));
+}
+
+.order-status-card__text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1440px) {
+  .order-status-card {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .order-status-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .order-status-card__count {
+    padding: 4px 12px;
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 1180px) {
+  /* Tor ekranda izoh yashiriladi — nom va son to‘liq ko‘rinadi */
+  .order-status-card__text small {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .order-status-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .order-status-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .order-status-card__icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .order-status-card__count {
+    padding: 2px 10px;
+    font-size: 15px;
+  }
+}
+
+/* Filtrlar paneli: elementlar ustma-ust tushmaydi — sig‘masa keyingi qatorga o‘tadi */
+.marketing-orders-toolbar {
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+.marketing-orders-toolbar__filters {
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+
+.marketing-orders-toolbar__filters > * {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.marketing-orders-search {
+  flex: 1 1 16rem;
+  max-width: 22rem;
+}
+
+.marketing-orders-toolbar__right {
+  margin-left: auto;
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  .marketing-orders-search,
+  .marketing-orders-toolbar__filters > * {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .marketing-orders-toolbar__right {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .marketing-orders-toolbar__right > div {
+    flex-wrap: wrap;
+  }
+}
+
+/* Jadval: ustunlar siqilib bir-birining ustiga chiqmaydi — tor ekranda gorizontal aylantiriladi */
+.marketing-orders-table,
+.reestr-table.marketing-orders-table {
+  min-width: 74rem !important;
+}
+
+.thub-table-wrap:has(.marketing-orders-table) {
+  overflow-x: auto;
+}
+
+.marketing-orders-table tbody td {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
