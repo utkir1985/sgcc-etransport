@@ -164,10 +164,14 @@ export function OrderSheetView({
                             title={`Jo‘natildi: ${formatTons(lineDoneT)} t · Qoldiq: ${formatTons(lineRemT)} t${pctStr}`}
                           >
                             {isTonDone ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ To‘liq jo‘natildi</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                ✓ To‘liq jo‘natildi{!wagonPlan ? ` · ${line.fulfilledWagonCount ?? 0} ta` : ''}
+                              </span>
                             ) : (
                               <span className="font-semibold">
-                                <span className="text-emerald-600 dark:text-emerald-400">Jo‘natildi: {formatTons(lineDoneT)} t</span>
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  Jo‘natildi: {!wagonPlan ? `${line.fulfilledWagonCount ?? 0} ta · ` : ''}{formatTons(lineDoneT)} t
+                                </span>
                                 <span className="text-slate-400"> · </span>
                                 <span className="text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                               </span>
@@ -216,7 +220,7 @@ export function OrderSheetView({
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
                       {wagonPlan
                         ? `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`
-                        : `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} vagon`}
+                        : `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`}
                     </div>
                   )}
                 </td>
@@ -334,10 +338,14 @@ export function OrderSheetView({
                             title={`Jo‘natildi: ${formatTons(lineDoneT)} t · Qoldiq: ${formatTons(lineRemT)} t${pctStr}`}
                           >
                             {isTonDone ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ To‘liq jo‘natildi</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                ✓ To‘liq jo‘natildi{!wagonPlan ? ` · ${line.fulfilledWagonCount ?? 0} ta` : ''}
+                              </span>
                             ) : (
                               <span className="font-semibold">
-                                <span className="text-emerald-600 dark:text-emerald-400">Jo‘natildi: {formatTons(lineDoneT)} t</span>
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  Jo‘natildi: {!wagonPlan ? `${line.fulfilledWagonCount ?? 0} ta · ` : ''}{formatTons(lineDoneT)} t
+                                </span>
                                 <span className="text-slate-400"> · </span>
                                 <span className="text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                               </span>
@@ -386,7 +394,7 @@ export function OrderSheetView({
                     <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
                       {wagonPlan
                         ? `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`
-                        : `Yuklandi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} vagon`}
+                        : `Jo‘natildi: ${lines.reduce((s, l) => s + (l.fulfilledWagonCount ?? 0), 0)} ta`}
                     </div>
                   )}
                 </td>
