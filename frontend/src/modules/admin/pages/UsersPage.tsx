@@ -4,8 +4,6 @@ import * as XLSX from 'xlsx';
 import {
   ArrowDown,
   ArrowUp,
-  BriefcaseBusiness,
-  Building2,
   Calculator,
   ChevronDown,
   ChevronsUpDown,
@@ -14,7 +12,6 @@ import {
   EyeOff,
   FileSpreadsheet,
   KeyRound,
-  LockKeyhole,
   Megaphone,
   Pencil,
   Plus,
@@ -884,30 +881,33 @@ export default function UsersPage() {
       {(action === 'create' || action === 'edit') && (
         <div className="confirm-dialog-root" role="presentation">
           <button type="button" className="confirm-dialog-backdrop" aria-label="Yopish" onClick={closeDialog} />
-          <div className="confirm-dialog admin-user-dialog" role="dialog" aria-modal="true">
+          <div className="confirm-dialog admin-user-dialog users-dialog" role="dialog" aria-modal="true">
             <button type="button" className="confirm-dialog__close" aria-label="Yopish" onClick={closeDialog}>
               <X className="w-4 h-4" strokeWidth={1.75} />
             </button>
             <div className="confirm-dialog__header">
               <div className="confirm-dialog__icon">
-                <UserPlus className="w-5 h-5" strokeWidth={1.75} />
+                {action === 'create'
+                  ? <UserPlus className="w-5 h-5" strokeWidth={1.75} />
+                  : <UserRound className="w-5 h-5" strokeWidth={1.75} />}
               </div>
-              <h2 className="confirm-dialog__title">
-                {action === 'create' ? 'Foydalanuvchi yaratish' : 'Foydalanuvchini tahrirlash'}
-              </h2>
+              <div className="min-w-0">
+                <h2 className="confirm-dialog__title">
+                  {action === 'create' ? 'Foydalanuvchi yaratish' : 'Foydalanuvchini tahrirlash'}
+                </h2>
+                <p className="users-dialog__subtitle">
+                  {action === 'create' ? 'Yangi hisob ma’lumotlarini kiriting' : (selected?.fullName || selected?.username)}
+                </p>
+              </div>
             </div>
 
             <form className="admin-user-form" onSubmit={submitForm}>
+              <div className="users-dialog__body">
               <section className="admin-user-section">
-                <div className="admin-user-section__title">
-                  <strong>Shaxsiy ma’lumotlar</strong>
-                  <span aria-hidden />
-                </div>
                 <div className="admin-user-section__grid admin-user-section__grid--identity">
                   <label className="admin-field">
                     <span>Familiya</span>
                     <div className="admin-field-control">
-                      <UserRound aria-hidden />
                       <input
                         value={form.lastName}
                         onChange={e => updateNameField('lastName', e.target.value)}
@@ -918,7 +918,6 @@ export default function UsersPage() {
                   <label className="admin-field">
                     <span>Ism</span>
                     <div className="admin-field-control">
-                      <UserRound aria-hidden />
                       <input
                         value={form.firstName}
                         onChange={e => updateNameField('firstName', e.target.value)}
@@ -929,7 +928,6 @@ export default function UsersPage() {
                   <label className="admin-field">
                     <span>Otasining ismi</span>
                     <div className="admin-field-control">
-                      <UserRound aria-hidden />
                       <input
                         value={form.middleName}
                         onChange={e => updateNameField('middleName', e.target.value)}
@@ -941,15 +939,10 @@ export default function UsersPage() {
               </section>
 
               <section className="admin-user-section">
-                <div className="admin-user-section__title">
-                  <strong>Tizim ma’lumotlari</strong>
-                  <span aria-hidden />
-                </div>
                 <div className="admin-user-section__grid admin-user-section__grid--system">
                   <label className="admin-field">
-                    <span>Login <em>*</em></span>
+                    <span><em>*</em> Login</span>
                     <div className="admin-field-control">
-                      <UserRound aria-hidden />
                       <input
                         required
                         autoComplete="off"
@@ -960,21 +953,21 @@ export default function UsersPage() {
                     </div>
                   </label>
                   <label className="admin-field">
-                    <span>{action === 'create' ? 'Parol' : 'Yangi parol'} {action === 'create' ? <em>*</em> : null}</span>
+                    <span>{action === 'create' ? <><em>*</em> Parol</> : 'Yangi parol'}</span>
                     <div className="admin-field-control admin-field-control--password">
-                      <LockKeyhole aria-hidden />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required={action === 'create'}
                         autoComplete="new-password"
                         value={form.password}
                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                        placeholder={action === 'create' ? 'Parol kiriting' : 'O‘zgartirilmasa bo‘sh qoldiring'}
+                        placeholder="Parol"
                       />
                       <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Parolni yashirish' : 'Parolni ko‘rsatish'}>
                         {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
                       </button>
                     </div>
+                    {action === 'edit' && <small className="users-dialog__hint">Bo‘sh qoldirilsa — o‘zgarmaydi</small>}
                     <label className="flex items-center gap-2 pt-1.5 pb-0.5 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -988,7 +981,7 @@ export default function UsersPage() {
                     </label>
                   </label>
                   <label className="admin-field">
-                    <span>Rol <em>*</em></span>
+                    <span><em>*</em> Rol</span>
                     <div className="relative">
                       <button
                         ref={roleButtonRef}
@@ -1002,10 +995,6 @@ export default function UsersPage() {
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          {(() => {
-                            const SelectedRoleIcon = (form.role && ROLE_META[form.role]?.icon) || UserPlus;
-                            return <SelectedRoleIcon aria-hidden className="w-4 h-4 text-slate-500 shrink-0" />;
-                          })()}
                           <span
                             className={`text-sm leading-snug break-words flex-1 ${
                               form.role
@@ -1054,15 +1043,10 @@ export default function UsersPage() {
               </section>
 
               <section className="admin-user-section">
-                <div className="admin-user-section__title">
-                  <strong>Ish ma’lumotlari</strong>
-                  <span aria-hidden />
-                </div>
                 <div className="admin-user-section__grid admin-user-section__grid--work">
                   <label className="admin-field">
-                    <span>Bo‘limning to‘liq nomi <em>*</em></span>
+                    <span><em>*</em> Bo‘limning to‘liq nomi</span>
                     <div className="admin-field-control bg-slate-50 dark:bg-slate-900/60 min-h-[3.25rem] h-auto py-2 px-3 flex items-center gap-2.5">
-                      <Building2 aria-hidden className="w-4 h-4 text-slate-400 shrink-0" />
                       <span className={`text-sm leading-snug break-words flex-1 select-none ${
                         form.department ? 'font-medium text-slate-700 dark:text-slate-200' : 'font-normal text-slate-400'
                       }`}>
@@ -1072,7 +1056,7 @@ export default function UsersPage() {
                   </label>
                   <label className="admin-field">
                     <div className="flex items-center justify-between">
-                      <span>Lavozimi / mutaxassisligi <em>*</em></span>
+                      <span><em>*</em> Lavozimi / mutaxassisligi</span>
                       {form.department && (
                         <button
                           type="button"
@@ -1091,7 +1075,6 @@ export default function UsersPage() {
                     </div>
                     {isCustomPosition ? (
                       <div className="admin-field-control min-h-[3.25rem] h-auto py-2 px-3 flex items-center gap-2.5">
-                        <BriefcaseBusiness aria-hidden className="w-4 h-4 text-slate-400 shrink-0" />
                         <textarea
                           rows={form.position.length > 30 ? 2 : 1}
                           required
@@ -1119,8 +1102,7 @@ export default function UsersPage() {
                           } ${isPositionOpen ? 'border-blue-500 ring-2 ring-blue-500/15' : ''}`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <BriefcaseBusiness aria-hidden className="w-4 h-4 text-slate-400 shrink-0" />
-                            <span
+                                <span
                               className={`text-sm leading-snug break-words flex-1 ${
                                 form.position
                                   ? 'text-slate-800 dark:text-slate-100 font-medium'
@@ -1179,6 +1161,7 @@ export default function UsersPage() {
               </section>
 
               {message && <p className="confirm-dialog__error">{message}</p>}
+              </div>
 
               <div className="confirm-dialog__actions">
                 <button type="button" className="btn-secondary confirm-dialog__btn" onClick={closeDialog}>

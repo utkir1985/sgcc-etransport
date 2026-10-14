@@ -17284,3 +17284,144 @@ html.dark .order-progress-track,
   white-space: nowrap !important;
   max-width: 100% !important;
 }
+
+/* Foydalanuvchi yaratish/tahrirlash oynasi — KPI tizimi andozasi */
+.admin-user-dialog.users-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100vw - 1.5rem, 52rem) !important;
+  max-width: 52rem !important;
+  max-height: calc(100vh - 1.5rem);
+  overflow: hidden;
+  padding: 0;
+  border-color: #e2e8f0;
+  border-radius: 20px;
+}
+
+.users-dialog > .confirm-dialog__close {
+  top: 20px;
+  right: 18px;
+}
+
+.users-dialog > .confirm-dialog__header {
+  flex: 0 0 auto;
+  gap: 14px;
+  padding: 20px 60px 18px 24px;
+  border-bottom: 1px solid #e8eef5;
+  background: linear-gradient(180deg, #f2f7fe 0%, #ffffff 100%);
+}
+
+.users-dialog .confirm-dialog__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #e6effc;
+}
+
+.users-dialog .confirm-dialog__title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.users-dialog__subtitle {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-dialog.users-dialog .admin-user-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  margin-top: 0;
+}
+
+.users-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  padding: 22px 24px 24px;
+}
+
+.users-dialog .admin-user-section__grid {
+  gap: 18px 16px;
+}
+
+.users-dialog .admin-field {
+  gap: 8px;
+}
+
+.users-dialog .admin-field > span,
+.users-dialog .admin-field > div:not(.admin-field-control):not(.relative) > span {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.users-dialog .admin-field em {
+  margin: 0 0.2rem 0 0;
+  color: #ef4444;
+  font-style: normal;
+}
+
+.users-dialog .admin-field-control {
+  min-height: 48px;
+  border-color: #d6dde6;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.users-dialog .admin-field-control input {
+  height: 46px;
+  padding: 0 14px !important;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.users-dialog .admin-field-control input::placeholder {
+  color: #94a3b8;
+}
+
+.users-dialog__hint {
+  margin-top: -2px;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.admin-user-dialog.users-dialog .confirm-dialog__actions {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #e8eef5;
+  background: #f8fafc;
+}
+
+.users-dialog .confirm-dialog__btn {
+  min-width: 124px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.dark .admin-user-dialog.users-dialog { border-color: #334155; }
+.dark .users-dialog > .confirm-dialog__header { border-color: #1e293b; background: linear-gradient(180deg, #13203a 0%, #0f172a 100%); }
+.dark .users-dialog .confirm-dialog__icon { background: rgb(59 130 246 / 0.15); }
+.dark .users-dialog__subtitle { color: #94a3b8; }
+.dark .users-dialog .admin-field > span,
+.dark .users-dialog .admin-field > div:not(.admin-field-control):not(.relative) > span { color: #e2e8f0; }
+.dark .users-dialog .admin-field-control { border-color: #334155; }
+.dark .users-dialog .admin-field-control input { color: #f1f5f9; }
+.dark .admin-user-dialog.users-dialog .confirm-dialog__actions { border-color: #1e293b; background: #0b1222; }
+
+@media (max-width: 639px) {
+  .users-dialog > .confirm-dialog__header { padding: 16px 52px 14px 16px; }
+  .users-dialog__body { padding: 16px; }
+  .admin-user-dialog.users-dialog .confirm-dialog__actions { padding: 14px 16px; }
+}
