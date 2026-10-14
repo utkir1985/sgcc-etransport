@@ -25,10 +25,10 @@ function renderDateTimeCell(iso?: string | null) {
   }
   const [d, t] = formatted.split(" ");
   return (
-    <div className="flex flex-col items-center leading-tight">
-      <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{d}</span>
-      <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500">{t}</span>
-    </div>
+    <span className="whitespace-nowrap tabular-nums">
+      <span className="text-xs text-slate-700 dark:text-slate-300">{d}</span>{' '}
+      <span className="text-[11px] text-slate-400 dark:text-slate-500">{t}</span>
+    </span>
   );
 }
 
@@ -128,25 +128,25 @@ interface OrderListProps {
 export type OrderListVariant = 'all' | 'faol' | 'tasdiq' | 'yakun';
 
 type OrderColumnKey =
-  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'fulfil' | 'shipped' | 'stage'
+  | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'done' | 'remain' | 'shipped' | 'stage'
   | 'contract' | 'created' | 'approved' | 'status' | 'doc' | 'actions';
 
 /** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
 const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
-  num: 3, order: 10, product: 15, wagons: 5.5, tons: 6, fulfil: 13, shipped: 12, stage: 15,
-  contract: 9, created: 9, approved: 9, status: 11, doc: 8, actions: 8,
+  num: 3, order: 10, product: 15, wagons: 6, tons: 7.5, done: 11, remain: 8, shipped: 12, stage: 15,
+  contract: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
 };
 
 function orderColumns(variant: OrderListVariant, showActions: boolean): OrderColumnKey[] {
   switch (variant) {
     case 'faol':
-      return ['num', 'order', 'product', 'wagons', 'tons', 'fulfil', 'contract', 'created', 'approved', 'doc'];
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'created', 'approved', 'doc'];
     case 'tasdiq':
       return ['num', 'order', 'product', 'tons', 'stage', 'contract', 'created', 'doc'];
     case 'yakun':
       return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'contract', 'created', 'approved', 'doc'];
     default:
-      return ['num', 'order', 'product', 'wagons', 'tons', 'fulfil', 'contract', 'created', 'approved', 'status', 'doc',
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'contract', 'created', 'approved', 'status', 'doc',
         ...(showActions ? ['actions' as const] : [])];
   }
 }
@@ -192,18 +192,20 @@ export function OrderList({
   const columns = orderColumns(variant, showActions);
   const has = (key: OrderColumnKey) => columns.includes(key);
   const weightTotal = columns.reduce((sum, key) => sum + COLUMN_WEIGHT[key], 0);
-  const COLUMN_HEADER: Record<OrderColumnKey, { label: ReactNode; className: string }> = {
+  // Sarlavhalar bir qatorda — qisqa nomlar, to‘liq ma’no title'da
+  const COLUMN_HEADER: Record<OrderColumnKey, { label: ReactNode; className: string; title?: string }> = {
     num: { label: '№', className: 'text-center' },
     order: { label: 'Buyurtma', className: 'text-center' },
     product: { label: 'Mahsulot', className: 'text-left' },
-    wagons: { label: <>Yuklangan<br />vagon</>, className: 'text-center leading-tight' },
-    tons: { label: <>Og‘irligi<br />(t)</>, className: 'text-center leading-tight' },
-    fulfil: { label: <>Bajarilish /<br />Qoldiq</>, className: 'text-center leading-tight' },
+    wagons: { label: 'Vagon', className: 'text-center', title: 'Yuklangan vagonlar soni' },
+    tons: { label: 'Og‘irlik (t)', className: 'text-center', title: 'Buyurtma og‘irligi, tonna' },
+    done: { label: 'Bajarilish', className: 'text-center', title: 'Yuklangan og‘irlik va foiz' },
+    remain: { label: 'Qoldiq', className: 'text-center', title: 'Yuklanishi qolgan og‘irlik' },
     shipped: { label: 'Jo‘natildi', className: 'text-center' },
     stage: { label: 'Kimda turibdi', className: 'text-center' },
     contract: { label: 'Shartnoma', className: 'text-center' },
-    created: { label: <>Yaratilgan<br />vaqti</>, className: 'text-center leading-tight' },
-    approved: { label: <>Tasdiqlangan<br />vaqti</>, className: 'text-center leading-tight' },
+    created: { label: 'Yaratilgan', className: 'text-center', title: 'Yaratilgan sana va vaqt' },
+    approved: { label: 'Tasdiqlangan', className: 'text-center', title: 'Tasdiqlangan sana va vaqt' },
     status: { label: 'Holat', className: 'text-center' },
     doc: { label: 'Hujjat', className: 'text-center' },
     actions: { label: 'Amallar', className: 'text-center' },
@@ -221,7 +223,7 @@ export function OrderList({
           <thead>
             <tr>
               {columns.map(key => (
-                <th key={key} className={COLUMN_HEADER[key].className}>{COLUMN_HEADER[key].label}</th>
+                <th key={key} className={COLUMN_HEADER[key].className} title={COLUMN_HEADER[key].title}>{COLUMN_HEADER[key].label}</th>
               ))}
             </tr>
           </thead>
@@ -295,42 +297,43 @@ export function OrderList({
                     </td>
                   )}
 
-                  {/* Bajarilish / Qoldiq */}
-                  {has('fulfil') && (
-                  <td className="whitespace-nowrap text-[11px] text-center px-1.5">
-                    {isCompleted ? (
-                      <div className="flex items-center justify-center">
+                  {/* Bajarilish: yuklangan og‘irlik + foiz */}
+                  {has('done') && (
+                    <td className="text-center px-1.5">
+                      {isCompleted ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                          <span>Ijro holati: 100%</span>
+                          <span>100%</span>
                         </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-0.5 min-w-0 mx-auto">
-                        <div className="flex flex-col items-center text-center text-xs leading-tight font-mono">
-                          <span className="font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                            {formatTons(fulfillment.remainingTons)} t qoldi
+                      ) : (
+                        <div className="flex flex-col items-center gap-1 min-w-0">
+                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap tabular-nums">
+                            {formatTons(fulfillment.fulfilledTons)} t · {tonPct}%
                           </span>
-                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                            {formatTons(fulfillment.fulfilledTons)} t yuklandi
-                          </span>
+                          <div className="w-full max-w-[7.5rem] h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${tonPct}%` }} />
+                          </div>
                         </div>
-                        <div className="w-full max-w-[7.5rem] h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-0.5">
-                          <div
-                            className="h-full bg-blue-500 rounded-full transition-all"
-                            style={{
-                              width: `${tonPct}%`
-                            }}
-                          />
+                      )}
+                    </td>
+                  )}
+
+                  {/* Qoldiq */}
+                  {has('remain') && (
+                    <td className="text-center px-1.5">
+                      {isCompleted ? (
+                        <span className="text-xs text-slate-400">—</span>
+                      ) : (
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap tabular-nums">
+                          {formatTons(fulfillment.remainingTons)} t
+                        </span>
+                      )}
+                      {!has('status') && isOrderLoadingOverdue(order) ? (
+                        <div className="mt-1">
+                          <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
                         </div>
-                      </div>
-                    )}
-                    {!has('status') && isOrderLoadingOverdue(order) ? (
-                      <div className="mt-1">
-                        <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
-                      </div>
-                    ) : null}
-                  </td>
+                      ) : null}
+                    </td>
                   )}
 
                   <td className="text-xs text-center leading-snug break-words whitespace-normal px-1" title={order.contractNumber || '—'}>
