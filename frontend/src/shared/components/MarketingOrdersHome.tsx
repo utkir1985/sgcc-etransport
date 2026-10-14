@@ -108,7 +108,7 @@ export function MarketingOrdersHome({
       options={productOptions}
       onChange={onFilterProductChange}
       widthLabel={RAILWAY_PRODUCT_TYPE_WIDTH_LABEL}
-      fieldLabel={isHubPanel ? '' : 'Mahsulot turi'}
+      fieldLabel=""
     />
   );
 
@@ -120,30 +120,32 @@ export function MarketingOrdersHome({
             <h1 className="marketing-orders-home__title">{panelTitle || title}</h1>
           </header>
         ) : null}
-        <div className="marketing-orders-toolbar">
-          <div className="marketing-orders-toolbar__filters">
-            {productFilter}
-            {showPeriodField ? (
-              <div className="marketing-orders-toolbar__field marketing-orders-toolbar__field--period">
-                {periodControl}
+        <div className="docs-panel">
+          <div className="marketing-orders-toolbar docs-panel__toolbar">
+            <div className="marketing-orders-toolbar__filters">
+              {productFilter}
+              {showPeriodField ? (
+                <div className="marketing-orders-toolbar__field marketing-orders-toolbar__field--period">
+                  {periodControl}
+                </div>
+              ) : null}
+            </div>
+            {(toolbarActions || (canCreate && onCreate)) ? (
+              <div className="marketing-orders-toolbar__right">
+                <div className="flex flex-nowrap items-center gap-2">
+                  {toolbarActions}
+                  {canCreate && onCreate ? (
+                    <button type="button" onClick={onCreate} className="btn-primary marketing-orders-home__create whitespace-nowrap">
+                      <Plus className="w-4 h-4" strokeWidth={2} />
+                      {createLabel}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>
-          {(toolbarActions || (canCreate && onCreate)) ? (
-            <div className="marketing-orders-toolbar__right">
-              <div className="flex flex-nowrap items-center gap-2">
-                {toolbarActions}
-                {canCreate && onCreate ? (
-                  <button type="button" onClick={onCreate} className="btn-primary marketing-orders-home__create whitespace-nowrap">
-                    <Plus className="w-4 h-4" strokeWidth={2} />
-                    {createLabel}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
+          <div className="marketing-orders-home__body">{children}</div>
         </div>
-        <div className="marketing-orders-home__body">{children}</div>
       </div>
     );
   }

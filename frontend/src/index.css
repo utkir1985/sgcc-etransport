@@ -17570,3 +17570,51 @@ html.dark .order-progress-track,
     padding: 12px;
   }
 }
+
+/* Buyurtmalar jadvali — holat, mahsulot va pagination tartibi */
+.thub-table-wrap:has(.marketing-orders-table) {
+  max-height: none;
+}
+
+.reestr-table.marketing-orders-table tbody td:nth-child(3) {
+  text-align: left !important;
+}
+
+.marketing-orders-table__status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.marketing-orders-table .order-status-badge {
+  max-width: 100%;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: center;
+  white-space: normal;
+}
+
+.marketing-orders-table__overdue {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  background: #fff1f2;
+  padding: 1px 6px;
+  color: #be123c;
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dark .marketing-orders-table__overdue {
+  border-color: rgb(244 63 94 / 0.4);
+  background: rgb(244 63 94 / 0.12);
+  color: #fda4af;
+}
+
+.marketing-orders-pagination {
+  margin-top: 16px;
+}

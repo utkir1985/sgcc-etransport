@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronRight, X, Pencil, Trash2, MapPin, CheckCircle2 } from 'lucide-react';
 import { ProductTypeIcon } from './ProductTypeIcon';
 import { OrderStatusBadge, orderStatusModifier } from './OrderStatusBadge';
@@ -12,6 +12,7 @@ import type { MonthlyOrder } from '../types';
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/dates';
 import { summarizeOrderQuantities } from '../utils/orderQuantity';
 import { computeOrderFulfillment } from './OrderFulfillmentStatus';
+import { TablePagination } from './TablePagination';
 
 function getOrderStationsTotal(order: MonthlyOrder): number {
   const o = order as any;
@@ -24,6 +25,12 @@ function getOrderStationsTotal(order: MonthlyOrder): number {
   const rawStations = (order.lines ?? []).map(l => l.destinationStation?.trim()).filter(Boolean) as string[];
   const uniqueStations = Array.from(new Set(rawStations));
   return rawStations.length || uniqueStations.length;
+}
+
+function isPolyethyleneOverdue(order: MonthlyOrder): boolean {
+  const product = order.productType?.toLowerCase() ?? '';
+  if (!product.includes('polietilen') && !product.includes('полиэтилен')) return false;
+  return order.deadline ? new Date(order.deadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
 }
 
 function renderDateTimeCell(iso?: string | null) {
@@ -102,15 +109,9 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
             )}
           </span>
           <OrderStatusBadge status={order.status} />
-          {(order.productType?.toLowerCase().includes('polietilen') || order.productType?.toLowerCase().includes('полиэтилен')) && (() => {
-            const isOverdue = order.deadline ? new Date(order.deadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
-            if (!isOverdue) return null;
-            return (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
-                ⛔ Srok o‘tgan
-              </span>
-            );
-          })()}
+          {isPolyethyleneOverdue(order) ? (
+            <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
+          ) : null}
         </div>
         <p className="marketing-order-row__meta">{meta}</p>
       </div>
@@ -157,8 +158,20 @@ export function OrderList({
   canDeleteOrder,
 }: OrderListProps) {
   const [documentOrder, setDocumentOrder] = useState<MonthlyOrder | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Filtr o‘zgarib ro‘yxat qisqarsa, mavjud bo‘lmagan sahifada qolib ketmaslik uchun
+  useEffect(() => {
+    setPage(1);
+  }, [orders.length]);
 
   if (orders.length === 0) return null;
+
+  const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const pageOrders = orders.slice(startIndex, startIndex + pageSize);
 
   const showActions = !!(onEdit || onDelete);
 
@@ -173,13 +186,13 @@ export function OrderList({
               <col style={{ width: '11.0%' }} />
               <col style={{ width: '4.5%' }} />
               <col style={{ width: '5.0%' }} />
-              <col style={{ width: '13.5%' }} />
+              <col style={{ width: '12.5%' }} />
               <col style={{ width: '10.0%' }} />
               <col style={{ width: '6.5%' }} />
-              <col style={{ width: '8.5%' }} />
-              <col style={{ width: '9.0%' }} />
               <col style={{ width: '7.5%' }} />
-              <col style={{ width: '7.0%' }} />
+              <col style={{ width: '7.5%' }} />
+              <col style={{ width: '10.5%' }} />
+              <col style={{ width: '7.5%' }} />
               <col style={{ width: '6.5%' }} />
             </colgroup>
           ) : (
@@ -189,13 +202,13 @@ export function OrderList({
               <col style={{ width: '12.0%' }} />
               <col style={{ width: '5.0%' }} />
               <col style={{ width: '5.5%' }} />
-              <col style={{ width: '14.5%' }} />
+              <col style={{ width: '13.5%' }} />
               <col style={{ width: '11.0%' }} />
               <col style={{ width: '7.0%' }} />
-              <col style={{ width: '9.0%' }} />
-              <col style={{ width: '9.5%' }} />
               <col style={{ width: '8.0%' }} />
-              <col style={{ width: '6.5%' }} />
+              <col style={{ width: '8.0%' }} />
+              <col style={{ width: '11.0%' }} />
+              <col style={{ width: '7.0%' }} />
             </colgroup>
           )}
           <thead>
@@ -216,7 +229,7 @@ export function OrderList({
             </tr>
           </thead>
           <tbody>
-            {orders.map((order, index) => {
+            {pageOrders.map((order, index) => {
               const { wagonTotal, tonTotal } = summarizeOrderQuantities(order.lines);
               const productLabel = getProductLabel(order.productType, logisticsType);
               const active = activeOrderId === order.id;
@@ -244,7 +257,7 @@ export function OrderList({
                     }
                   }}
                 >
-                  <td className="thub-mono reestr-num text-xs text-center">{index + 1}</td>
+                  <td className="thub-mono reestr-num text-xs text-center">{startIndex + index + 1}</td>
                   <td className="whitespace-nowrap font-mono font-bold text-xs text-center">
                     <div className="party-cell-with-indicator">
                       <span className="thub-mono text-xs">{order.orderNumber}</span>
@@ -314,7 +327,7 @@ export function OrderList({
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-0.5 min-w-0 mx-auto">
                         <div className="flex flex-col items-center text-center text-[11px] leading-tight font-mono">
-                          <span className="font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                          <span className="font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                             {fulfillment.remainingWagons} ta ijroda
                           </span>
                           <span className="font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
@@ -342,16 +355,14 @@ export function OrderList({
                   <td className="whitespace-nowrap text-center text-xs">
                     {renderDateTimeCell(approvedAt)}
                   </td>
-                  <td className="text-center text-xs"><OrderStatusBadge status={order.status} />
-          {(order.productType?.toLowerCase().includes('polietilen') || order.productType?.toLowerCase().includes('полиэтилен')) && (() => {
-            const isOverdue = order.deadline ? new Date(order.deadline).getTime() < new Date().setHours(0, 0, 0, 0) : false;
-            if (!isOverdue) return null;
-            return (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
-                ⛔ Srok o‘tgan
-              </span>
-            );
-          })()}</td>
+                  <td className="text-center text-xs">
+                    <div className="marketing-orders-table__status">
+                      <OrderStatusBadge status={order.status} />
+                      {isPolyethyleneOverdue(order) ? (
+                        <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
+                      ) : null}
+                    </div>
+                  </td>
                   <td onClick={event => event.stopPropagation()} className="text-center px-1">
                     <DocumentChipButton
                       onClick={() => setDocumentOrder(order)}
@@ -365,22 +376,22 @@ export function OrderList({
                           <button
                             type="button"
                             onClick={() => onEdit(order)}
-                            className="p-1.5 text-blue-600 dark:text-blue-400 bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 rounded-lg transition-all hover:scale-110 shadow-2xs"
+                            className="users-action-btn users-action-btn--blue"
                             title="Tahrirlash"
                             aria-label="Tahrirlash"
                           >
-                            <Pencil className="w-4 h-4 stroke-[2]" />
+                            <Pencil className="w-[15px] h-[15px]" strokeWidth={1.9} />
                           </button>
                         )}
                         {canDeleteOrder?.(order) && onDelete && (
                           <button
                             type="button"
                             onClick={() => onDelete(order)}
-                            className="p-1.5 text-rose-600 dark:text-rose-400 bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 rounded-lg transition-all hover:scale-110 shadow-2xs"
+                            className="users-action-btn users-action-btn--rose"
                             title="O'chirish"
                             aria-label="O'chirish"
                           >
-                            <Trash2 className="w-4 h-4 stroke-[2]" />
+                            <Trash2 className="w-[15px] h-[15px]" strokeWidth={1.9} />
                           </button>
                         )}
                       </div>
@@ -394,7 +405,7 @@ export function OrderList({
       </div>
 
       <div className="marketing-orders-list marketing-orders-list--mobile" role="list">
-        {orders.map(order => (
+        {pageOrders.map(order => (
           <OrderListRow
             key={order.id}
             order={order}
@@ -406,6 +417,18 @@ export function OrderList({
           />
         ))}
       </div>
+
+      <TablePagination
+        total={orders.length}
+        page={currentPage}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        unitLabel="buyurtma"
+        pageSizeOptions={[10, 20, 50]}
+        className="marketing-orders-pagination"
+      />
 
       {documentOrder ? (
         <div className="yx-preview-root" role="dialog" aria-modal="true" aria-label="Buyurtma hujjati">
