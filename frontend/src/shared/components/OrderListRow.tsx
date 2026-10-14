@@ -297,35 +297,32 @@ export function OrderList({
                     </td>
                   )}
 
-                  {/* Bajarilish: yuklangan og‘irlik + foiz */}
+                  {/* Bajarilish: foiz + yuklangan og‘irlik + progress */}
                   {has('done') && (
-                    <td className="text-center px-1.5">
-                      {isCompleted ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                          <span>100%</span>
-                        </span>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 min-w-0">
-                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap tabular-nums">
-                            {formatTons(fulfillment.fulfilledTons)} t · {tonPct}%
-                          </span>
-                          <div className="w-full max-w-[7.5rem] h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${tonPct}%` }} />
-                          </div>
+                    <td className="px-3">
+                      <div className={`order-progress${isCompleted ? ' order-progress--done' : tonPct >= 75 ? ' order-progress--high' : ''}`}>
+                        <div className="order-progress__top">
+                          <span className="order-progress__pct">{isCompleted ? 100 : tonPct}%</span>
+                          <span className="order-progress__tons">{formatTons(fulfillment.fulfilledTons)} t</span>
                         </div>
-                      )}
+                        <div className="order-progress__bar">
+                          <i style={{ width: `${isCompleted ? 100 : tonPct}%` }} />
+                        </div>
+                      </div>
                     </td>
                   )}
 
                   {/* Qoldiq */}
                   {has('remain') && (
-                    <td className="text-center px-1.5">
+                    <td className="text-center px-2">
                       {isCompleted ? (
-                        <span className="text-xs text-slate-400">—</span>
+                        <span className="order-remain order-remain--done">
+                          <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
+                          Yopildi
+                        </span>
                       ) : (
-                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap tabular-nums">
-                          {formatTons(fulfillment.remainingTons)} t
+                        <span className="order-remain">
+                          {formatTons(fulfillment.remainingTons)}<small>t</small>
                         </span>
                       )}
                       {!has('status') && isOrderLoadingOverdue(order) ? (

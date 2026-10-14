@@ -17830,3 +17830,99 @@ html.dark .order-progress-track,
 .marketing-orders-search {
   min-width: 16rem;
 }
+
+/* Buyurtmalar jadvali — kengroq qatorlar */
+.marketing-orders-table tbody td,
+.reestr-table.marketing-orders-table tbody td {
+  height: 3.75rem !important;
+  padding-top: 0.7rem !important;
+  padding-bottom: 0.7rem !important;
+}
+
+/* Bajarilish: foiz, yuklangan og‘irlik va progress chizig‘i */
+.order-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.order-progress__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.marketing-orders-table .order-progress__pct {
+  color: #2563eb;
+  font-size: 14px !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.marketing-orders-table .order-progress__tons {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-progress__bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.order-progress__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #3b82f6;
+  transition: width 200ms ease;
+}
+
+.order-progress--high .order-progress__pct { color: #0d9488; }
+.order-progress--high .order-progress__bar i { background: #14b8a6; }
+.order-progress--done .order-progress__pct { color: #16a34a; }
+.order-progress--done .order-progress__bar i { background: #22c55e; }
+
+/* Qoldiq: yumshoq sariq belgi; yopilgan bo‘lsa — yashil */
+.order-remain {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  border-radius: 8px;
+  background: #fff7ed;
+  padding: 4px 10px;
+  color: #c2410c;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.marketing-orders-table .order-remain small {
+  color: #ea580c;
+  font-size: 12px !important;
+  font-weight: 600;
+}
+
+.order-remain--done {
+  align-items: center;
+  gap: 4px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.dark .order-progress__bar { background: #334155; }
+.dark .marketing-orders-table .order-progress__pct { color: #60a5fa; }
+.dark .marketing-orders-table .order-progress__tons { color: #94a3b8; }
+.dark .order-progress--high .order-progress__pct { color: #2dd4bf; }
+.dark .order-progress--done .order-progress__pct { color: #4ade80; }
+.dark .order-remain { background: rgb(234 88 12 / 0.15); color: #fdba74; }
+.dark .marketing-orders-table .order-remain small { color: #fb923c; }
+.dark .order-remain--done { background: rgb(34 197 94 / 0.15); color: #86efac; }
