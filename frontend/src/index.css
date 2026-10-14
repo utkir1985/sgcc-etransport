@@ -17518,3 +17518,42 @@ html.dark .order-progress-track,
   .users-dialog__body { padding: 16px; }
   .admin-user-dialog.users-dialog .confirm-dialog__actions { padding: 14px 16px; }
 }
+
+/* Yuk xatlari, kiritish xizmat xatlari, dalolatnomalar — KPI andozasidagi umumiy panel */
+.docs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 20px 20px;
+  border: 1px solid #e6edf5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 0.05);
+}
+
+.docs-panel > .thub__toolbar {
+  padding: 0 0 16px;
+  border: 0;
+  border-bottom: 1px solid #edf1f6;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.docs-panel .thub-table-wrap,
+.docs-panel .reestr-table-wrap {
+  border-color: #dbe5f0;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.dark .docs-panel { background: #0f172a; border-color: #1e293b; box-shadow: none; }
+.dark .docs-panel > .thub__toolbar { border-bottom-color: #1e293b; }
+.dark .docs-panel .thub-table-wrap,
+.dark .docs-panel .reestr-table-wrap { border-color: #334155; }
+
+@media (max-width: 639px) {
+  .docs-panel {
+    padding: 12px;
+  }
+}

@@ -2935,7 +2935,7 @@ export function EmptyWagonsPage() {
           </div>
         </>
       ) : menuEntryLetters ? (
-        <div className="thub reestr">
+        <div className="thub reestr docs-panel">
           <DocsHubToolbar
             search={hub.search}
             onSearchChange={hub.setSearch}
@@ -2989,7 +2989,7 @@ export function EmptyWagonsPage() {
           />
         </div>
       ) : menuDefectArchive ? (
-        <div className="thub reestr">
+        <div className="thub reestr docs-panel">
           <DocsHubToolbar
             search={hub.search}
             onSearchChange={hub.setSearch}

@@ -4899,7 +4899,7 @@ export default function RegistryPage() {
         ) : (
           <div className="space-y-3">
             {!isRegistryWorkHub ? (
-              <>
+              <div className="docs-panel">
                 <DocsHubToolbar
                   search={hub.search}
                   onSearchChange={hub.setSearch}
@@ -4935,7 +4935,7 @@ export default function RegistryPage() {
                   onPageSizeChange={hub.setPageSize}
                   unitLabel="yuk xati"
                 />
-              </>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="marketing-order-page__bar ui-card">
