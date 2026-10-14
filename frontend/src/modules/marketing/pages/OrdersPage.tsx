@@ -51,8 +51,6 @@ import { ProductTypeFilter } from '../../../shared/components/ProductTypeFilter'
 import { ProductDetailBackButton } from '../../../shared/components/ProductDetailBackButton';
 import { OrderList, type OrderListVariant } from '../../../shared/components/OrderListRow';
 import { ORDER_STATUS_LABELS } from '../../../shared/constants/orderStatuses';
-import { exportSheet, todayStamp } from '../../../shared/utils/excelExport';
-import { FileSpreadsheet } from 'lucide-react';
 import { filterAgreedOrderLines } from '../../../shared/utils/orderApprovals';
 import { listMarketingOrdersForPeriod } from '../../../shared/utils/marketingOrderSelection';
 import { OrderFilterPlaceholder } from '../../../shared/components/OrderFilterPlaceholder';
@@ -638,6 +636,7 @@ function MarketingOrdersPanel({
   }, [viewOrderId, editHistory.length]);
 
   const isReturnedEdit = !isNew && editingOrder?.status === 'ReturnedToMarketing';
+  const isBlankOrder = /^ZAXIRA-/i.test(header.contractNumber);
 
   const isLineEditableInForm = (line: MonthlyOrderLineInput) => {
     if (isReturnedEdit) {
@@ -1014,54 +1013,6 @@ function MarketingOrdersPanel({
     );
   };
 
-  /** Ro'yxatdagi buyurtmalar satrlar darajasida Excelga chiqadi. */
-  const exportOrdersExcel = (sectionOrders: MonthlyOrder[]) => {
-    exportSheet(`buyurtmalar_${logisticsType}_${todayStamp()}.xlsx`, 'Buyurtmalar', [
-      ['Hujjat raqami', 'Buyurtma №', 'Shartnoma', 'Mahsulot', 'Markasi', 'Yil', 'Oy', 'Holat',
-       'Kontragent', 'Jo‘natish stansiyasi', 'Reja, vagon', 'Reja, tonna',
-       'Bajarilgan, vagon', 'Bajarilgan, tonna'],
-      ...sectionOrders.flatMap(order => {
-        const status = ORDER_STATUS_LABELS[order.status] || order.status;
-        const prodName = order.productGrade ? `${order.productType} (${order.productGrade})` : order.productType || '—';
-        const lines = order.lines ?? [];
-        if (lines.length === 0) {
-          return [[order.orderNumber, '—', order.contractNumber || '—', prodName, order.productGrade || '—',
-                   order.year, order.month, status, '—', '—', order.totalWagons ?? 0,
-                   order.totalTons ?? 0, 0, 0]];
-        }
-        return lines.map(line => [
-          order.orderNumber,
-          line.customerOrderNumber || '—',
-          line.contractNumber || order.contractNumber || '—',
-          prodName,
-          line.productGrade || '—',
-          order.year,
-          order.month,
-          status,
-          line.contractor || '—',
-          line.destinationStation || '—',
-          line.wagonCount ?? 0,
-          line.tonCount ?? 0,
-          line.fulfilledWagonCount ?? 0,
-          line.fulfilledNetWeight ?? 0,
-        ]);
-      }),
-    ]);
-  };
-
-  const excelAction = (
-    <button
-      type="button"
-      className="btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap"
-      onClick={() => exportOrdersExcel(matchingOrders)}
-      disabled={matchingOrders.length === 0}
-      title="Ro‘yxatdagi buyurtmalarni Excel fayliga yuklash"
-    >
-      <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-      <span>Excel<span className="btn-label-extra"> yuklash</span></span>
-    </button>
-  );
-
   const renderOrderList = (sectionOrders: MonthlyOrder[], variant: OrderListVariant = 'all') => (
     <>
       <OrderList
@@ -1392,6 +1343,29 @@ function MarketingOrdersPanel({
                 </p>
               </div>
             </div>
+            {isNew ? (
+              <div className="order-kind-toggle" role="radiogroup" aria-label="Buyurtma turi">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!isBlankOrder}
+                  className={`order-kind-toggle__btn${!isBlankOrder ? ' is-active' : ''}`}
+                  onClick={() => { if (isBlankOrder) startNew(); }}
+                >
+                  Oddiy
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isBlankOrder}
+                  className={`order-kind-toggle__btn order-kind-toggle__btn--reserve${isBlankOrder ? ' is-active' : ''}`}
+                  onClick={() => { if (!isBlankOrder) startBlankEmergencyOrder(); }}
+                  title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
+                >
+                  Zaxira (bo‘sh)
+                </button>
+              </div>
+            ) : null}
           </div>
           {editForm}
           {!isNew ? (
@@ -1521,22 +1495,6 @@ function MarketingOrdersPanel({
           resultCount={matchingOrders.length}
           canCreate={canCreateOrder}
           onCreate={startNew}
-          toolbarActions={
-            <div className="flex items-center gap-2">
-              {canCreateOrder && (
-                <button
-                  type="button"
-                  onClick={startBlankEmergencyOrder}
-                  className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1.5 border-dashed border-amber-400/80 hover:bg-amber-500/10"
-                  title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
-                >
-                  <Plus className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Bo‘sh<span className="btn-label-extra"> buyurtma</span></span>
-                </button>
-              )}
-              {excelAction}
-            </div>
-          }
         >
           {matchingOrders.length === 0 ? (
             <div className="thub-empty">
@@ -1580,22 +1538,6 @@ function MarketingOrdersPanel({
           statusCards={buildStatusCards(statusTabCounts)}
           activeStatus={statusTab}
           onStatusChange={id => setStatusTab(id as StatusTab)}
-          toolbarActions={
-            <div className="flex items-center gap-2">
-              {canCreateOrder && (
-                <button
-                  type="button"
-                  onClick={startBlankEmergencyOrder}
-                  className="btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1.5 border-dashed border-amber-400/80 hover:bg-amber-500/10"
-                  title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
-                >
-                  <Plus className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Bo‘sh<span className="btn-label-extra"> buyurtma</span></span>
-                </button>
-              )}
-              {excelAction}
-            </div>
-          }
         >
           {plainListOrders.length === 0 && !searchQuery.trim() ? (
             <OrderFilterPlaceholder

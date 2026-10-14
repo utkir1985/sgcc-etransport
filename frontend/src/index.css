@@ -19243,3 +19243,35 @@ html.dark .order-progress-track,
 .marketing-orders-table td:has(> .order-date-cell) {
   white-space: normal !important;
 }
+
+/* Yangi buyurtma: Oddiy / Zaxira (bo‘sh) tanlovi */
+.order-kind-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 3px;
+}
+.order-kind-toggle__btn {
+  border-radius: 7px;
+  padding: 6px 14px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.order-kind-toggle__btn:hover:not(.is-active) { color: #0f172a; }
+.order-kind-toggle__btn.is-active {
+  background: #fff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+}
+.order-kind-toggle__btn--reserve.is-active { color: #b45309; }
+.dark .order-kind-toggle { border-color: #334155; background: #020617; }
+.dark .order-kind-toggle__btn { color: #94a3b8; }
+.dark .order-kind-toggle__btn:hover:not(.is-active) { color: #e2e8f0; }
+.dark .order-kind-toggle__btn.is-active { background: #1e293b; color: #93c5fd; }
+.dark .order-kind-toggle__btn--reserve.is-active { color: #fbbf24; }
