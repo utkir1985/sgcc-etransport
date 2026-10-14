@@ -254,14 +254,14 @@ export function OrderList({
                   <td className="whitespace-nowrap text-[11px] text-center px-1.5">
                     {isCompleted ? (
                       <div className="flex items-center justify-center">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                           <span>Ijro holati: 100%</span>
                         </span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-0.5 min-w-0 mx-auto">
-                        <div className="flex flex-col items-center text-center text-[11px] leading-tight font-mono">
+                        <div className="flex flex-col items-center text-center text-xs leading-tight font-mono">
                           <span className="font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                             {formatTons(fulfillment.remainingTons)} t qoldi
                           </span>
