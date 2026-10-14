@@ -71,7 +71,7 @@ public class OrderService(
     public async Task<MonthlyOrderDto> CreateAsync(CreateMonthlyOrderRequest request, Guid userId)
     {
         var contractNumber = ResolveOrderContract(request.ContractNumber, request.Lines);
-        await ValidateRequestAsync(request.LogisticsType, request.ProductType, contractNumber, request.Lines, userId);
+        await ValidateRequestAsync(request.LogisticsType, request.ProductType, contractNumber, request.ContractNumber, request.Lines, userId);
 
         var creator = await db.Users.FindAsync(userId);
         var order = new MonthlyOrder
@@ -126,7 +126,7 @@ public class OrderService(
             throw new ArgumentException("Tahrirlash izohini kiriting");
 
         var contractNumber = ResolveOrderContract(request.ContractNumber, request.Lines);
-        await ValidateRequestAsync(order.LogisticsType, request.ProductType, contractNumber, request.Lines, userId);
+        await ValidateRequestAsync(order.LogisticsType, request.ProductType, contractNumber, request.ContractNumber, request.Lines, userId);
 
         var changes = new List<string>();
         var requestedNumber = request.OrderNumber?.Trim() ?? "";
@@ -810,6 +810,7 @@ public class OrderService(
         string logisticsType,
         string productType,
         string contractNumber,
+        string? headerContract,
         List<MonthlyOrderLineInput> lines,
         Guid userId)
     {
@@ -845,6 +846,12 @@ public class OrderService(
                 || contractNumber.Contains("BO'SH", StringComparison.OrdinalIgnoreCase)
                 || contractNumber.Contains("BOSH", StringComparison.OrdinalIgnoreCase)
                 || contractNumber.Contains("FAVQULODDA", StringComparison.OrdinalIgnoreCase));
+
+        // Shartnoma raqami majburiy: har bir qatorda (eski buyurtmalarda — sarlavhada). Zaxira buyurtmada shart emas.
+        if (!isBlankOrEmergencyOrder
+            && string.IsNullOrWhiteSpace(headerContract)
+            && lines.Any(l => string.IsNullOrWhiteSpace(l.ContractNumber)))
+            throw new ArgumentException("Har bir korxona uchun shartnoma raqamini kiriting");
 
         // Tonna majburiy (oddiy buyurtmada > 0 bo'lishi shart, zaxira/bo'sh buyurtmada 0 bo'lishi mumkin)
         if (!isBlankOrEmergencyOrder && lines.Any(l => l.TonCount <= 0))

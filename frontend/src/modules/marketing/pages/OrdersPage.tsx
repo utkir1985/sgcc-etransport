@@ -125,7 +125,12 @@ function validateOrderDraft(
       return `${rowNumber}-qator: mahsulot og‘irligi (tonna) kiritilishi shart (0 dan katta bo‘lishi kerak)`;
     }
 
-    // Marka, shartnoma, stansiya va yuklash muddati — ixtiyoriy.
+    // Shartnoma majburiy (eski buyurtmada sarlavhadagisi yetarli, zaxirada shart emas).
+    if (!isBlankOrder && !header.contractNumber.trim() && !line.contractNumber?.trim()) {
+      return `${rowNumber}-qator: shartnoma raqamini kiriting`;
+    }
+
+    // Marka, stansiya va yuklash muddati — ixtiyoriy.
     // Stansiya ko‘rsatilmasa, u yuk xati tuzilganda tanlanadi.
   }
 
@@ -1168,7 +1173,10 @@ function MarketingOrdersPanel({
             <thead>
               <tr>
                 {tableHeaders.map(h => (
-                  <th key={h} className={getOrderSheetHeaderClass(h)}>{h}</th>
+                  <th key={h} className={getOrderSheetHeaderClass(h)}>
+                    {h}
+                    {h === 'Shartnoma raqami' && !/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
+                  </th>
                 ))}
                 {(header.productType?.toLowerCase().includes('polietilen') || header.productType?.toLowerCase().includes('полиэтилен')) && (
                   <th className="order-sheet-center w-40">Yuklash oxirgi sanasi</th>
@@ -1231,7 +1239,8 @@ function MarketingOrdersPanel({
                         value={line.contractNumber ?? ''}
                         onChange={e => updateLine(idx, { contractNumber: e.target.value })}
                         className="order-sheet-input order-sheet-input--sm"
-                        placeholder="Ixtiyoriy"
+                        placeholder="Shartnoma raqami"
+                        required={!header.contractNumber.trim()}
                         maxLength={100}
                         aria-label="Shartnoma raqami"
                         autoComplete="off"
