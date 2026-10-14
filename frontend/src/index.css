@@ -17641,3 +17641,31 @@ html.dark .order-progress-track,
   min-width: 12rem;
   width: 12rem;
 }
+
+/* Buyurtmalar jadvali — asosiy matn 14px, ikkinchi darajali (vaqt, izoh) 12px */
+.marketing-orders-table thead th,
+.reestr-table.marketing-orders-table thead th {
+  font-size: 13px !important;
+}
+
+.marketing-orders-table tbody td,
+.reestr-table.marketing-orders-table tbody td,
+.marketing-orders-table tbody td .text-xs,
+.marketing-orders-table tbody td .text-sm {
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+
+.marketing-orders-table tbody td .text-\[11px\],
+.marketing-orders-table tbody td .text-\[10px\] {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+
+.marketing-orders-table .order-status-badge {
+  font-size: 13px;
+}
+
+.marketing-orders-table .order-sheet-annex-chip__trigger {
+  font-size: 13px !important;
+}
