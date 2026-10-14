@@ -4,7 +4,6 @@ import { api } from '../../../shared/services/api';
 import { OrderAccountingSheet } from '../../../shared/components/OrderAccountingSheet';
 import { OrderApprovedSheet } from '../../../shared/components/OrderApprovedSheet';
 import { OrderEditHistory } from '../../../shared/components/OrderEditHistory';
-import { OrderFulfillmentStatus } from '../../../shared/components/OrderFulfillmentStatus';
 import { OrderFilterPlaceholder } from '../../../shared/components/OrderFilterPlaceholder';
 import { OrderPeriodPicker } from '../../../shared/components/OrderPeriodPicker';
 import { MarketingOrdersHome } from '../../../shared/components/MarketingOrdersHome';
@@ -120,9 +119,6 @@ export default function OrderApprovalsPage() {
         )}
         <div className="order-detail-split">
           <OrderEditHistory orderId={viewOrder.id} />
-          {(viewOrder.status === 'Active' || viewOrder.status === 'Completed') ? (
-            <OrderFulfillmentStatus order={viewOrder} />
-          ) : null}
         </div>
       </div>
     );

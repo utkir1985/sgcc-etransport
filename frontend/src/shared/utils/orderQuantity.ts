@@ -52,3 +52,12 @@ export function formatOrderQuantityTotalFromLines(lines: OrderQuantityLine[]): s
   const { wagonTotal, tonTotal } = summarizeOrderQuantities(lines);
   return formatOrderQuantityTotal(wagonTotal, tonTotal);
 }
+
+/** Tonna: mingliklar probel bilan, kasr nuqta bilan (masalan, 8 301.26) — brauzer locale'iga bog‘liq emas. */
+export function formatTons(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  const [int, frac] = Math.abs(rounded).toFixed(2).split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  const decimals = frac.replace(/0+$/, '');
+  return `${rounded < 0 ? '-' : ''}${grouped}${decimals ? `.${decimals}` : ''}`;
+}

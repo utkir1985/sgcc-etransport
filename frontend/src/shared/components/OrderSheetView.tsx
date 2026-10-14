@@ -5,6 +5,7 @@ import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
 import { buildOrderTableRows } from '../../modules/marketing/utils/orderTable';
 import {
+  formatTons,
   lineTonCount,
   lineWagonCount,
   summarizeOrderQuantities,
@@ -133,14 +134,16 @@ export function OrderSheetView({
                         const pctStr = linePlanT > 0 ? ` (${Math.min(100, Math.round((lineDoneT / linePlanT) * 100))}%)` : '';
                         return (
                           <div
-                            className="text-[10px] whitespace-nowrap mt-0.5"
-                            title={lineDoneT > 0 ? `Yuklandi: ${lineDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t · Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t${pctStr}` : `Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t`}
+                            className="text-[11px] whitespace-nowrap mt-0.5"
+                            title={`Jo‘natildi: ${formatTons(lineDoneT)} t · Qoldiq: ${formatTons(lineRemT)} t${pctStr}`}
                           >
                             {isTonDone ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ To‘liq jo‘natildi</span>
                             ) : (
-                              <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                                Qoldiq: {lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                              <span className="font-semibold">
+                                <span className="text-emerald-600 dark:text-emerald-400">Jo‘natildi: {formatTons(lineDoneT)} t</span>
+                                <span className="text-slate-400"> · </span>
+                                <span className="text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                               </span>
                             )}
                           </div>
@@ -201,7 +204,7 @@ export function OrderSheetView({
                     const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
                     return (
                       <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
-                        Yuklandi: {totalDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} · Qoldiq: {totalRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                        Jo‘natildi: {formatTons(totalDoneT)} t · Qoldiq: {formatTons(totalRemT)} t
                       </div>
                     );
                   })()}
@@ -309,14 +312,16 @@ export function OrderSheetView({
                         const pctStr = linePlanT > 0 ? ` (${Math.min(100, Math.round((lineDoneT / linePlanT) * 100))}%)` : '';
                         return (
                           <div
-                            className="text-[10px] whitespace-nowrap mt-0.5"
-                            title={lineDoneT > 0 ? `Yuklandi: ${lineDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t · Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t${pctStr}` : `Qoldiq: ${lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t`}
+                            className="text-[11px] whitespace-nowrap mt-0.5"
+                            title={`Jo‘natildi: ${formatTons(lineDoneT)} t · Qoldiq: ${formatTons(lineRemT)} t${pctStr}`}
                           >
                             {isTonDone ? (
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ 100% yopilgan</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ To‘liq jo‘natildi</span>
                             ) : (
-                              <span className="text-rose-600 dark:text-rose-400 font-semibold">
-                                Qoldiq: {lineRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                              <span className="font-semibold">
+                                <span className="text-emerald-600 dark:text-emerald-400">Jo‘natildi: {formatTons(lineDoneT)} t</span>
+                                <span className="text-slate-400"> · </span>
+                                <span className="text-amber-600 dark:text-amber-400">Qoldiq: {formatTons(lineRemT)} t</span>
                               </span>
                             )}
                           </div>
@@ -377,7 +382,7 @@ export function OrderSheetView({
                     const totalRemT = Math.max(0, Math.round((totals.tonTotal - totalDoneT) * 100) / 100);
                     return (
                       <div className="text-[10px] font-normal whitespace-nowrap mt-0.5 text-slate-500 dark:text-slate-400">
-                        Yuklandi: {totalDoneT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} · Qoldiq: {totalRemT.toLocaleString('uz-UZ', { maximumFractionDigits: 1 })} t
+                        Jo‘natildi: {formatTons(totalDoneT)} t · Qoldiq: {formatTons(totalRemT)} t
                       </div>
                     );
                   })()}

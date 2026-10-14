@@ -10,11 +10,10 @@ import { getProductLabel } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
 import type { MonthlyOrder } from '../types';
 import { formatDateDisplay, formatDateTimeDisplay } from '../utils/dates';
-import { summarizeOrderQuantities } from '../utils/orderQuantity';
+import { formatTons, summarizeOrderQuantities } from '../utils/orderQuantity';
 import { computeOrderFulfillment, isOrderFulfilled, isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import { TablePagination } from './TablePagination';
 
-/** Tonna: mingliklar probel bilan, kasr nuqta bilan (masalan, 8 301.26) — brauzer locale'iga bog‘liq emas. */
 /** Buyurtma hozirgi kelishuv bosqichiga qachon kelgani (mavjud vaqt belgilari bo‘yicha). */
 function stageEnteredAt(order: MonthlyOrder): string | null | undefined {
   switch (order.status) {
@@ -26,14 +25,6 @@ function stageEnteredAt(order: MonthlyOrder): string | null | undefined {
     case 'ReturnedToMarketing': return order.approvedAt ?? order.submittedAt;
     default: return null;
   }
-}
-
-function formatTons(value: number): string {
-  const rounded = Math.round(value * 100) / 100;
-  const [int, frac] = Math.abs(rounded).toFixed(2).split('.');
-  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
-  const decimals = frac.replace(/0+$/, '');
-  return `${rounded < 0 ? '-' : ''}${grouped}${decimals ? `.${decimals}` : ''}`;
 }
 
 function renderDateTimeCell(iso?: string | null) {

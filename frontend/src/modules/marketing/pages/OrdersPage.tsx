@@ -40,7 +40,6 @@ import {
 } from '../../../shared/utils/orderQuantity';
 import { OrderSheetView } from '../../../shared/components/OrderSheetView';
 import { OrderAccountingSheet } from '../../../shared/components/OrderAccountingSheet';
-import { OrderFulfillmentStatus } from '../../../shared/components/OrderFulfillmentStatus';
 import { OrderSheetMenu, type OrderSheetMenuItem } from '../../../shared/components/OrderSheetMenu';
 import { OrderAttachmentsModal } from '../../../shared/components/OrderAttachmentsModal';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
@@ -1446,10 +1445,9 @@ function MarketingOrdersPanel({
           ) : null}
           {renderOrderSheet(viewOrder)}
           {(() => {
-            const showFulfillment =
-              viewOrder.status === 'Active' || viewOrder.status === 'Completed';
+            // Ijro holati jadvalda (Bajarilish/Qoldiq) va buyurtma varag‘ida korxona bo‘yicha ko‘rinadi.
             const showHistory = editHistory.length > 0;
-            if (!showFulfillment && !showHistory) return null;
+            if (!showHistory) return null;
             return (
               <div className="order-detail-split">
                 {showHistory ? (
@@ -1497,7 +1495,6 @@ function MarketingOrdersPanel({
                     </div>
                   </section>
                 ) : null}
-                {showFulfillment ? <OrderFulfillmentStatus order={viewOrder} /> : null}
               </div>
             );
           })()}
