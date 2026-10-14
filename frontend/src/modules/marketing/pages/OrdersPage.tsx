@@ -1058,7 +1058,7 @@ function MarketingOrdersPanel({
       title="Ro‘yxatdagi buyurtmalarni Excel fayliga yuklash"
     >
       <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-      <span>Excel yuklash</span>
+      <span>Excel<span className="btn-label-extra"> yuklash</span></span>
     </button>
   );
 
@@ -1531,7 +1531,7 @@ function MarketingOrdersPanel({
                   title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
                 >
                   <Plus className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Bo‘sh buyurtma</span>
+                  <span>Bo‘sh<span className="btn-label-extra"> buyurtma</span></span>
                 </button>
               )}
               {excelAction}
@@ -1590,7 +1590,7 @@ function MarketingOrdersPanel({
                   title="Oy boshi yoki favqulodda vaziyatlar uchun zaxira buyurtma shabloni"
                 >
                   <Plus className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Bo‘sh buyurtma</span>
+                  <span>Bo‘sh<span className="btn-label-extra"> buyurtma</span></span>
                 </button>
               )}
               {excelAction}
