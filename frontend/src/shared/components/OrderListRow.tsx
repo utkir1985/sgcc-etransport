@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, X, Pencil, Trash2, MapPin, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, X, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
 import { ProductTypeIcon } from './ProductTypeIcon';
 import { OrderStatusBadge, orderStatusModifier } from './OrderStatusBadge';
 import { DocumentChipButton } from './DocumentPackChip';
@@ -13,19 +13,6 @@ import { formatDateDisplay, formatDateTimeDisplay } from '../utils/dates';
 import { summarizeOrderQuantities } from '../utils/orderQuantity';
 import { computeOrderFulfillment, isOrderFulfilled, isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import { TablePagination } from './TablePagination';
-
-function getOrderStationsTotal(order: MonthlyOrder): number {
-  const o = order as any;
-  if (order.orderNumber === 'LPG-0926-001' || (o.periodMonth === 9 && o.periodYear === 2026 && /LPG/i.test(order.orderNumber || ''))) {
-    return 8;
-  }
-  if (order.orderNumber === 'LPG-1026-001' || (o.periodMonth === 10 && o.periodYear === 2026 && /LPG/i.test(order.orderNumber || ''))) {
-    return 10;
-  }
-  const rawStations = (order.lines ?? []).map(l => l.destinationStation?.trim()).filter(Boolean) as string[];
-  const uniqueStations = Array.from(new Set(rawStations));
-  return rawStations.length || uniqueStations.length;
-}
 
 function formatTons(value: number): string {
   return (Math.round(value * 100) / 100).toLocaleString('uz-UZ', { maximumFractionDigits: 2 });
@@ -58,16 +45,6 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
   const productLabel = getProductLabel(order.productType, logisticsType);
   const deadlineLabel = formatDateDisplay(order.deadline?.slice(0, 10) || '') || '—';
   const fulfillment = computeOrderFulfillment(order);
-  const rawStations = (order.lines ?? []).map(l => l.destinationStation?.trim()).filter(Boolean) as string[];
-  const uniqueStations = Array.from(new Set(rawStations));
-  const totalCount = getOrderStationsTotal(order);
-  let stationText = "";
-  if (totalCount === 1 || uniqueStations.length === 1) {
-    stationText = uniqueStations[0] || "";
-  } else if (uniqueStations.length >= 2) {
-    const rem = Math.max(0, totalCount - 2);
-    stationText = `${uniqueStations.slice(0, 2).join(", ")}${rem > 0 ? ` (+${rem})` : ""}`;
-  }
 
   const isCompleted = order.status === 'Completed' || isOrderFulfilled(order);
   const remainText = isCompleted
@@ -76,7 +53,6 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
 
   const meta = [
     order.orderNumber,
-    stationText ? `📍 ${stationText}` : null,
     `${formatTons(summarizeOrderQuantities(order.lines).tonTotal)} t`,
     remainText,
     deadlineLabel !== '—' ? deadlineLabel : null,
@@ -179,33 +155,31 @@ export function OrderList({
                     {showActions ? (
             <colgroup>
               <col style={{ width: '2.5%' }} />
-              <col style={{ width: '8.5%' }} />
-              <col style={{ width: '11.0%' }} />
+              <col style={{ width: '10.0%' }} />
+              <col style={{ width: '14.0%' }} />
               <col style={{ width: '4.5%' }} />
               <col style={{ width: '5.0%' }} />
-              <col style={{ width: '12.5%' }} />
-              <col style={{ width: '10.0%' }} />
-              <col style={{ width: '6.5%' }} />
-              <col style={{ width: '7.5%' }} />
-              <col style={{ width: '7.5%' }} />
-              <col style={{ width: '10.5%' }} />
-              <col style={{ width: '7.5%' }} />
-              <col style={{ width: '6.5%' }} />
+              <col style={{ width: '12.0%' }} />
+              <col style={{ width: '8.0%' }} />
+              <col style={{ width: '8.0%' }} />
+              <col style={{ width: '8.0%' }} />
+              <col style={{ width: '12.0%' }} />
+              <col style={{ width: '8.0%' }} />
+              <col style={{ width: '8.0%' }} />
             </colgroup>
           ) : (
             <colgroup>
               <col style={{ width: '2.5%' }} />
-              <col style={{ width: '9.5%' }} />
-              <col style={{ width: '12.0%' }} />
+              <col style={{ width: '11.0%' }} />
+              <col style={{ width: '15.0%' }} />
               <col style={{ width: '5.0%' }} />
               <col style={{ width: '5.5%' }} />
-              <col style={{ width: '13.5%' }} />
-              <col style={{ width: '11.0%' }} />
-              <col style={{ width: '7.0%' }} />
-              <col style={{ width: '8.0%' }} />
-              <col style={{ width: '8.0%' }} />
-              <col style={{ width: '11.0%' }} />
-              <col style={{ width: '7.0%' }} />
+              <col style={{ width: '13.0%' }} />
+              <col style={{ width: '9.0%' }} />
+              <col style={{ width: '9.0%' }} />
+              <col style={{ width: '9.0%' }} />
+              <col style={{ width: '12.0%' }} />
+              <col style={{ width: '9.0%' }} />
             </colgroup>
           )}
           <thead>
@@ -215,7 +189,6 @@ export function OrderList({
               <th className="text-left">Mahsulot</th>
               <th className="text-center leading-tight">Yuklangan<br />vagon</th>
               <th className="text-center leading-tight">Og‘irligi<br />(t)</th>
-              <th className="text-center leading-tight">Yetkazib berish<br />stansiyasi</th>
               <th className="text-center leading-tight">Bajarilish /<br />Qoldiq</th>
               <th className="text-center">Shartnoma</th>
               <th className="text-center leading-tight">Yaratilgan<br />vaqti</th>
@@ -232,10 +205,6 @@ export function OrderList({
               const active = activeOrderId === order.id;
               const approvedAt = order.dispatchApprovedAt || null;
               const fulfillment = computeOrderFulfillment(order);
-              const rawStations = (order.lines ?? []).map(l => l.destinationStation?.trim()).filter(Boolean) as string[];
-              const uniqueStations = Array.from(new Set(rawStations));
-              const totalStationsCount = getOrderStationsTotal(order);
-              const remainingStationsCount = Math.max(0, totalStationsCount - 2);
               const isCompleted = order.status === 'Completed' || isOrderFulfilled(order);
               const tonPct = fulfillment.orderedTons > 0
                 ? Math.min(100, Math.round((fulfillment.fulfilledTons / fulfillment.orderedTons) * 100))
@@ -281,39 +250,6 @@ export function OrderList({
                   </td>
                   <td className="text-center font-semibold tabular-nums text-xs">{fulfillment.fulfilledWagons}</td>
                   <td className="text-center font-semibold tabular-nums text-xs">{tonTotal}</td>
-
-                  {/* Yetkazib berish stansiyasi */}
-                  <td className="text-xs text-center px-1.5">
-                    {uniqueStations.length > 0 ? (
-                      <div
-                        className="flex items-center justify-center gap-1 text-slate-800 dark:text-slate-200 leading-tight text-center"
-                        title={uniqueStations.join(", ")}
-                      >
-                        <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0 self-center" />
-                        {totalStationsCount === 1 || uniqueStations.length === 1 ? (
-                          <span className="font-semibold text-xs leading-snug break-words">
-                            {uniqueStations[0]}
-                          </span>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center leading-tight min-w-0">
-                            <span className="font-semibold text-xs break-words">
-                              {uniqueStations[0]}
-                            </span>
-                            <span className="font-semibold text-xs break-words">
-                              {uniqueStations[1]}
-                              {remainingStationsCount > 0 && (
-                                <span className="ml-1 text-[11px] font-normal text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                  (+{remainingStationsCount})
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-slate-400 text-xs">—</span>
-                    )}
-                  </td>
 
                   {/* Bajarilish / Qoldiq */}
                   <td className="whitespace-nowrap text-[11px] text-center px-1.5">
