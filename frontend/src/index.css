@@ -17669,3 +17669,58 @@ html.dark .order-progress-track,
 .marketing-orders-table .order-sheet-annex-chip__trigger {
   font-size: 12px !important;
 }
+
+/*
+ * Ro‘yxat jadvallari (buyurtmalar, yuk xatlari, kiritish xatlari, dalolatnomalar va boshq.) —
+ * Foydalanuvchilar jadvali andozasi: vertikal chiziqsiz, qatorlar orasida yengil chiziq,
+ * 14px yumaloq ramka. Rasmiy hujjat varaqlari (order-sheet, yuk xati, PDF) bunga kirmaydi.
+ */
+.thub-table-wrap.reestr-table-wrap {
+  border: 1px solid #dbe5f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.thub-table.reestr-table th,
+.thub-table.reestr-table td,
+.thub-table.reestr-table th:first-child,
+.thub-table.reestr-table td:first-child {
+  border: 0;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.thub-table.reestr-table thead th {
+  border-top: 0;
+  border-bottom: 1px solid #dbe5f0;
+  background: #eaf2fc;
+}
+
+.thub-table.reestr-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.thub-table.reestr-table tbody tr:hover td {
+  background: #f5f9fe;
+}
+
+.dark .thub-table-wrap.reestr-table-wrap {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+.dark .thub-table.reestr-table th,
+.dark .thub-table.reestr-table td,
+.dark .thub-table.reestr-table th:first-child,
+.dark .thub-table.reestr-table td:first-child {
+  border-color: #1e293b;
+}
+
+.dark .thub-table.reestr-table thead th {
+  border-bottom-color: #334155;
+  background: #1e293b;
+}
+
+.dark .thub-table.reestr-table tbody tr:hover td {
+  background: #17243a;
+}
