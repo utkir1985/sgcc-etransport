@@ -19145,3 +19145,35 @@ html.dark .order-progress-track,
   padding-left: 0.3rem !important;
   padding-right: 0.3rem !important;
 }
+
+/* Buyurtmalar paneli (≥1024px): mahsulot filtri eng uzun nom kengligida emas — siqiladi, nom «…» bilan */
+@media (min-width: 1024px) {
+  .marketing-orders-toolbar .marketing-product-filter--sizer {
+    display: none;
+  }
+
+  .marketing-orders-toolbar .product-type-filter {
+    flex: 0 1 15rem;
+    min-width: 11rem;
+  }
+
+  .marketing-orders-toolbar .marketing-product-filter-anchor,
+  .marketing-orders-toolbar .marketing-product-filter--trigger {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .marketing-orders-toolbar .marketing-product-filter--trigger {
+    position: relative;
+  }
+
+  .marketing-orders-toolbar .marketing-product-filter__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .marketing-orders-search {
+    min-width: 9rem;
+  }
+}

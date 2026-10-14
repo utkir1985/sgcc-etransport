@@ -142,7 +142,7 @@ type OrderColumnKey =
 
 /** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
 const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
-  num: 3, order: 13, product: 15, wagons: 8, tons: 7, done: 11, remain: 8, shipped: 10, stage: 16, waiting: 13,
+  num: 3, order: 15, product: 14, wagons: 8, tons: 7, done: 11, remain: 8, shipped: 10, stage: 16, waiting: 13,
   contract: 9, customer: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
 };
 
