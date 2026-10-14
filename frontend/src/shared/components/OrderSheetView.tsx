@@ -39,14 +39,21 @@ function getLineFulfilledTons(line: { wagonCount?: number | null; tonCount?: num
  * Stansiya katagi: qatorda stansiya bo‘lmasa — yuk xatlarida tanlangan stansiyalar
  * kesimi (vagon soni va og‘irlik); hali yuk xati bo‘lmasa — «Yuk xatida tanlanadi».
  */
-function LineDestination({ line }: { line: MonthlyOrder['lines'][number] }) {
-  const shipments = line.stationShipments ?? [];
-  if (line.destinationStation?.trim() || shipments.length === 0) {
+function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][number]; showShipped: boolean }) {
+  const fixedStation = line.destinationStation?.trim();
+  // Qatorda stansiya belgilangan bo‘lsa — barcha vagonlar o‘sha stansiyaga ketgan (qator yig‘indisidan);
+  // aks holda yuk xatlarida tanlangan stansiyalar kesimi (serverda hisoblanadi).
+  const shipments = !showShipped ? [] : fixedStation
+    ? ((line.fulfilledWagonCount ?? 0) > 0
+      ? [{ station: fixedStation, wagons: line.fulfilledWagonCount ?? 0, netTons: Number(line.fulfilledNetWeight ?? 0) }]
+      : [])
+    : (line.stationShipments ?? []);
+  if (shipments.length === 0) {
     return (
       <span className="order-sheet-destination__inner">
         <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-        {line.destinationStation?.trim()
-          ? <span>{line.destinationStation}</span>
+        {fixedStation
+          ? <span>{fixedStation}</span>
           : <span className="text-slate-400 dark:text-slate-500 italic">Yuk xatida tanlanadi</span>}
       </span>
     );
@@ -191,7 +198,7 @@ export function OrderSheetView({
                       </>
                     )}
                     <td className="order-sheet-destination">
-                      <LineDestination line={line} />
+                      <LineDestination line={line} showShipped={!wagonPlan} />
                     </td>
                     {showDeadline && (() => {
                       const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
@@ -365,7 +372,7 @@ export function OrderSheetView({
                       </>
                     )}
                     <td className="order-sheet-destination">
-                      <LineDestination line={line} />
+                      <LineDestination line={line} showShipped={!wagonPlan} />
                     </td>
                     {showDeadline && (() => {
                       const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
