@@ -160,7 +160,7 @@ export default function Header({
   const [notifications, setNotifications] = useState<RoleNotification[]>([]);
 
   const unreadCount = notifications.length;
-  const headerLeft = isDesktop ? (sidebarCollapsed ? 72 : 260) : 0;
+  const headerLeft = isDesktop ? (sidebarCollapsed ? 72 : 280) : 0;
   const role = user?.role || '';
   const userKey = user?.username || '';
   const displayName = compactPersonName(user?.fullName, user?.username);

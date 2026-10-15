@@ -67,7 +67,7 @@ export default function MainLayout() {
 
       <main
         className="pt-[var(--layout-header-height)] min-h-screen transition-[padding] duration-300"
-        style={{ paddingLeft: isDesktop ? (sidebarCollapsed ? 72 : 260) : 0 }}
+        style={{ paddingLeft: isDesktop ? (sidebarCollapsed ? 72 : 280) : 0 }}
       >
         <div className="app-content-inner">
           <Outlet />

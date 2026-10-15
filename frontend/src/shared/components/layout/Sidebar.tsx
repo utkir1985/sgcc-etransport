@@ -167,7 +167,7 @@ function SidebarSubGroup({ group, isDark, onNavigate }: { group: MenuItem; isDar
         className={`${subNavClass(false, isDark, true)} w-full text-left sidebar-nav-subgroup__trigger${active ? ' is-active' : ''}`}
       >
         <Icon className="nav-icon nav-icon--sub" strokeWidth={active ? 2 : 1.75} style={{ color: getMenuItemColor(group) }} />
-        <span className="nav-label truncate flex-1">{group.label}</span>
+        <span className="nav-label nav-label--wrap flex-1">{group.label}</span>
         <ChevronDown className={`w-3.5 h-3.5 shrink-0 opacity-60 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
       </button>
       {open && (
@@ -178,7 +178,7 @@ function SidebarSubGroup({ group, isDark, onNavigate }: { group: MenuItem; isDar
             return (
               <NavLink key={child.key} to={child.path} end onClick={onNavigate} title={child.label} className={subNavClass(childActive, isDark, true)}>
                 <ChildIcon className="nav-icon nav-icon--sub" strokeWidth={childActive ? 2 : 1.75} style={!childActive ? { color: getMenuItemColor(child) } : undefined} />
-                <span className="nav-label truncate">{child.label}</span>
+                <span className="nav-label nav-label--wrap">{child.label}</span>
               </NavLink>
             );
           })}
@@ -241,7 +241,7 @@ function SidebarMenuItem({
         className={() => `${navClass(isItemActive, isDark, showLabels)} relative`}
       >
         <Icon className="nav-icon" strokeWidth={isItemActive ? 2 : 1.75} style={!isItemActive ? { color: itemColor } : undefined} />
-        {showLabels && <span className="nav-label min-w-0 flex-1 truncate">{item.label}</span>}
+        {showLabels && <span className="nav-label nav-label--wrap min-w-0 flex-1">{item.label}</span>}
         {notificationCount > 0 && (
           <span
             className={showLabels
@@ -333,7 +333,7 @@ function SidebarMenuItem({
         <Icon className="nav-icon" strokeWidth={isGroupActive ? 2 : 1.75} style={!isGroupActive ? { color: itemColor } : undefined} />
         {showLabels && (
           <>
-            <span className="nav-label truncate flex-1">{item.label}</span>
+            <span className="nav-label nav-label--wrap flex-1">{item.label}</span>
             <ChevronDown
               className={`w-4 h-4 shrink-0 opacity-60 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
               strokeWidth={1.75}
@@ -367,7 +367,7 @@ function SidebarMenuItem({
                   strokeWidth={childActive ? 2 : 1.75}
                   style={!childActive ? { color: childColor } : undefined}
                 />
-                <span className="nav-label truncate">{child.label}</span>
+                <span className="nav-label nav-label--wrap">{child.label}</span>
               </NavLink>
             );
           })}
@@ -446,8 +446,8 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
         'fixed left-0 top-0 h-full z-40 flex flex-col transition-transform duration-300 ease-in-out',
         isDark ? 'sidebar-dark' : 'sidebar-light',
         isDesktop
-          ? collapsed ? 'w-[72px] translate-x-0 sidebar--collapsed' : 'w-[260px] translate-x-0'
-          : 'w-[min(280px,85vw)]',
+          ? collapsed ? 'w-[72px] translate-x-0 sidebar--collapsed' : 'w-[280px] translate-x-0'
+          : 'w-[min(300px,85vw)]',
         !isDesktop && (mobileOpen ? 'translate-x-0' : '-translate-x-full'),
         !isVisible && 'pointer-events-none',
       ].join(' ')}

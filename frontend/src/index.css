@@ -20553,3 +20553,17 @@ html.dark .order-progress-track,
 .sidebar-nav-subgroup__trigger.is-active .nav-label { font-weight: 600; }
 .sidebar-nav-subgroup__items { margin-left: 14px; padding-left: 4px; border-left: 1px solid rgba(148, 163, 184, .18); }
 .sidebar-nav-subgroup__items .sidebar-nav-sub-item { min-height: 38px; font-size: 13px; }
+
+/* Sidebar: uzun nomlar kesilmasdan ko‘pi bilan 2 qatorga o‘tadi */
+.nav-label--wrap {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.sidebar-nav-item:has(.nav-label--wrap) { height: auto; padding-top: 0.5rem; padding-bottom: 0.5rem; }
