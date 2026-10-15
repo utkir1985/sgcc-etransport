@@ -455,7 +455,10 @@ export default function StatisticsPage() {
   // Grafik oralig‘i Davr filtridan olinadi: tanlanmagan bo‘lsa — oxirgi 12 oy
   const chartEnd = range.to && range.to < todayIso() ? range.to : todayIso();
   const chartStart = (() => {
-    const start = range.from || shiftDays(chartEnd, -364);
+    // Davr tanlanmagan bo‘lsa — birinchi ma’lumot kunidan (ko‘pi bilan 12 oy)
+    const firstDay = [...cur.entries.map(e => e.day), ...cur.loads.map(e => e.day), ...cur.exits.map(e => e.day)].sort()[0];
+    const yearAgo = shiftDays(chartEnd, -364);
+    const start = range.from || (firstDay && firstDay > yearAgo ? firstDay : yearAgo);
     return daysBetween(start, chartEnd) > 1100 ? shiftDays(chartEnd, -1099) : start;
   })();
   const spanDays = daysBetween(chartStart, chartEnd);
