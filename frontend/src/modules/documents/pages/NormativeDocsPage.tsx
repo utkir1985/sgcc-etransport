@@ -843,7 +843,7 @@ export default function NormativeDocsPage() {
           </div>
           <div
             className="yx-preview-scroll ndocs-preview-scroll"
-            onClick={e => { if (e.target === e.currentTarget) closePreview(); }}
+            onClick={e => { if (!(e.target as HTMLElement).closest('.pdf-sheet, .ndocs-preview-msg, .ndocs-preview-image')) closePreview(); }}
           >
             {previewLoading ? (
               <div className="ndocs-preview-msg">Hujjat yuklanmoqda…</div>
