@@ -1044,7 +1044,9 @@ export default function StatisticsPage() {
           pw.reys += 1; pw.tonna += routeTons(w.netWeight ?? w.NetWeight ?? w.nettoWeight);
           perWagon.set(n, pw);
         }
-        const st = (w.destinationStation || r.destinationStation || 'Ko‘rsatilmagan').trim();
+        // Stansiya nomi har xil yozilgan bo‘lishi mumkin (KENGSOY / Kengsoy) — bitta ko‘rinishga
+        const rawSt = (w.destinationStation || r.destinationStation || 'Ko‘rsatilmagan').trim();
+        const st = rawSt.charAt(0).toLocaleUpperCase('uz') + rawSt.slice(1).toLocaleLowerCase('uz');
         const next = (visits.get(n) ?? []).find(v => v.at > exitAt);
         if (next) {
           const d = (new Date(next.at).getTime() - new Date(exitAt).getTime()) / 86400000;
