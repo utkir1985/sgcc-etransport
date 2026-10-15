@@ -10,10 +10,9 @@ import DashboardPage from '../modules/dashboard/pages/DashboardPage';
 import TransportVehiclesPage from '../modules/dashboard/pages/TransportVehiclesPage';
 import HistoryPage from '../modules/dashboard/pages/HistoryPage';
 import ReportsPage from '../modules/dashboard/pages/ReportsPage';
-import MonthlyPlansPage from '../modules/dashboard/pages/MonthlyPlansPage';
+import PlanExecutionPage from '../modules/dashboard/pages/PlanExecutionPage';
 import { DemurrageControlPage } from '../modules/dashboard/pages/DemurrageControlPage';
 import { WeightControlPage } from '../modules/dashboard/pages/WeightControlPage';
-import { ContractorLimitsPage } from '../modules/dashboard/pages/ContractorLimitsPage';
 import { DefectsGu23Page } from '../modules/dashboard/pages/DefectsGu23Page';
 import { LogisticsTariffsPage } from '../modules/dashboard/pages/LogisticsTariffsPage';
 import { TelegramAlertsPage } from '../modules/dashboard/pages/TelegramAlertsPage';
@@ -109,7 +108,7 @@ export default function App() {
         <Route path="order-deputy-approvals" element={<ProcessRedirect to="/orders/railway?view=tasdiq" />} />
         <Route path="empty-wagons" element={<EmptyWagonsPage />} />
         <Route path="railway-intake" element={<RailwayWagonIntakePage />} />
-        <Route path="plans" element={<MonthlyPlansPage />} />
+        <Route path="plans" element={<PlanExecutionPage />} />
         <Route path="shipments" element={<ShipmentsPage />} />
         <Route path="dispatch" element={<DispatchJournalPage />} />
         {/* 03 Temir yo'l */}
@@ -146,7 +145,7 @@ export default function App() {
         <Route path="reports" element={<MenuGuardedRoute menuKey="reports"><ReportsPage /></MenuGuardedRoute>} />
         <Route path="reports/demurrage" element={<DemurrageControlPage />} />
         <Route path="reports/weight-control" element={<WeightControlPage />} />
-        <Route path="reports/contractor-limits" element={<ContractorLimitsPage />} />
+        <Route path="reports/contractor-limits" element={<Navigate to="/plans?view=contractors" replace />} />
         <Route path="reports/defects-gu23" element={<DefectsGu23Page />} />
         <Route path="reports/tariffs" element={<AdminOnlyRoute><LogisticsTariffsPage /></AdminOnlyRoute>} />
         <Route path="reports/telegram" element={<AdminOnlyRoute><TelegramAlertsPage /></AdminOnlyRoute>} />

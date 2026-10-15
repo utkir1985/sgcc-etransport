@@ -132,13 +132,13 @@ function buildReportsHubItem(byKey: Map<string, MenuItem>): MenuItem {
   const base = fromMap(
     byKey,
     'history',
-    item('history', 'Hisobotlar va reja', '/history', 'BarChart3'),
+    item('history', 'Reja va nazorat', '/plans', 'BarChart3'),
   );
 
   return {
     ...base,
-    label: 'Hisobotlar va reja',
-    path: '/history',
+    label: 'Reja va nazorat',
+    path: '/plans',
     children: undefined,
   };
 }
@@ -330,7 +330,7 @@ export function menuItemMatches(entry: MenuItem, pathname: string, search = ''):
   const [path, query] = entry.path.split('?');
 
   // Umumiy band barcha ichki bo‘limlarda, jumladan filtrlangan tarixda ham faol qoladi.
-  if (entry.key === 'history' && path === '/history' && !query) {
+  if (entry.key === 'history' && (path === '/history' || path === '/plans') && !query) {
     return pathname === '/history'
       || pathname === '/plans'
       || pathname === '/reports'

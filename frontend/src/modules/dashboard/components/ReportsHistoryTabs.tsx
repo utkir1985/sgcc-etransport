@@ -55,7 +55,7 @@ const SECTIONS: ReportsHistorySection[] = [
   },
   {
     key: 'plans',
-    label: 'Reja',
+    label: 'Reja va ijro',
     path: '/plans',
     icon: Target,
     title: 'Oylik va kunlik yuklash/jo‘natish rejalari',
@@ -137,7 +137,10 @@ export function ReportsHistoryTabs({ active }: { active: ReportsHistoryTabKey })
   const isAdmin = user?.role === 'Admin';
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
 
-  const visibleSections = SECTIONS.filter(section => {
+  // Tartib: Reja va ijro → Nazorat (prostoy, og‘irlik, nosozliklar) → Jarayonlar tarixi → qo‘shimchalar.
+  // «Mijozlar limiti» «Reja va ijro» ichidagi «Kontragentlar» ko‘rinishiga birlashtirilgan.
+  const ORDER: ReportsHistoryTabKey[] = ['plans', 'demurrage', 'weight', 'defects', 'history', 'stats', 'tariffs', 'telegram'];
+  const visibleSections = ORDER.map(key => SECTIONS.find(s => s.key === key)!).filter(section => {
     if (section.key === 'stats' && !hasReportsAccess) return false;
     if (section.adminOnly && !isAdmin) return false;
     return true;
@@ -147,7 +150,7 @@ export function ReportsHistoryTabs({ active }: { active: ReportsHistoryTabKey })
     <div className="rhub-navigation mb-6">
       <nav
         className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-x-auto max-w-full scrollbar-none"
-        aria-label="Hisobotlar va reja bo‘limlari"
+        aria-label="Reja va nazorat bo‘limlari"
         role="tablist"
       >
         {visibleSections.map(section => {
