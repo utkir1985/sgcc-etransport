@@ -19901,3 +19901,20 @@ html.dark .order-progress-track,
 .dark .ndocs-card__foot { color: #94a3b8; }
 .ndocs-table { min-width: 52rem !important; }
 .ndocs-table .ndocs-open-btn { padding: 5px 9px; }
+
+/* Jadvalda hujjat nomi to‘liq — qisqartirilmaydi, tavsif 2 qatorgacha */
+.ndocs-table .ndocs-title strong {
+  display: block !important;
+  overflow: visible !important;
+  -webkit-line-clamp: unset !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+}
+.ndocs-table .ndocs-title small {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal !important;
+  margin-top: 2px;
+}
