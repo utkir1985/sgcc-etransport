@@ -19,6 +19,7 @@ import LoadingPage from '../modules/warehouse/pages/LoadingPage';
 import { GateScalesPage } from '../modules/gate-scales/pages/GateScalesPage';
 import RegistryPage from '../modules/documents/pages/RegistryPage';
 import NormativeDocsPage from '../modules/documents/pages/NormativeDocsPage';
+import SferaBalancePage from '../modules/sfera/pages/SferaBalancePage';
 import RegistryAnnexPage from '../modules/documents/pages/RegistryAnnexPage';
 import UsersPage from '../modules/admin/pages/UsersPage';
 import RolesPage from '../modules/admin/pages/RolesPage';
@@ -121,6 +122,7 @@ export default function App() {
         <Route path="registry/agree/security" element={<RegistryPage />} />
         <Route path="registry" element={<RegistryPage />} />
         <Route path="normative-docs" element={<NormativeDocsPage />} />
+        <Route path="sfera" element={<SferaBalancePage />} />
         <Route path="permits" element={<ProcessRedirect to="/registry/agree/permit" />} />
         {/* 07 Buxgalteriya */}
         <Route path="order-approvals" element={<ProcessRedirect to="/orders/railway?view=tasdiq" />} />

@@ -30,6 +30,7 @@ import {
   Truck,
   Users,
   Warehouse,
+  Gauge,
 } from 'lucide-react';
 import { ROLE_LABELS } from '../../shared/types';
 
@@ -1037,6 +1038,15 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     flags: ['D'],
     roles: ['Admin'],
   },
+  // --- SFERA BALANCE (tashqi tizim paneli) ---
+  {
+    key: 'sfera.view',
+    module: 'reports',
+    label: 'Sfera Balance panelini ko‘rish',
+    description: 'FB-8104 sfera va kondensat rezervuarlari real vaqt monitoringi (alohida tizim, E-Transport ichida panel)',
+    flags: ['R'],
+    roles: ['Admin', 'Management', 'DeputyDirector', 'DispatchSupervisor', 'Dispatching', 'Warehouse', 'Marketing', 'Economist'],
+  },
   {
     key: 'products.read',
     module: 'admin',
@@ -1756,6 +1766,7 @@ export const RESOURCE_META: Record<string, ResourceMeta> = {
   plans: { label: 'Oylik reja monitoringi', icon: Target, module: 'marketing', order: 6 },
   // --- Ma\'lumotnomalar ---
   'normative-docs': { label: 'Normativ hujjatlar', icon: BookOpen, module: 'reports', order: 19 },
+  sfera: { label: 'Sfera Balance', icon: Gauge, module: 'reports', order: 19.5 },
   products: { label: 'Mahsulotlar katalogi', icon: Package, module: 'admin', order: 20 },
   contractors: { label: 'Kontragentlar', icon: Building2, module: 'admin', order: 21 },
   stations: { label: 'Stansiyalar', icon: MapPinned, module: 'admin', order: 22 },
@@ -1909,6 +1920,7 @@ export const RESOURCE_EXPLANATIONS: Record<string, string> = {
   flow: 'Estakadada yuklash, bo‘sh/to‘la (Tara/Brutto) tortish va rasmiy plombalash',
   road: 'Avtosisternalar navbati, tarozida tortish va nazorat punktidan chiqish',
   plans: 'Oylik va sutkalik rejalarning bajarilish monitoringi va tasdiqlash zanjiri',
+  sfera: 'Alohida Sfera Balance tizimi: sfera sathi, hajm, zichlik va massa real vaqtda',
   'normative-docs': 'Qonunlar, O‘ztemiryo‘l qoidalari, korxona yo‘riqnomalari va texnik reglamentlar bazasi',
   products: 'Yuklanadigan mahsulotlar (Polietilen, Polipropilen va b.) turlari va zichlik standartlari',
   contractors: 'Mahsulot oluvchi mijozlar, yuk oluvchilar va shartnoma parametrlari',

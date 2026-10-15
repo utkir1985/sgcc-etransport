@@ -6,7 +6,7 @@ import {
   TrainFront, Truck, X, ChevronDown, UserPlus, Menu, Layers, KeyRound,
   Building2, Database, Flame, ScrollText, LogIn, History, Factory, Clock,
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
-  Weight, Play, BadgeCheck, Target,
+  Weight, Play, BadgeCheck, Target, Gauge,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +19,7 @@ import {
 } from '../../utils/menuNav';
 import type { MenuItem } from '../../types';
 import { api } from '../../services/api';
+import { useRbacPermission } from '../../hooks/useRbacPermission';
 import { buildRoleNotifications } from '../../utils/roleNotifications';
 import { subscribeOrdersChanged } from '../../utils/realtimeSync';
 
@@ -28,7 +29,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidt
   Lock, FileCheck, Shield, ShieldCheck, FileSearch, Plug, TrendingUp, Activity, Truck,
   TrainFront, UserPlus, Menu, Layers, KeyRound, Building2, Database, Flame, ScrollText, LogIn, History, Factory, Clock,
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
-  Weight, Play, BadgeCheck, Target,
+  Weight, Play, BadgeCheck, Target, Gauge,
 };
 
 
@@ -51,6 +52,7 @@ const MENU_ITEM_COLORS: Record<string, string> = {
   reports: '#c084fc',           // Purple: Hisobotlar
   plans: '#a855f7',             // Purple: Rejalar
   'normative-docs': '#2dd4bf',  // Teal: Normativ hujjatlar
+  sfera: '#f97316',             // Orange: Sfera Balance
   'railway-intake': '#22d3ee',  // Cyan: Vagonlar reestri
   'wagon-registry': '#22d3ee',  // Cyan
   loading: '#fb923c',           // Orange: Yuklash (TM va XA)
@@ -320,7 +322,12 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
   const showLabels = !isDesktop || !collapsed;
   const isVisible = isDesktop || mobileOpen;
 
-  const items = useMemo(() => augmentMenuItems(menu, user?.role), [menu, user?.role]);
+  const { can } = useRbacPermission();
+  const canSfera = can('sfera.view');
+  const items = useMemo(
+    () => augmentMenuItems(menu, user?.role).filter(entry => entry.key !== 'sfera' || canSfera),
+    [menu, user?.role, canSfera],
+  );
   const [emptyWagonAlertCount, setEmptyWagonAlertCount] = useState(0);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [openFlyoutKey, setOpenFlyoutKey] = useState<string | null>(null);

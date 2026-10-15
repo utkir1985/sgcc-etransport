@@ -145,6 +145,11 @@ function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
   );
 }
 
+/** Sfera Balance — alohida tizim, E-Transport ichida faqat panel sifatida ochiladi. */
+function buildSferaItem(): MenuItem {
+  return item('sfera', 'Sfera Balance', '/sfera', 'Gauge');
+}
+
 function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
   return fromMap(
     byKey,
@@ -159,6 +164,14 @@ function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
  * Tarozi, TM/XA va boshqa ish panellari faqat tegishli rolning qo‘shimcha bandlari.
  */
 export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
+  // Sfera Balance paneli Normativ hujjatlardan keyin turadi
+  const base = buildMenuItems(menu, role);
+  const at = base.findIndex(entry => entry.key === 'normative-docs');
+  const sfera = buildSferaItem();
+  return at >= 0 ? [...base.slice(0, at + 1), sfera, ...base.slice(at + 1)] : [...base, sfera];
+}
+
+function buildMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
   const byKey = new Map(menu.map(entry => [entry.key, entry]));
 
   const dashboard = fromMap(
