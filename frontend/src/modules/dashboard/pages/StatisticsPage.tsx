@@ -796,7 +796,7 @@ export default function StatisticsPage() {
       }
       let status: St;
       let days = 0;
-      if (!deadline) status = finished ? 'done' : 'nodeadline';
+      if (!deadline) status = 'nodeadline';
       else if (finished && doneDay) { status = doneDay <= deadline ? 'ontime' : 'late'; days = Math.max(0, daysBetween(deadline, doneDay) - 1); }
       else if (finished) status = 'done';
       else if (deadline < today) { status = 'overdue'; days = daysBetween(deadline, today) - 1; }
