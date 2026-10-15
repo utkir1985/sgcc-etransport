@@ -19821,3 +19821,81 @@ html.dark .order-progress-track,
 @media (max-width: 767px) {
   .ndocs-table .ndocs-open-btn span { display: none; }
 }
+
+/* Normativ hujjatlar v3: jadvalda nom to‘liq (2 qatorgacha), kartochka 3/4 ustunli */
+.ndocs-table { min-width: 64rem !important; }
+.ndocs-table .ndocs-title strong {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+}
+.ndocs-table .ndocs-title small { white-space: nowrap; }
+.ndocs-table .ndocs-title { align-items: flex-start; }
+.ndocs-table .ndocs-title__icon { margin-top: 1px; }
+.ndocs-table td { overflow: hidden; }
+
+.ndocs-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (min-width: 1700px) { .ndocs-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .ndocs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ndocs-grid { grid-template-columns: 1fr; } }
+
+.ndocs-card {
+  gap: 10px;
+  border: 1px solid #e6edf5 !important;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+.ndocs-card:hover { border-color: var(--nd-border) !important; box-shadow: 0 10px 26px rgb(15 23 42 / 0.08); transform: translateY(-1px); }
+.ndocs-card { transition: box-shadow 160ms ease, border-color 160ms ease, transform 160ms ease; }
+.ndocs-card__head { display: flex; align-items: center; gap: 12px; }
+.ndocs-card__icon {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--nd-tone);
+  color: #fff;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--nd-tone) 30%, transparent);
+}
+.ndocs-card__kind { display: flex; min-width: 0; flex: 1 1 auto; flex-direction: column; }
+.ndocs-card__cat { overflow: hidden; color: var(--nd-tone); font-size: 12.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.ndocs-card__num { overflow: hidden; color: #64748b; font-size: 12.5px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.ndocs-card__title {
+  display: block !important;
+  margin-top: 2px;
+  overflow: visible !important;
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+  -webkit-line-clamp: unset !important;
+}
+.ndocs-card__desc {
+  min-height: 0 !important;
+  margin-top: -2px;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal !important;
+}
+.ndocs-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: auto;
+  border-top: 1px solid #eef2f7;
+  padding-top: 12px;
+  color: #64748b;
+  font-size: 12.5px;
+}
+.ndocs-card__foot .ndocs-open-btn { margin-left: auto; }
+.dark .ndocs-card { border-color: #1e293b !important; }
+.dark .ndocs-card:hover { border-color: var(--nd-border) !important; }
+.dark .ndocs-card__icon { box-shadow: none; color: #0f172a; }
+.dark .ndocs-card__num,
+.dark .ndocs-card__foot { color: #94a3b8; }

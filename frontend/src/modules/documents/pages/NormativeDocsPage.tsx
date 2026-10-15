@@ -12,9 +12,7 @@ import {
   X,
   LayoutGrid,
   List,
-  Hash,
   CalendarDays,
-  UserRound,
     FileCheck,
   Building2,
   TrainFront,
@@ -414,18 +412,6 @@ export default function NormativeDocsPage() {
     { key: 'delete', label: 'O‘chirish', icon: Trash2, variant: 'danger', onClick: () => setDocToDelete(doc) },
   ];
 
-  const renderDocMeta = (doc: NormativeDocument) => {
-    const num = doc.DocumentNumber?.trim().replace(/^№\s*/, '');
-    return (
-      <>
-        <span className="ndocs-meta__item"><Hash className="w-3.5 h-3.5" />{num && num.toLowerCase() !== 'raqamsiz' ? num : 'Raqamsiz'}</span>
-        <span className="ndocs-meta__item"><CalendarDays className="w-3.5 h-3.5" />{formatDate(doc.DocumentDate)}</span>
-        <span className="ndocs-meta__item"><FileText className="w-3.5 h-3.5" />{formatBytes(doc.FileSize)}</span>
-        <span className="ndocs-meta__item ndocs-meta__item--user"><UserRound className="w-3.5 h-3.5" />{doc.UploadedBy || 'Admin'}</span>
-      </>
-    );
-  };
-
   return (
     <div className="space-y-4">
       <OrderStatusCards
@@ -525,26 +511,16 @@ export default function NormativeDocsPage() {
             {viewMode === 'list' ? (
               <div className="thub-table-wrap reestr-table-wrap">
                 <table className="thub-table reestr-table ndocs-table w-full">
-                  <colgroup>
-                    <col style={{ width: '3rem' }} />
-                    <col />
-                    <col style={{ width: '11.5rem' }} />
-                    <col style={{ width: '8rem' }} />
-                    <col style={{ width: '7rem' }} />
-                    <col style={{ width: '5rem' }} />
-                    <col style={{ width: '9rem' }} />
-                    <col style={{ width: '8rem' }} />
-                  </colgroup>
                   <thead>
                     <tr>
-                      <th className="ndocs-th--center">№</th>
-                      <th className="ndocs-th--left">Hujjat nomi</th>
-                      <th className="ndocs-th--left">Turi</th>
-                      <th className="ndocs-th--left">Raqami</th>
-                      <th className="ndocs-th--center">Sanasi</th>
-                      <th className="ndocs-th--right">Hajmi</th>
-                      <th className="ndocs-th--left">Yukladi</th>
-                      <th className="ndocs-th--right">Amallar</th>
+                      <th className="ndocs-th--center" style={{ width: '3rem' }}>№</th>
+                      <th className="ndocs-th--left ndocs-th--title">Hujjat nomi</th>
+                      <th className="ndocs-th--left" style={{ width: '12rem' }}>Turi</th>
+                      <th className="ndocs-th--left" style={{ width: '8.5rem' }}>Raqami</th>
+                      <th className="ndocs-th--center" style={{ width: '7rem' }}>Sanasi</th>
+                      <th className="ndocs-th--right" style={{ width: '5.5rem' }}>Hajmi</th>
+                      <th className="ndocs-th--left" style={{ width: '9.5rem' }}>Yukladi</th>
+                      <th className="ndocs-th--right" style={{ width: '10rem' }}>Amallar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -595,16 +571,22 @@ export default function NormativeDocsPage() {
                   return (
                     <article key={doc.Id} className={`ndocs-card ndocs-tone--${cat.key}`} role="listitem">
                       <div className="ndocs-card__head">
-                        <span className="ndocs-row__icon"><CatIcon className="w-5 h-5" /></span>
-                        <span className="ndocs-meta__cat">{cat.label}</span>
+                        <span className="ndocs-card__icon"><CatIcon className="w-5 h-5" /></span>
+                        <div className="ndocs-card__kind">
+                          <span className="ndocs-card__cat">{cat.label}</span>
+                          <span className="ndocs-card__num">
+                            {(() => { const num = doc.DocumentNumber?.trim().replace(/^№\s*/, ''); return num && num.toLowerCase() !== 'raqamsiz' ? `№ ${num}` : 'Raqamsiz'; })()}
+                          </span>
+                        </div>
                         <OrderSheetMenu items={docMenuItems(doc)} compact />
                       </div>
-                      <button type="button" className="ndocs-card__title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
+                      <button type="button" className="ndocs-card__title" onClick={() => { void handleOpenPreview(doc); }}>
                         {doc.Title}
                       </button>
-                      {doc.Description ? <p className="ndocs-card__desc">{doc.Description}</p> : <p className="ndocs-card__desc" />}
+                      {doc.Description ? <p className="ndocs-card__desc">{doc.Description}</p> : null}
                       <div className="ndocs-card__foot">
-                        <div className="ndocs-meta">{renderDocMeta(doc)}</div>
+                        <span className="ndocs-meta__item"><CalendarDays className="w-3.5 h-3.5" />{formatDate(doc.DocumentDate)}</span>
+                        <span className="ndocs-meta__item"><FileText className="w-3.5 h-3.5" />{formatBytes(doc.FileSize)}</span>
                         <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
                           <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
                         </button>
