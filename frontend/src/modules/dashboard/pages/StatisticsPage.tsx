@@ -19,6 +19,7 @@ import {
 import {
   Activity,
   CheckCircle2,
+  FileDown,
   Clock3,
   FileSpreadsheet,
   GitCompareArrows,
@@ -279,6 +280,7 @@ export default function StatisticsPage() {
   const [registries, setRegistries] = useState<LoadingRegistry[]>([]);
   const [loading, setLoading] = useState(true);
   const [drill, setDrill] = useState<DrillState | null>(null);
+  const [printAll, setPrintAll] = useState(false);
   const [gran, setGran] = useState<'day' | 'week' | 'month'>('day');
   const [dailyMetric, setDailyMetric] = useState<'vagon' | 'tonna'>('vagon');
   const [stationMetric, setStationMetric] = useState<'tonna' | 'vagon'>('tonna');
@@ -1069,11 +1071,43 @@ export default function StatisticsPage() {
     { tone: 'violet', icon: Truck, title: 'Jo‘natildi', hint: tons(cur.exitTons), value: `${cur.exitWagons} vagon`, delta: <Delta cur={cur.exitWagons} prev={prev ? prev.exitWagons : null} /> },
   ];
 
+  // PDF hisobot: barcha bo‘limlar bitta sahifada chiziladi va chop etish oynasi ochiladi
+  useEffect(() => {
+    if (!printAll) return;
+    const done = () => setPrintAll(false);
+    window.addEventListener('afterprint', done);
+    const timer = window.setTimeout(() => window.print(), 900);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('afterprint', done);
+    };
+  }, [printAll]);
+  const show = (t: Tab) => (printAll ? t !== 'overview' : tab === t);
+  const sectionTitle = (t: Tab) => (printAll ? <h2 className="stat-print-section">{TABS.find(x => x.id === t)?.label}</h2> : null);
+  const filterSummary = [
+    range.from || range.to ? `Davr: ${range.from || '…'} — ${range.to || '…'}` : 'Davr: barcha',
+    filters.products.length ? `Mahsulot: ${filters.products.map(prodLabel).join(', ')}` : null,
+    filters.transport ? `Transport: ${filters.transport === 'Road' ? 'Avtotransport' : 'Temir yo‘l'}` : null,
+    filters.contractors.length ? `Kontragent: ${filters.contractors.map(shortContractor).join(', ')}` : null,
+    filters.stations.length ? `Stansiya: ${filters.stations.join(', ')}` : null,
+    filters.ownership ? `Vagon: ${filters.ownership === 'majmua' ? 'Majmua' : 'Tashqi (O‘TY)'}` : null,
+    cmpRange ? `Solishtirma davr: ${cmpRange.from} — ${cmpRange.to}` : null,
+  ].filter(Boolean).join(' · ');
+
   const hasFilters = Boolean(filters.products.length || filters.transport || filters.contractors.length || filters.stations.length || filters.ownership || range.from || range.to || compare !== 'none');
   const needRange = !range.from || !range.to;
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4${printAll ? ' stat-printing' : ''}`}>
+      {printAll ? (
+        <header className="stat-print-header">
+          <div>
+            <h1>E-Transport — Statistika hisoboti</h1>
+            <p>{filterSummary}</p>
+          </div>
+          <span>{new Intl.DateTimeFormat('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tashkent' }).format(new Date())}</span>
+        </header>
+      ) : null}
       <div className="order-status-cards order-status-cards--four plan-kpis">
         {kpis.map(k => {
           const Icon = k.icon;
@@ -1102,6 +1136,10 @@ export default function StatisticsPage() {
             </div>
             <DateRangePicker from={range.from} to={range.to} onFromChange={v => setParam({ from: v })} onToChange={v => setParam({ to: v })} />
             <div className="stats-filters__spacer" />
+            <button type="button" className="btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap" onClick={() => { setDrill(null); setPrintAll(true); }} disabled={loading || printAll} title="Barcha bo‘limlar diagrammalari bilan — chop etish oynasida «PDF sifatida saqlash»">
+              <FileDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>{printAll ? 'Tayyorlanmoqda…' : 'PDF hisobot'}</span>
+            </button>
             <button type="button" className="btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap" onClick={exportAll} disabled={loading}>
               <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Excel</span>
@@ -1189,7 +1227,7 @@ export default function StatisticsPage() {
 
         {loading ? <div className="stat-empty">Ma’lumotlar yuklanmoqda…</div> : (
           <>
-            {tab === 'overview' ? (
+            {show('overview') ? (
               <>
                 <div className="stat-grid stat-grid--1-1">
                   {monthlyChart}
@@ -1203,7 +1241,7 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
-            {tab === 'plan' || tab === 'overview' ? (
+            {printAll || tab === 'plan' || tab === 'overview' ? (
               <ChartCard
                 title={`${MONTH_NAMES_UZ[cm - 1]} oyi — oy oxirigacha prognoz`}
                 hint={`Reja: ${tons(forecast.plan)} · bajarildi: ${tons(forecast.base)} · hozirgi sur’at: ${tons(forecast.pace)}/kun · prognoz: ${tons(forecast.projected)} (${forecast.pct}%)${forecast.plan > forecast.projected ? ` · rejaga yetish uchun kuniga ${tons(forecast.need)} kerak` : ''}`}
@@ -1225,8 +1263,9 @@ export default function StatisticsPage() {
               </ChartCard>
             ) : null}
 
-            {tab === 'plan' ? (
+            {show('plan') ? (
               <>
+                {sectionTitle('plan')}
                 <div className="stat-grid stat-grid--2-1">
                   {monthlyChart}
                   {pieCard('Mahsulotlar ulushi', byProduct, 'Yuklangan tonna bo‘yicha · bo‘lak bosilsa — buyurtmalar', name => drillOrders(`${name} — buyurtmalar`, l => prodLabel(l.order.productType) === name))}
@@ -1272,8 +1311,9 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
-            {tab === 'loading' ? (
+            {show('loading') ? (
               <>
+                {sectionTitle('loading')}
                 {dailyChart}
                 <div className="stat-grid stat-grid--1-1">
                   <ChartCard title="Hafta kunlari bo‘yicha jo‘natish" hint="Bir kunda o‘rtacha chiqqan vagonlar">
@@ -1327,8 +1367,9 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
-            {tab === 'idle' ? (
+            {show('idle') ? (
               <>
+                {sectionTitle('idle')}
                 <div className="stat-grid stat-grid--1-1">
                   {stageChartCard}
                   <ChartCard title="Zavodda turish vaqti (kunlar bo‘yicha)" hint={`Odatiy (mediana) ${r1(cur.stayMedian)} soat · me’yordan oshgan: ${cur.stayOver} / ${cur.stays.length} vagon`}>
@@ -1376,8 +1417,9 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
-            {tab === 'quality' ? (
+            {show('quality') ? (
               <>
+                {sectionTitle('quality')}
                 <ChartCard
                   title="Mahsulotlar bo‘yicha yuklash natijasi"
                   hint={`Tortilgan: ${cur.weights.length} vagon · ortiqcha yuklash: ${cur.weights.filter(w => w.status === 'overload').length} · kam yuklash: ${cur.weights.filter(w => w.status === 'underload').length} · ≈ vagon sig‘imi mahsulot turi bo‘yicha taxminiy`}
@@ -1430,8 +1472,9 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
-            {tab === 'defects' ? (
+            {show('defects') ? (
               <>
+                {sectionTitle('defects')}
                 <p className="stat-note">
                   Jami {cur.defectItems.length} ta dalolatnoma · qaytarilgan: {defectCharts.returned} · nosozlik sababli kechikish: {defectCharts.delay} soat
                 </p>
@@ -1478,8 +1521,9 @@ export default function StatisticsPage() {
                 </div>
               </>
             ) : null}
-            {tab === 'staff' ? (
+            {show('staff') ? (
               <>
+                {sectionTitle('staff')}
                 <ChartCard title="Kelishuv va tasdiqlash vaqti" hint="Hujjat yaratilgandan tasdiqlangungacha, mediana (daqiqa) · davrda tasdiqlanganlar bo‘yicha">
                   {approvals.length === 0 ? empty() : (
                     <ResponsiveContainer width="100%" height={Math.max(220, approvals.length * 34 + 30)}>

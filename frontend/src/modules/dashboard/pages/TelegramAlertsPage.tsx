@@ -36,6 +36,8 @@ export function TelegramAlertsPage() {
   const [autoDemurrage, setAutoDemurrage] = useState(() => getTelegramConfig().autoDemurrage);
   const [autoParty, setAutoParty] = useState(() => getTelegramConfig().autoParty);
   const [autoDailySummary, setAutoDailySummary] = useState(() => getTelegramConfig().autoDailySummary);
+  const [autoWeeklySummary, setAutoWeeklySummary] = useState(() => getTelegramConfig().autoWeeklySummary ?? true);
+  const [summarySending, setSummarySending] = useState<'daily' | 'weekly' | null>(null);
 
   const [sending, setSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -57,6 +59,7 @@ export function TelegramAlertsPage() {
           if (typeof d.autoDemurrage === 'boolean') setAutoDemurrage(d.autoDemurrage);
           if (typeof d.autoParty === 'boolean') setAutoParty(d.autoParty);
           if (typeof d.autoDailySummary === 'boolean') setAutoDailySummary(d.autoDailySummary);
+          if (typeof d.autoWeeklySummary === 'boolean') setAutoWeeklySummary(d.autoWeeklySummary);
         }
       })
       .catch((err: any) => {
@@ -99,6 +102,7 @@ export function TelegramAlertsPage() {
       autoDemurrage,
       autoParty,
       autoDailySummary,
+      autoWeeklySummary,
     };
     saveTelegramConfig(payload);
     try {
@@ -108,6 +112,20 @@ export function TelegramAlertsPage() {
       setStatusMessage({ text: "Brauzerda saqlandi, serverga saqlashda xatolik: " + (err?.message || err), ok: false });
     }
     setTimeout(() => setStatusMessage(null), 4000);
+  };
+
+  const handleSendSummary = async (kind: 'daily' | 'weekly') => {
+    setSummarySending(kind);
+    setStatusMessage(null);
+    try {
+      await api.triggerTelegramSummary(kind);
+      setStatusMessage({ text: kind === 'daily' ? 'Kunlik xulosa Telegramga yuborildi.' : 'Haftalik xulosa Telegramga yuborildi.', ok: true });
+    } catch (err: any) {
+      setStatusMessage({ text: `Yuborib bo‘lmadi: ${err?.message || err}`, ok: false });
+    } finally {
+      setSummarySending(null);
+      setTimeout(() => setStatusMessage(null), 5000);
+    }
   };
 
   const handleSendTestMessage = async () => {
@@ -530,6 +548,42 @@ export function TelegramAlertsPage() {
                   className="w-4 h-4 text-sky-600 rounded cursor-pointer"
                 />
               </label>
+
+              {/* 7. Haftalik xulosa */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+                <div className="text-xs">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    Haftalik xulosa (dushanba 08:00)
+                  </span>
+                  <span className="text-slate-400 text-[11px]">O‘tgan hafta: jo‘natish, turish vaqti, reja ijrosi va prognoz</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={autoWeeklySummary}
+                  onChange={e => setAutoWeeklySummary(e.target.checked)}
+                  className="w-4 h-4 text-sky-600 rounded cursor-pointer"
+                />
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => { void handleSendSummary('daily'); }}
+                disabled={summarySending !== null}
+                className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+              >
+                {summarySending === 'daily' ? 'Yuborilmoqda…' : 'Kunlik xulosani hozir yuborish'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleSendSummary('weekly'); }}
+                disabled={summarySending !== null}
+                className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+              >
+                {summarySending === 'weekly' ? 'Yuborilmoqda…' : 'Haftalik xulosani hozir yuborish'}
+              </button>
             </div>
 
             <div className="pt-3">

@@ -1918,6 +1918,10 @@ class ApiClient {
     return this.post<ApiResponse<TelegramConfig>>('/notifications/telegram-settings', settings);
   }
 
+  async triggerTelegramSummary(kind: 'daily' | 'weekly'): Promise<ApiResponse<boolean>> {
+    return this.post<ApiResponse<boolean>>(`/notifications/telegram-settings/trigger-${kind}-summary`, {});
+  }
+
   async testTelegramSettings(settings?: Partial<TelegramConfig>): Promise<ApiResponse<boolean>> {
     return this.post<ApiResponse<boolean>>('/notifications/telegram-settings/test', settings || {});
   }

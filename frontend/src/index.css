@@ -20384,3 +20384,40 @@ html.dark .order-progress-track,
 .stat-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .stat-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
 .dark .stat-legend { color: #94a3b8; }
+
+/* ==== Statistika: PDF hisobot (chop etish) ==== */
+.stat-print-header { display: none; }
+.stat-print-section { display: none; }
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  html, body { background: #fff !important; }
+  aside, header:not(.stat-print-header), .stats-filters, .stats-tabs, .stat-toggles, .stat-drill, .docs-panel > .marketing-orders-toolbar { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+  .stat-printing .stat-print-header {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 8px;
+    color: #0f172a;
+  }
+  .stat-print-header h1 { font-size: 18px; font-weight: 800; }
+  .stat-print-header p { margin-top: 2px; color: #334155; font-size: 11px; }
+  .stat-print-header span { color: #475569; font-size: 11px; white-space: nowrap; }
+  .stat-printing .stat-print-section {
+    display: block !important;
+    margin: 10px 0 6px;
+    border-left: 4px solid #2563eb;
+    padding-left: 8px;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 800;
+    break-after: avoid;
+  }
+  .stat-printing .docs-panel { border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+  .stat-card { break-inside: avoid; border-color: #cbd5e1 !important; background: #fff !important; }
+  .stat-grid { gap: 10px !important; }
+  .order-status-card { border: 1px solid #cbd5e1 !important; box-shadow: none !important; }
+  .btn-secondary, .btn-primary { display: none !important; }
+}

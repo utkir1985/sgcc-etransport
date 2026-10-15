@@ -7,6 +7,7 @@ export interface TelegramConfig {
   autoDemurrage: boolean;
   autoParty: boolean;
   autoDailySummary: boolean;
+  autoWeeklySummary?: boolean;
 }
 
 export const DEFAULT_TG_CONFIG: TelegramConfig = {

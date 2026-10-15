@@ -46,6 +46,12 @@ public class TelegramMonitoringHostedService(
                 {
                     await notificationService.SendDailySummaryAsync(stoppingToken);
                 }
+
+                // 3. Haftalik xulosa (dushanba, Toshkent vaqti bilan 08:00 - 08:15)
+                if (tashkentNow.DayOfWeek == DayOfWeek.Monday && tashkentNow.Hour == 8 && tashkentNow.Minute <= 15)
+                {
+                    await notificationService.SendWeeklySummaryAsync(stoppingToken);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

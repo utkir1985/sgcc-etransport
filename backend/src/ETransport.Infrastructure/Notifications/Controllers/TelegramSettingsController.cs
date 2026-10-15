@@ -46,8 +46,15 @@ public class TelegramSettingsController(ITelegramNotificationService telegramSer
     [HttpPost("trigger-daily-summary")]
     public async Task<ActionResult<ApiResponse<bool>>> TriggerDailySummary(CancellationToken ct)
     {
-        await telegramService.SendDailySummaryAsync(ct);
-        return Ok(new ApiResponse<bool>(true, true, "Kunlik smena xulosasi Telegramga jo'natildi"));
+        await telegramService.SendDailySummaryAsync(ct, force: true);
+        return Ok(new ApiResponse<bool>(true, true, "Kunlik xulosa Telegramga jo'natildi"));
+    }
+
+    [HttpPost("trigger-weekly-summary")]
+    public async Task<ActionResult<ApiResponse<bool>>> TriggerWeeklySummary(CancellationToken ct)
+    {
+        await telegramService.SendWeeklySummaryAsync(ct, force: true);
+        return Ok(new ApiResponse<bool>(true, true, "Haftalik xulosa Telegramga jo'natildi"));
     }
 
     [HttpPost("trigger-demurrage")]
