@@ -159,7 +159,7 @@ function computeAll(
   const transportOk = (lt?: string) => !f.transport || (lt || 'Railway') === f.transport;
 
   // Buyurtma qatorlari (faqat tasdiqlangan buyurtmalar)
-  const lines: { order: MonthlyOrder; contractor: string; plan: number; done: number; remain: number }[] = [];
+  const lines: { order: MonthlyOrder; line: MonthlyOrder['lines'][number]; contractor: string; plan: number; done: number; remain: number }[] = [];
   for (const o of orders) {
     if (o.status !== 'Active' && o.status !== 'Completed') continue;
     if (!inMonth(o.year, o.month, range) || !productOk(o.productType) || !transportOk(o.logisticsType)) continue;
@@ -169,7 +169,7 @@ function computeAll(
       if (f.stations.length && !stationOk(l.destinationStation) && !(l.stationShipments ?? []).some(s => stationOk(s.station))) continue;
       const plan = Number(l.tonCount || 0);
       const done = Number(l.fulfilledNetWeight ?? 0);
-      lines.push({ order: o, contractor, plan, done, remain: o.status === 'Completed' ? 0 : Math.max(0, plan - done) });
+      lines.push({ order: o, line: l, contractor, plan, done, remain: o.status === 'Completed' ? 0 : Math.max(0, plan - done) });
     }
   }
 
@@ -783,7 +783,7 @@ export default function StatisticsPage() {
     type St = 'ontime' | 'late' | 'overdue' | 'open' | 'done' | 'nodeadline';
     const rows: { order: MonthlyOrder; contractor: string; deadline: string; plan: number; done: number; status: St; doneDay?: string; days: number }[] = [];
     for (const l of cur.lines) {
-      const line = (l.order.lines ?? []).find(x => (x.contractor || 'Ko‘rsatilmagan').trim() === l.contractor && Number(x.tonCount || 0) === l.plan);
+      const line = l.line;
       const deadline = line?.lastLoadingDate ? localDateKey(line.lastLoadingDate) : '';
       const finished = l.order.status === 'Completed' || (l.plan > 0 && l.done >= l.plan * 0.999);
       let doneDay: string | undefined;
