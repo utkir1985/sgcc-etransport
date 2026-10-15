@@ -20421,3 +20421,59 @@ html.dark .order-progress-track,
   .order-status-card { border: 1px solid #cbd5e1 !important; box-shadow: none !important; }
   .btn-secondary, .btn-primary { display: none !important; }
 }
+
+/* Statistika filtrlari v2: bitta tartibli qator */
+.stats-filters { gap: 8px; }
+.stats-filters__row { gap: 8px; }
+.stats-ms__trigger { height: 38px; border-radius: 10px; padding: 0 12px; }
+.stats-period__trigger { max-width: 22rem; }
+.stats-action { height: 38px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+.stats-period__menu {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  width: min(560px, calc(100vw - 16px));
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.16);
+}
+.stats-period__presets { display: flex; flex-direction: column; gap: 2px; border-right: 1px solid #eef2f7; background: #f8fafc; padding: 8px; }
+.stats-period__presets button { border-radius: 8px; padding: 8px 10px; color: #334155; font-size: 13px; font-weight: 600; text-align: left; }
+.stats-period__presets button:hover { background: #eef2f7; }
+.stats-period__presets button.is-active { background: #2563eb; color: #fff; }
+.stats-period__body { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; }
+.stats-period__year { display: flex; align-items: center; justify-content: space-between; color: #64748b; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.stats-period__year select { height: 32px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 0 8px; color: #0f172a; font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.stats-period__months { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.stats-period__months button { border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 4px; color: #334155; font-size: 13px; font-weight: 600; }
+.stats-period__months button:hover:not(:disabled) { border-color: #93c5fd; color: #1d4ed8; }
+.stats-period__months button.is-active { border-color: #2563eb; background: #2563eb; color: #fff; }
+.stats-period__months button.is-anchor { box-shadow: 0 0 0 3px rgb(37 99 235 / 0.25); }
+.stats-period__months button:disabled { cursor: not-allowed; opacity: 0.4; }
+.stats-period__hint { color: #94a3b8; font-size: 12px; }
+.stats-period__range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border-top: 1px solid #eef2f7; padding-top: 10px; color: #64748b; font-size: 12.5px; font-weight: 600; }
+.stats-period__range span:first-child { margin-right: auto; }
+.stats-period__range input { height: 32px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 8px; color: #0f172a; font-size: 13px; }
+.stats-period__dash { color: #94a3b8; }
+.stats-period__foot { display: flex; justify-content: space-between; }
+.stats-period__foot button { border-radius: 8px; padding: 6px 12px; color: #2563eb; font-size: 13px; font-weight: 600; }
+.stats-period__foot button.is-primary { background: #2563eb; color: #fff; }
+
+.dark .stats-period__menu { border-color: #334155; background: #0f172a; box-shadow: 0 18px 40px rgb(0 0 0 / 0.5); }
+.dark .stats-period__presets { border-color: #1e293b; background: #0b1222; }
+.dark .stats-period__presets button { color: #cbd5e1; }
+.dark .stats-period__presets button:hover { background: #1e293b; }
+.dark .stats-period__presets button.is-active { background: #2563eb; color: #fff; }
+.dark .stats-period__year select, .dark .stats-period__range input { border-color: #334155; background: #0b1222; color: #f1f5f9; color-scheme: dark; }
+.dark .stats-period__months button { border-color: #334155; color: #cbd5e1; }
+.dark .stats-period__months button.is-active { border-color: #3b82f6; background: #2563eb; color: #fff; }
+.dark .stats-period__range { border-color: #1e293b; }
+@media (max-width: 560px) {
+  .stats-period__menu { grid-template-columns: 1fr; }
+  .stats-period__presets { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid #eef2f7; }
+  .stats-period__months { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

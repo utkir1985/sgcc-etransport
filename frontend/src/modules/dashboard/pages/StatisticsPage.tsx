@@ -22,7 +22,6 @@ import {
   FileDown,
   Clock3,
   FileSpreadsheet,
-  GitCompareArrows,
   Hourglass,
   LayoutDashboard,
   Scale,
@@ -34,7 +33,6 @@ import {
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 import type { EmptyWagonArrival, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
-import { DateRangePicker } from '../../../shared/components/DateRangePicker';
 import { getProductLabel } from '../../../shared/constants/productTypes';
 import { logisticsFromRoute } from '../../../shared/constants/logisticsTypes';
 import { DEFECT_ACT_TYPE_LABEL } from '../../../shared/constants/defectActTypes';
@@ -45,6 +43,7 @@ import { exportSheets, todayStamp } from '../../../shared/utils/excelExport';
 import { buildDefectsGu23Analysis, buildDemurrageAnalysis, buildWeightAnalysis } from '../utils/demurrageUtils';
 import { loadedWagonCountOf, localDateKey, wagonCountOf } from '../utils/sharedPanels';
 import { StatsMultiSelect, type StatsOption } from '../components/StatsMultiSelect';
+import { StatsPeriodPicker } from '../components/StatsPeriodPicker';
 import { StatsDrillTable, type DrillColumn, type DrillRow, type DrillState } from '../components/StatsDrillTable';
 
 const PRODUCT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
@@ -369,32 +368,6 @@ export default function StatisticsPage() {
     { id: 'lastyear', label: 'O‘tgan yil', from: monthStart(cy - 1, 1), to: monthEnd(cy - 1, 12) },
     { id: 'all', label: 'Hammasi', from: '', to: '' },
   ];
-  const activePreset = presets.find(p => p.from === range.from && p.to === range.to)?.id;
-
-  // ---- Yil + oylar (Shift bilan bosilsa — oraliq) ----
-  const selYear = range.from ? Number(range.from.slice(0, 4)) : cy;
-  const selMonths = (() => {
-    const out = new Set<number>();
-    if (!range.from || !range.to || range.from.slice(0, 4) !== range.to.slice(0, 4)) return out;
-    const a = Number(range.from.slice(5, 7));
-    const b = Number(range.to.slice(5, 7));
-    if (range.from !== monthStart(selYear, a)) return out;
-    if (range.to !== monthEnd(selYear, b) && range.to !== todayIso()) return out;
-    for (let m = a; m <= b; m += 1) out.add(m);
-    return out;
-  })();
-  const monthTo = (y: number, m: number) => (y === cy && m === cm ? todayIso() : monthEnd(y, m));
-  const pickMonth = (m: number, extend: boolean) => {
-    if (extend && selMonths.size) {
-      const a = Math.min(...selMonths, m);
-      const b = Math.max(...selMonths, m);
-      setParam({ from: monthStart(selYear, a), to: monthTo(selYear, b) });
-    } else {
-      setParam({ from: monthStart(selYear, m), to: monthTo(selYear, m) });
-    }
-  };
-  const pickYear = (y: number) => setParam({ from: monthStart(y, 1), to: y === cy ? todayIso() : monthEnd(y, 12) });
-
   // ---- Solishtirma davr ----
   const cmpRange: Range | null = compare === 'none' || !range.from || !range.to
     ? null
@@ -1127,50 +1100,18 @@ export default function StatisticsPage() {
       <div className="docs-panel">
         <div className="stats-filters">
           <div className="stats-filters__row">
-            <div className="stats-presets" role="group" aria-label="Davr">
-              {presets.map(p => (
-                <button key={p.id} type="button" className={`stats-chip${activePreset === p.id ? ' is-active' : ''}`} onClick={() => setParam({ from: p.from, to: p.to })}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            <DateRangePicker from={range.from} to={range.to} onFromChange={v => setParam({ from: v })} onToChange={v => setParam({ to: v })} />
-            <div className="stats-filters__spacer" />
-            <button type="button" className="btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap" onClick={() => { setDrill(null); setPrintAll(true); }} disabled={loading || printAll} title="Barcha bo‘limlar diagrammalari bilan — chop etish oynasida «PDF sifatida saqlash»">
-              <FileDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-              <span>{printAll ? 'Tayyorlanmoqda…' : 'PDF hisobot'}</span>
-            </button>
-            <button type="button" className="btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap" onClick={exportAll} disabled={loading}>
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Excel</span>
-            </button>
-          </div>
-
-          <div className="stats-filters__row">
-            <select className="stats-year" value={selYear} onChange={e => pickYear(Number(e.target.value))} aria-label="Yil">
-              {years.map(y => <option key={y} value={y}>{y}-yil</option>)}
-            </select>
-            <div className="stats-months" role="group" aria-label="Oylar">
-              {MONTH_NAMES_UZ.map((name, i) => {
-                const m = i + 1;
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    disabled={selYear === cy && m > cm}
-                    title={`${name} · Shift bilan bosilsa — oraliq tanlanadi`}
-                    className={`stats-month${selMonths.has(m) ? ' is-active' : ''}`}
-                    onClick={e => pickMonth(m, e.shiftKey)}
-                  >
-                    {name.slice(0, 3)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="stats-filters__row">
+            <StatsPeriodPicker
+              from={range.from}
+              to={range.to}
+              presets={presets}
+              years={years}
+              currentYear={cy}
+              currentMonth={cm}
+              onChange={(f, t) => setParam({ from: f, to: t })}
+            />
             <StatsMultiSelect label="Mahsulot" options={productOptions} value={filters.products} onChange={v => setParam({ p: v })} />
+            <StatsMultiSelect label="Kontragent" options={contractorOptions} value={filters.contractors} onChange={v => setParam({ c: v })} />
+            <StatsMultiSelect label="Stansiya" options={stationOptions} value={filters.stations} onChange={v => setParam({ s: v })} />
             <StatsMultiSelect
               label="Transport"
               single
@@ -1178,8 +1119,6 @@ export default function StatisticsPage() {
               value={filters.transport ? [filters.transport] : []}
               onChange={v => setParam({ t: v[0] || null })}
             />
-            <StatsMultiSelect label="Kontragent" options={contractorOptions} value={filters.contractors} onChange={v => setParam({ c: v })} />
-            <StatsMultiSelect label="Stansiya" options={stationOptions} value={filters.stations} onChange={v => setParam({ s: v })} />
             <StatsMultiSelect
               label="Vagon"
               single
@@ -1187,29 +1126,36 @@ export default function StatisticsPage() {
               value={filters.ownership ? [filters.ownership] : []}
               onChange={v => setParam({ o: v[0] || null })}
             />
-            <div className="stats-compare" role="group" aria-label="Solishtirish">
-              <GitCompareArrows className="w-4 h-4" aria-hidden />
-              {([['none', 'Solishtirmaslik'], ['prev', 'Oldingi davr'], ['yoy', 'O‘tgan yil']] as const).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  disabled={id !== 'none' && needRange}
-                  title={id !== 'none' && needRange ? 'Avval davrni tanlang' : undefined}
-                  className={`stats-chip${compare === id ? ' is-active' : ''}`}
-                  onClick={() => setParam({ cmp: id === 'none' ? null : id })}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <StatsMultiSelect
+              label="Solishtirish"
+              single
+              allLabel="Yo‘q"
+              options={[{ value: 'prev', label: 'Oldingi davr bilan' }, { value: 'yoy', label: 'O‘tgan yil bilan' }]}
+              value={compare === 'none' ? [] : [compare]}
+              onChange={v => {
+                // Davr tanlanmagan bo‘lsa, solishtirish uchun «Bu oy» olinadi
+                const needs = v[0] && (!range.from || !range.to);
+                const month = presets.find(p => p.id === 'month')!;
+                setParam({ cmp: v[0] || null, ...(needs ? { from: month.from, to: month.to } : {}) });
+              }}
+            />
             {hasFilters ? (
               <button type="button" className="stats-reset" onClick={() => setSp(new URLSearchParams(tab === 'overview' ? {} : { tab }), { replace: true })}>
                 <X className="w-3.5 h-3.5" /> Tozalash
               </button>
             ) : null}
+            <div className="stats-filters__spacer" />
+            <button type="button" className="btn-secondary stats-action" onClick={() => { setDrill(null); setPrintAll(true); }} disabled={loading || printAll} title="Barcha bo‘limlar diagrammalari bilan — chop etish oynasida «PDF sifatida saqlash»">
+              <FileDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>{printAll ? 'Tayyorlanmoqda…' : 'PDF'}</span>
+            </button>
+            <button type="button" className="btn-secondary stats-action" onClick={exportAll} disabled={loading}>
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Excel</span>
+            </button>
           </div>
           {prev && cmpRange ? (
-            <p className="stats-compare-note">Solishtirma davr: {cmpRange.from} — {cmpRange.to}. Kartochkalardagi ▲▼ shu davrga nisbatan o‘zgarish.</p>
+            <p className="stats-compare-note">Solishtirma davr: {cmpRange.from.split('-').reverse().join('.')} — {cmpRange.to.split('-').reverse().join('.')}. Kartochkalardagi ▲▼ shu davrga nisbatan.</p>
           ) : null}
         </div>
 
