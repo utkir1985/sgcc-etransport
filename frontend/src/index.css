@@ -19993,3 +19993,4 @@ html.dark .order-progress-track,
 .dark .ndocs-table .ndocs-tone--railway   { --nd-border: rgb(251 191 36 / 0.55); }
 .dark .ndocs-table .ndocs-tone--internal  { --nd-border: rgb(74 222 128 / 0.55); }
 .dark .ndocs-table .ndocs-tone--technical { --nd-border: rgb(167 139 250 / 0.55); }
+.order-status-cards--four .order-status-card__count { border-radius: 8px; }
