@@ -9,9 +9,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  LayoutGrid,
-  List,
-  CalendarDays,
     FileCheck,
   Building2,
   TrainFront,
@@ -117,13 +114,6 @@ export default function NormativeDocsPage() {
   // Filters
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
-    try { return localStorage.getItem('ndocs-view') === 'grid' ? 'grid' : 'list'; } catch { return 'list'; }
-  });
-  const changeViewMode = (mode: 'list' | 'grid') => {
-    setViewMode(mode);
-    try { localStorage.setItem('ndocs-view', mode); } catch { /* ixtiyoriy */ }
-  };
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -448,30 +438,6 @@ export default function NormativeDocsPage() {
           </div>
           <div className="marketing-orders-toolbar__right">
             <div className="flex flex-nowrap items-center gap-2">
-              <div className="order-kind-toggle ndocs-view-toggle" role="radiogroup" aria-label="Ko‘rinish">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={viewMode === 'list'}
-                  className={`order-kind-toggle__btn${viewMode === 'list' ? ' is-active' : ''}`}
-                  onClick={() => changeViewMode('list')}
-                  title="Ro‘yxat"
-                >
-                  <List className="order-kind-toggle__icon" aria-hidden />
-                  <span className="ndocs-view-toggle__label">Ro‘yxat</span>
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={viewMode === 'grid'}
-                  className={`order-kind-toggle__btn${viewMode === 'grid' ? ' is-active' : ''}`}
-                  onClick={() => changeViewMode('grid')}
-                  title="Kartochka"
-                >
-                  <LayoutGrid className="order-kind-toggle__icon" aria-hidden />
-                  <span className="ndocs-view-toggle__label">Kartochka</span>
-                </button>
-              </div>
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(true)}
@@ -507,7 +473,6 @@ export default function NormativeDocsPage() {
           </div>
         ) : (
           <>
-            {viewMode === 'list' ? (
               <div className="thub-table-wrap reestr-table-wrap">
                 <table className="thub-table reestr-table ndocs-table w-full">
                   <thead>
@@ -556,36 +521,6 @@ export default function NormativeDocsPage() {
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div className="ndocs-grid" role="list">
-                {pageDocuments.map(doc => {
-                  const cat = getCategoryInfo(doc.Category);
-                  const CatIcon = cat.icon;
-                  return (
-                    <article key={doc.Id} className={`ndocs-card ndocs-tone--${cat.key}`} role="listitem">
-                      <div className="ndocs-card__head">
-                        <span className="ndocs-card__icon"><CatIcon className="w-5 h-5" /></span>
-                        <div className="ndocs-card__kind">
-                          <span className="ndocs-card__cat">{cat.label}</span>
-                          <span className="ndocs-card__num">
-                            {(() => { const num = doc.DocumentNumber?.trim().replace(/^№\s*/, ''); return num && num.toLowerCase() !== 'raqamsiz' ? `№ ${num}` : 'Raqamsiz'; })()}
-                          </span>
-                        </div>
-                        <OrderSheetMenu items={docMenuItems(doc)} compact />
-                      </div>
-                      <button type="button" className="ndocs-card__title" onClick={() => { void handleOpenPreview(doc); }}>
-                        {doc.Title}
-                      </button>
-                      {doc.Description ? <p className="ndocs-card__desc">{doc.Description}</p> : null}
-                      <div className="ndocs-card__foot">
-                        <span className="ndocs-meta__item"><CalendarDays className="w-3.5 h-3.5" />{formatDate(doc.DocumentDate)}</span>
-                        <DocumentChipButton onClick={() => { void handleOpenPreview(doc); }} title="Hujjatni ochish" />
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
 
             <TablePagination
               total={filteredDocuments.length}
