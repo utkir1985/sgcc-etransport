@@ -19994,3 +19994,19 @@ html.dark .order-progress-track,
 .dark .ndocs-table .ndocs-tone--internal  { --nd-border: rgb(74 222 128 / 0.55); }
 .dark .ndocs-table .ndocs-tone--technical { --nd-border: rgb(167 139 250 / 0.55); }
 .order-status-cards--four .order-status-card__count { border-radius: 8px; }
+
+/* Tungi rejim: normativ hujjatlar belgilari yumshoqroq (ko‘zni qamashtirmaydi) */
+.dark .ndocs-tone--law       { --nd-tone: #7fa8e6; --nd-bg: rgb(59 130 246 / 0.08); }
+.dark .ndocs-tone--railway   { --nd-tone: #d4a24c; --nd-bg: rgb(245 158 11 / 0.08); }
+.dark .ndocs-tone--internal  { --nd-tone: #6cbf8c; --nd-bg: rgb(34 197 94 / 0.08); }
+.dark .ndocs-tone--technical { --nd-tone: #a596dc; --nd-bg: rgb(139 92 246 / 0.09); }
+.dark .ndocs-table .ndocs-tone--law       { --nd-border: rgb(127 168 230 / 0.32); }
+.dark .ndocs-table .ndocs-tone--railway   { --nd-border: rgb(212 162 76 / 0.32); }
+.dark .ndocs-table .ndocs-tone--internal  { --nd-border: rgb(108 191 140 / 0.32); }
+.dark .ndocs-table .ndocs-tone--technical { --nd-border: rgb(165 150 220 / 0.32); }
+.dark .ndocs-table .ndocs-meta__cat { font-weight: 500; }
+.dark .ndocs-table .ndocs-number { --nd-border: #334155; color: #b6c2d2; }
+.dark .ndocs-table .ndocs-title strong { color: #e2e8f0; }
+.dark .ndocs-table .ndocs-title small { color: #8592a6; }
+.dark .ndocs-table .order-sheet-annex-chip__trigger { border-color: rgb(96 165 250 / 0.28); background: rgb(59 130 246 / 0.08); color: #9dbbe6; }
+.dark .order-status-cards--four .order-status-card__icon { filter: saturate(0.8) brightness(0.92); }
