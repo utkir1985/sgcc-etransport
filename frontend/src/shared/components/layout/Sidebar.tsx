@@ -52,8 +52,9 @@ const MENU_ITEM_COLORS: Record<string, string> = {
   reports: '#c084fc',           // Purple: Hisobotlar
   plans: '#a855f7',             // Purple: Rejalar
   'normative-docs': '#2dd4bf',  // Teal: Normativ hujjatlar
-  'sfera-lpg-group': '#f97316', // Orange: Suyultirilgan gaz sfera
-  'sfera-cond-group': '#38bdf8',// Sky: Gaz kondensati sfera
+  sfera: '#f97316',             // Orange: Mahsulot ishlab chiqarish ko'rsatkichlari (Sfera)
+  'sfera-lpg-group': '#fb923c', // Orange: Suyultirilgan gaz
+  'sfera-cond-group': '#38bdf8',// Sky: Gaz kondensati
   'railway-intake': '#22d3ee',  // Cyan: Vagonlar reestri
   'wagon-registry': '#22d3ee',  // Cyan
   loading: '#fb923c',           // Orange: Yuklash (TM va XA)
@@ -143,6 +144,50 @@ function subNavClass(isActive: boolean, isDark: boolean, showLabels: boolean) {
   ].join(' ');
 }
 
+/** Band yoki uning ichki bandlaridan biri faolmi (ichma-ich guruhlar uchun) */
+function itemOrChildActive(entry: MenuItem, pathname: string, search: string): boolean {
+  return entry.children?.length
+    ? entry.children.some(c => itemOrChildActive(c, pathname, search))
+    : menuItemMatches(entry, pathname, search);
+}
+
+/** Uchinchi daraja: guruh ichidagi ochiladigan kichik guruh (masalan, Suyultirilgan gaz) */
+function SidebarSubGroup({ group, isDark, onNavigate }: { group: MenuItem; isDark: boolean; onNavigate: () => void }) {
+  const location = useLocation();
+  const active = itemOrChildActive(group, location.pathname, location.search);
+  const [open, setOpen] = useState(active);
+  useEffect(() => { if (active) setOpen(true); }, [active]);
+  const Icon = ICONS[group.icon] || Layers;
+  return (
+    <div className="sidebar-nav-subgroup">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className={`${subNavClass(false, isDark, true)} w-full text-left sidebar-nav-subgroup__trigger${active ? ' is-active' : ''}`}
+      >
+        <Icon className="nav-icon nav-icon--sub" strokeWidth={active ? 2 : 1.75} style={{ color: getMenuItemColor(group) }} />
+        <span className="nav-label truncate flex-1">{group.label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 opacity-60 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} strokeWidth={1.75} />
+      </button>
+      {open && (
+        <div className="sidebar-nav-subgroup__items">
+          {group.children!.map(child => {
+            const ChildIcon = ICONS[child.icon] || Train;
+            const childActive = menuItemMatches(child, location.pathname, location.search);
+            return (
+              <NavLink key={child.key} to={child.path} end onClick={onNavigate} title={child.label} className={subNavClass(childActive, isDark, true)}>
+                <ChildIcon className="nav-icon nav-icon--sub" strokeWidth={childActive ? 2 : 1.75} style={!childActive ? { color: getMenuItemColor(child) } : undefined} />
+                <span className="nav-label truncate">{child.label}</span>
+              </NavLink>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SidebarMenuItem({
   item,
   isDark,
@@ -171,9 +216,7 @@ function SidebarMenuItem({
   const Icon = ICONS[item.icon] || LayoutDashboard;
   const itemColor = getMenuItemColor(item);
   const hasChildren = !!item.children?.length;
-  const isGroupActive = hasChildren && item.children!.some(
-    child => menuItemMatches(child, location.pathname, location.search),
-  );
+  const isGroupActive = hasChildren && itemOrChildActive(item, location.pathname, location.search);
 
   useEffect(() => {
     if (!flyoutOpen || showLabels) return;
@@ -235,8 +278,19 @@ function SidebarMenuItem({
             <div className="sidebar-nav-flyout__items">
               {item.children!.map(child => {
                 const ChildIcon = ICONS[child.icon] || Train;
-                if (!child.path) {
-                  return <p key={child.key} className="sidebar-nav-caption"><ChildIcon className="w-3.5 h-3.5" />{child.label}</p>;
+                if (!child.path || child.children?.length) {
+                  const caption = <p key={child.key} className="sidebar-nav-caption"><ChildIcon className="w-3.5 h-3.5" />{child.label}</p>;
+                  if (!child.children?.length) return caption;
+                  return [caption, ...child.children.map(g => {
+                    const GIcon = ICONS[g.icon] || Train;
+                    const gActive = menuItemMatches(g, location.pathname, location.search);
+                    return (
+                      <NavLink key={g.key} to={g.path} onClick={onNavigate} className={`sidebar-flyout-item${gActive ? ' sidebar-flyout-item--active' : ''}`}>
+                        <span className="sidebar-flyout-item__icon" style={!gActive ? { color: getMenuItemColor(g) } : undefined}><GIcon strokeWidth={gActive ? 2 : 1.75} /></span>
+                        <span className="sidebar-flyout-item__label">{g.label}</span>
+                      </NavLink>
+                    );
+                  })];
                 }
                 const childActive = menuItemMatches(child, location.pathname, location.search);
                 const childColor = getMenuItemColor(child);
@@ -292,6 +346,9 @@ function SidebarMenuItem({
         <div className="sidebar-nav-sub mt-0.5 space-y-0.5">
           {item.children!.map(child => {
             const ChildIcon = ICONS[child.icon] || Train;
+            if (child.children?.length) {
+              return <SidebarSubGroup key={child.key} group={child} isDark={isDark} onNavigate={onNavigate} />;
+            }
             if (!child.path) {
               return <p key={child.key} className="sidebar-nav-caption"><ChildIcon className="w-3.5 h-3.5" />{child.label}</p>;
             }
@@ -332,7 +389,7 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
   const { can } = useRbacPermission();
   const canSfera = can('sfera.view');
   const items = useMemo(
-    () => augmentMenuItems(menu, user?.role).filter(entry => !entry.key.startsWith('sfera-') || canSfera),
+    () => augmentMenuItems(menu, user?.role).filter(entry => entry.key !== 'sfera' || canSfera),
     [menu, user?.role, canSfera],
   );
   const [emptyWagonAlertCount, setEmptyWagonAlertCount] = useState(0);

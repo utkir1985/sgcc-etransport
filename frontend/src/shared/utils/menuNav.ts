@@ -145,26 +145,34 @@ function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
   );
 }
 
-/** Sfera Balance — alohida tizim; E-Transport ichida ikki panel (LPG sfera va kondensat) sifatida ochiladi. */
+/**
+ * Sfera Balance — alohida tizim; E-Transport ichida bitta asosiy panel
+ * (Mahsulot ishlab chiqarish ko‘rsatkichlari) → mahsulot guruhlari → sahifalar.
+ */
 function buildSferaItems(): MenuItem[] {
   return [
     {
-      ...item('sfera-lpg-group', 'Suyultirilgan gaz sfera', '/sfera?p=lpg', 'Flame'),
+      ...item('sfera', 'Mahsulot ishlab chiqarish ko‘rsatkichlari', '/sfera?p=lpg', 'Factory'),
       children: [
-        item('sfera-lpg', 'Real vaqt', '/sfera?p=lpg', 'Activity'),
-        item('sfera-lpg-daily', 'Sutkalik', '/sfera?p=lpg-daily', 'CalendarRange'),
-        item('sfera-lpg-monthly', 'Oylik', '/sfera?p=lpg-monthly', 'CalendarRange'),
-        item('sfera-lpg-yearly', 'Yillik', '/sfera?p=lpg-yearly', 'CalendarDays'),
-      ],
-    },
-    {
-      ...item('sfera-cond-group', 'Gaz kondensati sfera', '/sfera?p=cond', 'Droplets'),
-      children: [
-        item('sfera-cond', 'Real vaqt', '/sfera?p=cond', 'Activity'),
-        item('sfera-cond-hourly', 'Soatlik', '/sfera?p=cond-hourly', 'Clock'),
-        item('sfera-cond-daily', 'Sutkalik', '/sfera?p=cond-daily', 'CalendarRange'),
-        item('sfera-cond-monthly', 'Oylik', '/sfera?p=cond-monthly', 'CalendarRange'),
-        item('sfera-cond-yearly', 'Yillik', '/sfera?p=cond-yearly', 'CalendarDays'),
+        {
+          ...item('sfera-lpg-group', 'Suyultirilgan gaz', '/sfera?p=lpg', 'Flame'),
+          children: [
+            item('sfera-lpg', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=lpg', 'Activity'),
+            item('sfera-lpg-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=lpg-daily', 'CalendarRange'),
+            item('sfera-lpg-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=lpg-monthly', 'CalendarRange'),
+            item('sfera-lpg-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=lpg-yearly', 'CalendarDays'),
+          ],
+        },
+        {
+          ...item('sfera-cond-group', 'Gaz kondensati', '/sfera?p=cond', 'Droplets'),
+          children: [
+            item('sfera-cond', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=cond', 'Activity'),
+            item('sfera-cond-hourly', 'Soatlik ko‘rsatkichlar', '/sfera?p=cond-hourly', 'Clock'),
+            item('sfera-cond-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=cond-daily', 'CalendarRange'),
+            item('sfera-cond-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=cond-monthly', 'CalendarRange'),
+            item('sfera-cond-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=cond-yearly', 'CalendarDays'),
+          ],
+        },
       ],
     },
   ];
@@ -417,9 +425,21 @@ export function findActiveMenuTrail(
   pathname: string,
   search = '',
 ): { item: MenuItem; parent?: MenuItem } | undefined {
+  // Ichma-ich guruhlar (masalan, Sfera: panel → mahsulot → sahifa) — eng chuqur mos band
+  const findDeep = (list: MenuItem[]): MenuItem | undefined => {
+    for (const c of list) {
+      if (c.children?.length) {
+        const deep = findDeep(c.children);
+        if (deep) return deep;
+      } else if (menuItemMatches(c, pathname, search)) {
+        return c;
+      }
+    }
+    return undefined;
+  };
   for (const entry of menu) {
     if (entry.children?.length) {
-      const child = entry.children.find(c => menuItemMatches(c, pathname, search));
+      const child = findDeep(entry.children);
       if (child) return { item: child, parent: entry };
     }
 
