@@ -500,7 +500,9 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
               const next = !expandedGroups[item.key];
               if (next) {
                 setExpandedGroups({ [item.key]: true });
-                if (item.children?.length && activeTrail?.parent?.key !== item.key) {
+                // Ichki guruhli panel (Sfera) faqat ochiladi — kichik guruhlar yopiq ko‘rinadi, sahifa tanlanmaydi
+                const hasSubGroups = item.children?.some(c => c.children?.length);
+                if (item.children?.length && !hasSubGroups && activeTrail?.parent?.key !== item.key) {
                   navigate(item.path);
                 }
               } else {
