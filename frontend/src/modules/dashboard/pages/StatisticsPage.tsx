@@ -2067,32 +2067,6 @@ export default function StatisticsPage() {
                 <p className="stat-note">
                   Majmua vagonlari: <b>{fleet.total}</b> · davrda ishlagan: <b>{fleet.active}</b> ({fleet.tripsTotal} reys) · bir aylanish (mediana): <b>{fleet.cycle} kun</b> · zavoddan tashqarida: <b>{fleet.away} kun</b> · 15+ kun kelmagan: <b>{fleet.idle.length}</b>
                 </p>
-                <div className="stat-grid stat-grid--1-1">
-                  <ChartCard title="Aylanish vaqti taqsimoti" hint="Bir kelishdan keyingi kelishgacha o‘tgan kunlar (reyslar soni)">
-                    <ResponsiveContainer width="100%" height={270}>
-                      <BarChart data={fleet.hist} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid stroke={grid} vertical={false} />
-                        <XAxis dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis label={yUnit('reys')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
-                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} reys`} />
-                        <Bar dataKey="soni" name="Reys" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={56} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartCard>
-                  <ChartCard title="Eng ko‘p reys qilgan vagonlar" hint="Davrda zavodga kelishlar soni (top 15)">
-                    {fleet.top.length === 0 ? empty('Majmua vagonlari bo‘yicha ma’lumot yo‘q') : (
-                      <ResponsiveContainer width="100%" height={Math.max(200, fleet.top.length * 26 + 30)}>
-                        <BarChart data={fleet.top} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-                          <CartesianGrid stroke={grid} horizontal={false} />
-                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} reys`} />
-                          <Bar dataKey="reys" name="Reys" fill="#3b82f6" radius={[0, 6, 6, 0]} maxBarSize={18} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                </div>
                 <div className="stat-actions-row">
                   <button type="button" className="btn-secondary" onClick={() => openFleetDrill('Majmua vagonlari — to‘liq ro‘yxat', () => true)}>Barcha majmua vagonlari</button>
                   <button type="button" className="btn-secondary" onClick={() => openFleetDrill('15 kundan ortiq kelmagan vagonlar', r => r.idleDays >= 15)} disabled={fleet.idle.length === 0}>15+ kun kelmagan ({fleet.idle.length})</button>
@@ -2163,6 +2137,18 @@ export default function StatisticsPage() {
                       </ResponsiveContainer>
                     )}
                   </ChartCard>
+                  <ChartCard title="Aylanish vaqti taqsimoti" hint="Bir kelishdan keyingi kelishgacha o‘tgan kunlar (reyslar soni)">
+                    <ResponsiveContainer width="100%" height={270}>
+                      <BarChart data={fleet.hist} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid stroke={grid} vertical={false} />
+                        <XAxis dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis label={yUnit('reys')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} reys`} />
+                        <Bar dataKey="soni" name="Reys" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                </div>
                   <ChartCard title="Vagon bo‘yicha tashilgan yuk" hint="Davrda eng ko‘p tonna tashigan majmua vagonlari (top 12)">
                     {fleet2.tonsTop.length === 0 ? empty() : (
                       <ResponsiveContainer width="100%" height={Math.max(220, fleet2.tonsTop.length * 28 + 40)}>
@@ -2176,35 +2162,6 @@ export default function StatisticsPage() {
                       </ResponsiveContainer>
                     )}
                   </ChartCard>
-                </div>
-                <div className="stat-grid stat-grid--1-1">
-                  <ChartCard title="Eng kam ishlagan vagonlar" hint="Davrda ishlaganlar ichida eng kam tonna tashiganlar">
-                    {fleet2.tonsLow.length === 0 ? empty() : (
-                      <ResponsiveContainer width="100%" height={Math.max(200, fleet2.tonsLow.length * 28 + 40)}>
-                        <BarChart data={fleet2.tonsLow} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-                          <CartesianGrid stroke={grid} horizontal={false} />
-                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
-                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { reys?: number } }) => [`${tons(v)} · ${it?.payload?.reys ?? 0} reys`, 'Tashildi']} />
-                          <Bar dataKey="tonna" name="Tonna" fill="#94a3b8" radius={[0, 6, 6, 0]} maxBarSize={18} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                  <ChartCard title="Eng ko‘p nosozlik bergan vagonlar" hint="Qaytarilgan yoki dalolatnoma tuzilgan tashriflar soni">
-                    {fleet2.defectsTop.length === 0 ? empty('Nosozlik qayd etilmagan') : (
-                      <ResponsiveContainer width="100%" height={Math.max(200, fleet2.defectsTop.length * 28 + 40)}>
-                        <BarChart data={fleet2.defectsTop} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-                          <CartesianGrid stroke={grid} horizontal={false} />
-                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} marta`} />
-                          <Bar dataKey="soni" name="Nosozlik" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={18} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                </div>
               </>
             ) : null}
 
