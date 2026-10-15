@@ -940,6 +940,7 @@ export default function StatisticsPage() {
     }
     const today = todayIso();
     const cycles: number[] = [];
+    const cycleByMonth = new Map<string, number[]>();
     const away: number[] = [];
     const rows: { wagon: string; trips: number; last: string; idleDays: number; cycle: number }[] = [];
     for (const [wagon, vs] of visits) {
@@ -949,7 +950,7 @@ export default function StatisticsPage() {
       for (let i = 1; i < vs.length; i += 1) {
         if (!inDay(localDateKey(vs[i].at), range)) continue;
         const c = (new Date(vs[i].at).getTime() - new Date(vs[i - 1].at).getTime()) / 86400000;
-        if (c > 0 && c < 120) { cycles.push(c); wagonCycles.push(c); }
+        if (c > 0 && c < 120) { cycles.push(c); wagonCycles.push(c); const mk = localDateKey(vs[i].at).slice(0, 7); cycleByMonth.set(mk, [...(cycleByMonth.get(mk) ?? []), c]); }
         const ex = vs[i - 1].exit;
         if (ex) { const aw = (new Date(vs[i].at).getTime() - new Date(ex).getTime()) / 86400000; if (aw >= 0 && aw < 120) away.push(aw); }
       }
@@ -957,10 +958,12 @@ export default function StatisticsPage() {
       rows.push({ wagon, trips: inRange.length, last: localDateKey(last.at), idleDays: Math.max(0, daysBetween(localDateKey(last.exit || last.at), today) - 1), cycle: r1(median(wagonCycles)) });
     }
     const hist = [
-      { name: '≤ 3 kun', min: 0, max: 3 }, { name: '3–5 kun', min: 3, max: 5 }, { name: '5–7 kun', min: 5, max: 7 },
-      { name: '7–10 kun', min: 7, max: 10 }, { name: '10–15 kun', min: 10, max: 15 }, { name: '15+ kun', min: 15, max: 1e9 },
+      { name: '≤ 7 kun', min: 0, max: 7 }, { name: '7–10 kun', min: 7, max: 10 }, { name: '10–15 kun', min: 10, max: 15 },
+      { name: '15–20 kun', min: 15, max: 20 }, { name: '20–30 kun', min: 20, max: 30 }, { name: '30+ kun', min: 30, max: 1e9 },
     ].map(h => ({ name: h.name, soni: cycles.filter(c => c > h.min && c <= h.max).length }));
+    const cycleTrend = Array.from(cycleByMonth, ([k, v]) => ({ k, label: monthLabel(k), kun: r1(median(v)), reys: v.length })).sort((a, b) => a.k.localeCompare(b.k));
     return {
+      cycleTrend,
       total: rows.length,
       active: rows.filter(r => r.trips > 0).length,
       tripsTotal: rows.reduce((s0, r) => s0 + r.trips, 0),
@@ -2064,12 +2067,27 @@ export default function StatisticsPage() {
             {show('fleet') ? (
               <>
                 {sectionTitle('fleet')}
-                <p className="stat-note">
-                  Majmua vagonlari: <b>{fleet.total}</b> · davrda ishlagan: <b>{fleet.active}</b> ({fleet.tripsTotal} reys) · bir aylanish (mediana): <b>{fleet.cycle} kun</b> · zavoddan tashqarida: <b>{fleet.away} kun</b> · 15+ kun kelmagan: <b>{fleet.idle.length}</b>
-                </p>
-                <div className="stat-actions-row">
-                  <button type="button" className="btn-secondary" onClick={() => openFleetDrill('Majmua vagonlari — to‘liq ro‘yxat', () => true)}>Barcha majmua vagonlari</button>
-                  <button type="button" className="btn-secondary" onClick={() => openFleetDrill('15 kundan ortiq kelmagan vagonlar', r => r.idleDays >= 15)} disabled={fleet.idle.length === 0}>15+ kun kelmagan ({fleet.idle.length})</button>
+                <div className="order-status-cards order-status-cards--four plan-kpis">
+                  <div className="order-status-card order-status-card--blue">
+                    <span className="order-status-card__icon"><TrainFront strokeWidth={1.9} aria-hidden /></span>
+                    <span className="order-status-card__text"><strong>Majmua parki</strong><small>davrda harakatda: {fleet.active} vagon · {fleet.tripsTotal} reys</small></span>
+                    <span className="order-status-card__count">{fleet2.catalogCount || fleet.total} vagon</span>
+                  </div>
+                  <div className="order-status-card order-status-card--violet">
+                    <span className="order-status-card__icon"><Activity strokeWidth={1.9} aria-hidden /></span>
+                    <span className="order-status-card__text"><strong>Bir aylanish</strong><small>kelishdan keyingi kelishgacha (mediana)</small></span>
+                    <span className="order-status-card__count">{fleet.cycle} kun</span>
+                  </div>
+                  <div className="order-status-card order-status-card--amber">
+                    <span className="order-status-card__icon"><Truck strokeWidth={1.9} aria-hidden /></span>
+                    <span className="order-status-card__text"><strong>Zavoddan tashqarida</strong><small>chiqib, qaytib kelgunicha (mediana)</small></span>
+                    <span className="order-status-card__count">{fleet.away} kun</span>
+                  </div>
+                  <button type="button" className="order-status-card order-status-card--red-soft" onClick={() => openFleetDrill('15 kundan ortiq kelmagan vagonlar', r => r.idleDays >= 15)}>
+                    <span className="order-status-card__icon"><Hourglass strokeWidth={1.9} aria-hidden /></span>
+                    <span className="order-status-card__text"><strong>15+ kun kelmagan</strong><small>bosilsa — ro‘yxat</small></span>
+                    <span className="order-status-card__count">{fleet.idle.length} vagon</span>
+                  </button>
                 </div>
                 <h3 className="stat-mini-title">Park holati</h3>
                 {fleet2.catalogCount === 0 ? (
@@ -2149,6 +2167,19 @@ export default function StatisticsPage() {
                     </ResponsiveContainer>
                   </ChartCard>
                 </div>
+                <ChartCard title="Aylanish dinamikasi" hint="Oylar bo‘yicha bir aylanishning odatiy davomiyligi (mediana, kun) — pasaysa, park tezroq ishlayapti">
+                  {fleet.cycleTrend.length === 0 ? empty() : (
+                    <ResponsiveContainer width="100%" height={260}>
+                      <LineChart data={fleet.cycleTrend} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
+                        <CartesianGrid stroke={grid} vertical={false} />
+                        <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis label={yUnit('kun')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number, _n: string, it: { payload?: { reys?: number } }) => [`${v} kun (${it?.payload?.reys ?? 0} reys)`, 'Aylanish']} />
+                        <Line type="linear" dataKey="kun" name="Aylanish" stroke="#8b5cf6" strokeWidth={2.4} dot={{ r: 4 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
               </>
             ) : null}
 

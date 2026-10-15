@@ -20506,3 +20506,7 @@ html.dark .order-progress-track,
 .dark .stat-subsection svg { color: #60a5fa; }
 .stat-mini-title { margin: 6px 0 -4px; color: #475569; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .dark .stat-mini-title { color: #94a3b8; }
+.order-status-card--red-soft { cursor: pointer; }
+.order-status-card--red-soft .order-status-card__icon { background: #ef4444; }
+.order-status-card--red-soft .order-status-card__count { background: #fee2e2; color: #b91c1c; }
+.dark .order-status-card--red-soft .order-status-card__count { background: rgb(239 68 68 / 0.18); color: #fca5a5; }
