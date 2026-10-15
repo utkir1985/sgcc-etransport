@@ -1258,11 +1258,11 @@ public class DocumentsController(
 
                     orderLine.FulfilledWagonCount = Math.Max(0, orderLine.FulfilledWagonCount - wagonDelta);
                     orderLine.FulfilledNetWeight = Math.Max(0, orderLine.FulfilledNetWeight - netDelta);
-                    if (grpOrder.Status == OrderStatus.Completed)
-                    {
-                        grpOrder.Status = OrderStatus.Active;
-                    }
                 }
+
+                // Qaytarishdan keyin ham bajarilgan buyurtma «Yakunlangan»da qoladi (faqat qoldiq paydo bo‘lsa — «Ijroda»)
+                foreach (var oldOrder in oldOrders)
+                    OrderFulfillment.RefreshStatus(oldOrder);
             }
 
             // 2. Yangi tanlangan vagonlarni bazadan yuklash
