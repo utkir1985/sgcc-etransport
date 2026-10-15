@@ -147,7 +147,7 @@ export default function Header({
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeTrail = findActiveMenuTrail(augmentMenuItems(menu, user?.role), location.pathname, location.search);
+  const activeTrail = findActiveMenuTrail(augmentMenuItems(menu, user?.role, true), location.pathname, location.search);
   const currentItem = activeTrail?.item ?? menu[0];
   const headerTitle =
     location.pathname === '/profile'

@@ -14,25 +14,38 @@ const SFERA_URL = (import.meta.env.VITE_SFERA_URL as string | undefined)
   || `${window.location.protocol}//${window.location.hostname}:8010/`;
 const SFERA_ORIGIN = new URL(SFERA_URL).origin;
 
-const PAGES: Record<string, { group: string; title: string; route: string }> = {
-  lpg: { group: 'Suyultirilgan gaz', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/' },
-  'lpg-daily': { group: 'Suyultirilgan gaz', title: 'Sutkalik ko‘rsatkichlar', route: '/balance/daily' },
-  'lpg-monthly': { group: 'Suyultirilgan gaz', title: 'Oylik ko‘rsatkichlar', route: '/balance/monthly' },
-  'lpg-yearly': { group: 'Suyultirilgan gaz', title: 'Yillik ko‘rsatkichlar', route: '/balance/yearly' },
-  cond: { group: 'Gaz kondensati', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/condensate/monitoring' },
-  'cond-hourly': { group: 'Gaz kondensati', title: 'Soatlik ko‘rsatkichlar', route: '/condensate/hourly' },
-  'cond-daily': { group: 'Gaz kondensati', title: 'Sutkalik ko‘rsatkichlar', route: '/condensate/daily' },
-  'cond-monthly': { group: 'Gaz kondensati', title: 'Oylik ko‘rsatkichlar', route: '/condensate/monthly' },
-  'cond-yearly': { group: 'Gaz kondensati', title: 'Yillik ko‘rsatkichlar', route: '/condensate/yearly' },
+const LPG = 'Suyultirilgan gaz';
+const COND = 'Gaz kondensati';
+/** admin: true — faqat sfera.admin huquqi bilan (Sferaning admin bo‘limlari) */
+const PAGES: Record<string, { group: string; title: string; route: string; admin?: boolean }> = {
+  lpg: { group: LPG, title: 'Real vaqtdagi ko‘rsatkichlar', route: '/' },
+  'lpg-daily': { group: LPG, title: 'Sutkalik ko‘rsatkichlar', route: '/balance/daily' },
+  'lpg-monthly': { group: LPG, title: 'Oylik ko‘rsatkichlar', route: '/balance/monthly' },
+  'lpg-yearly': { group: LPG, title: 'Yillik ko‘rsatkichlar', route: '/balance/yearly' },
+  'lpg-flow': { group: LPG, title: 'Kiruvchi gaz', route: '/flow-history', admin: true },
+  'lpg-minute': { group: LPG, title: 'Sfera telemetriyasi', route: '/minute-history', admin: true },
+  'lpg-sources': { group: LPG, title: 'Ma’lumot manbalari', route: '/data-sources', admin: true },
+  'lpg-calc': { group: LPG, title: 'Hisoblashlar', route: '/calculations', admin: true },
+  'lpg-history': { group: LPG, title: 'V1/V2 tahlili', route: '/history', admin: true },
+  'lpg-settings': { group: LPG, title: 'Sozlamalar', route: '/settings?product=lpg', admin: true },
+  cond: { group: COND, title: 'Real vaqtdagi ko‘rsatkichlar', route: '/condensate/monitoring' },
+  'cond-hourly': { group: COND, title: 'Soatlik ko‘rsatkichlar', route: '/condensate/hourly' },
+  'cond-daily': { group: COND, title: 'Sutkalik ko‘rsatkichlar', route: '/condensate/daily' },
+  'cond-monthly': { group: COND, title: 'Oylik ko‘rsatkichlar', route: '/condensate/monthly' },
+  'cond-yearly': { group: COND, title: 'Yillik ko‘rsatkichlar', route: '/condensate/yearly' },
+  'cond-flow': { group: COND, title: 'Kiruvchi gaz kondensati', route: '/condensate/flow-history', admin: true },
+  'cond-telemetry': { group: COND, title: 'Silindr telemetriyasi', route: '/condensate/cylinder-telemetry', admin: true },
+  'cond-settings': { group: COND, title: 'Sozlamalar', route: '/settings?product=condensate', admin: true },
 };
 
 type Status = 'checking' | 'online' | 'offline';
 
 export default function SferaBalancePage() {
-  const { canSferaView } = useRbacPermission();
+  const { canSferaView, canSferaAdmin } = useRbacPermission();
   const { theme } = useTheme();
   const [params] = useSearchParams();
-  const pageKey = PAGES[params.get('p') ?? ''] ? params.get('p')! : 'lpg';
+  const requested = PAGES[params.get('p') ?? ''];
+  const pageKey = requested && (!requested.admin || canSferaAdmin) ? params.get('p')! : 'lpg';
   const page = PAGES[pageKey];
   const [status, setStatus] = useState<Status>('checking');
   const [frameKey, setFrameKey] = useState(0);
@@ -71,7 +84,12 @@ export default function SferaBalancePage() {
   }
 
   // Tema faqat birinchi yuklashda URL orqali, keyin postMessage bilan
-  const src = `${new URL(page.route, SFERA_URL).toString()}?embed=1&theme=${themeRef.current === 'dark' ? 'dark' : 'light'}`;
+  const srcUrl = new URL(page.route, SFERA_URL);
+  srcUrl.searchParams.set('embed', '1');
+  srcUrl.searchParams.set('theme', themeRef.current === 'dark' ? 'dark' : 'light');
+  // admin=1 — Sfera sarlavhasi (Admin rejimi tugmasi) ko‘rinadi; Sfera PIN-kodi baribir so‘raladi
+  srcUrl.searchParams.set('admin', canSferaAdmin ? '1' : '0');
+  const src = srcUrl.toString();
   const reload = () => { setFrameKey(k => k + 1); void check(); };
 
   return (

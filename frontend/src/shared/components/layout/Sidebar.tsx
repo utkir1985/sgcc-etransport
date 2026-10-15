@@ -6,7 +6,7 @@ import {
   TrainFront, Truck, X, ChevronDown, UserPlus, Menu, Layers, KeyRound,
   Building2, Database, Flame, ScrollText, LogIn, History, Factory, Clock,
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
-  Weight, Play, BadgeCheck, Target, Gauge, Droplets, CalendarRange, CalendarDays,
+  Weight, Play, BadgeCheck, Target, Gauge, Droplets, CalendarRange, CalendarDays, Sigma, SlidersHorizontal,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,7 +29,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidt
   Lock, FileCheck, Shield, ShieldCheck, FileSearch, Plug, TrendingUp, Activity, Truck,
   TrainFront, UserPlus, Menu, Layers, KeyRound, Building2, Database, Flame, ScrollText, LogIn, History, Factory, Clock,
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
-  Weight, Play, BadgeCheck, Target, Gauge, Droplets, CalendarRange, CalendarDays,
+  Weight, Play, BadgeCheck, Target, Gauge, Droplets, CalendarRange, CalendarDays, Sigma, SlidersHorizontal,
 };
 
 
@@ -391,10 +391,11 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
   const isVisible = isDesktop || mobileOpen;
 
   const { can } = useRbacPermission();
-  const canSfera = can('sfera.view');
+  const canSferaAdmin = can('sfera.admin');
+  const canSfera = can('sfera.view') || canSferaAdmin;
   const items = useMemo(
-    () => augmentMenuItems(menu, user?.role).filter(entry => entry.key !== 'sfera' || canSfera),
-    [menu, user?.role, canSfera],
+    () => augmentMenuItems(menu, user?.role, canSferaAdmin).filter(entry => entry.key !== 'sfera' || canSfera),
+    [menu, user?.role, canSfera, canSferaAdmin],
   );
   const [emptyWagonAlertCount, setEmptyWagonAlertCount] = useState(0);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});

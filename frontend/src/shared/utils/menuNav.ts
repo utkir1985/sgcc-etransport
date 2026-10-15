@@ -148,31 +148,41 @@ function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
 /**
  * Sfera Balance — alohida tizim; E-Transport ichida bitta asosiy panel
  * (Mahsulot ishlab chiqarish ko‘rsatkichlari) → mahsulot guruhlari → sahifalar.
+ * full=true (sfera.admin) — Sferaning admin bo‘limlari ham ko‘rinadi.
  */
-function buildSferaItems(): MenuItem[] {
+export function buildSferaItems(full = false): MenuItem[] {
+  const lpg = [
+    item('sfera-lpg', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=lpg', 'LayoutDashboard'),
+    item('sfera-lpg-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=lpg-daily', 'CalendarRange'),
+    item('sfera-lpg-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=lpg-monthly', 'CalendarRange'),
+    item('sfera-lpg-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=lpg-yearly', 'CalendarDays'),
+    ...(full ? [
+      item('sfera-lpg-flow', 'Kiruvchi gaz', '/sfera?p=lpg-flow', 'ArrowDownToLine'),
+      item('sfera-lpg-minute', 'Sfera telemetriyasi', '/sfera?p=lpg-minute', 'Clock'),
+      item('sfera-lpg-sources', 'Ma’lumot manbalari', '/sfera?p=lpg-sources', 'Database'),
+      item('sfera-lpg-calc', 'Hisoblashlar', '/sfera?p=lpg-calc', 'Sigma'),
+      item('sfera-lpg-history', 'V1/V2 tahlili', '/sfera?p=lpg-history', 'TrendingUp'),
+      item('sfera-lpg-settings', 'Sozlamalar', '/sfera?p=lpg-settings', 'SlidersHorizontal'),
+    ] : []),
+  ];
+  const cond = [
+    item('sfera-cond', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=cond', 'LayoutDashboard'),
+    item('sfera-cond-hourly', 'Soatlik ko‘rsatkichlar', '/sfera?p=cond-hourly', 'Clock'),
+    item('sfera-cond-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=cond-daily', 'CalendarRange'),
+    item('sfera-cond-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=cond-monthly', 'CalendarRange'),
+    item('sfera-cond-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=cond-yearly', 'CalendarDays'),
+    ...(full ? [
+      item('sfera-cond-flow', 'Kiruvchi gaz kondensati', '/sfera?p=cond-flow', 'ArrowDownToLine'),
+      item('sfera-cond-telemetry', 'Silindr telemetriyasi', '/sfera?p=cond-telemetry', 'Clock'),
+      item('sfera-cond-settings', 'Sozlamalar', '/sfera?p=cond-settings', 'SlidersHorizontal'),
+    ] : []),
+  ];
   return [
     {
       ...item('sfera', 'Mahsulot ishlab chiqarish ko‘rsatkichlari', '/sfera?p=lpg', 'Factory'),
       children: [
-        {
-          ...item('sfera-lpg-group', 'Suyultirilgan gaz', '/sfera?p=lpg', 'Flame'),
-          children: [
-            item('sfera-lpg', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=lpg', 'Activity'),
-            item('sfera-lpg-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=lpg-daily', 'CalendarRange'),
-            item('sfera-lpg-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=lpg-monthly', 'CalendarRange'),
-            item('sfera-lpg-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=lpg-yearly', 'CalendarDays'),
-          ],
-        },
-        {
-          ...item('sfera-cond-group', 'Gaz kondensati', '/sfera?p=cond', 'Droplets'),
-          children: [
-            item('sfera-cond', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=cond', 'Activity'),
-            item('sfera-cond-hourly', 'Soatlik ko‘rsatkichlar', '/sfera?p=cond-hourly', 'Clock'),
-            item('sfera-cond-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=cond-daily', 'CalendarRange'),
-            item('sfera-cond-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=cond-monthly', 'CalendarRange'),
-            item('sfera-cond-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=cond-yearly', 'CalendarDays'),
-          ],
-        },
+        { ...item('sfera-lpg-group', 'Suyultirilgan gaz', '/sfera?p=lpg', 'Flame'), children: lpg },
+        { ...item('sfera-cond-group', 'Gaz kondensati', '/sfera?p=cond', 'Droplets'), children: cond },
       ],
     },
   ];
@@ -191,11 +201,11 @@ function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
  * Boshqaruv paneli → Buyurtmalar → Yuklash jarayonlari → Majmuadagi vagonlar → Hisobotlar va reja.
  * Tarozi, TM/XA va boshqa ish panellari faqat tegishli rolning qo‘shimcha bandlari.
  */
-export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
+export function augmentMenuItems(menu: MenuItem[], role?: string, sferaFull = false): MenuItem[] {
   // Sfera panellari Normativ hujjatlardan keyin turadi
   const base = buildMenuItems(menu, role);
   const at = base.findIndex(entry => entry.key === 'normative-docs');
-  const sfera = buildSferaItems();
+  const sfera = buildSferaItems(sferaFull);
   return at >= 0 ? [...base.slice(0, at + 1), ...sfera, ...base.slice(at + 1)] : [...base, ...sfera];
 }
 

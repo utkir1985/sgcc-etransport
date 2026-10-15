@@ -80,7 +80,8 @@ export function useRbacPermission() {
     canNormativeDelete: can('normative-docs.delete'),
 
     // Sfera Balance (tashqi tizim paneli)
-    canSferaView: can('sfera.view'),
+    canSferaView: can('sfera.view') || can('sfera.admin'),
+    canSferaAdmin: can('sfera.admin'),
 
     // Ma'lumotnomalar
     canProductsCreate: can('products.create'),
