@@ -4,11 +4,12 @@ import {
   UploadCloud,
   Search,
   Download,
+  Plus,
+  FilePlus2,
   Pencil,
   Lock,
   Trash2,
   FileText,
-  CheckCircle2,
   AlertCircle,
   X,
     FileCheck,
@@ -28,6 +29,7 @@ import { PdfPagesViewer, printPdfUrl } from '../../../shared/components/PdfPages
 import type { NormativeDocument, CreateNormativeDocPayload } from '../../../shared/types';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
+import { DatePicker } from '../../../shared/components/DatePicker';
 import {
   getLocalNormativeDocs,
   saveLocalNormativeDoc,
@@ -586,8 +588,8 @@ export default function NormativeDocsPage() {
                 onClick={openCreateModal}
                 className="btn-primary marketing-orders-home__create whitespace-nowrap"
               >
-                <UploadCloud className="w-4 h-4" strokeWidth={2} />
-                <span>Hujjat<span className="marketing-orders-home__create-extra"> yuklash</span></span>
+                <Plus className="w-4 h-4" strokeWidth={2} />
+                <span>Yangi<span className="marketing-orders-home__create-extra"> hujjat</span></span>
               </button>
               ) : null}
             </div>
@@ -684,206 +686,157 @@ export default function NormativeDocsPage() {
       {/* UPLOAD MODAL */}
       {/* ======================================================== */}
       {uploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-                  <UploadCloud className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    {editingDoc ? 'Normativ hujjatni tahrirlash' : 'Yangi normativ hujjat yuklash'}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {editingDoc ? 'Ma’lumotlarni o‘zgartiring; faylni almashtirish ixtiyoriy' : 'PDF, Word, Excel yoki boshqa normativ hujjat faylini tizimga kiriting'}
-                  </p>
-                </div>
+        <div className="confirm-dialog-root" role="presentation">
+          <button type="button" className="confirm-dialog-backdrop" aria-label="Yopish" onClick={() => { if (!uploading) closeUploadModal(); }} />
+          <div className="confirm-dialog admin-user-dialog users-dialog ndocs-dialog" role="dialog" aria-modal="true">
+            <button type="button" className="confirm-dialog__close" aria-label="Yopish" onClick={closeUploadModal} disabled={uploading}>
+              <X className="w-4 h-4" strokeWidth={1.75} />
+            </button>
+            <div className="confirm-dialog__header">
+              <div className="confirm-dialog__icon">
+                {editingDoc ? <Pencil className="w-5 h-5" strokeWidth={1.75} /> : <FilePlus2 className="w-5 h-5" strokeWidth={1.75} />}
               </div>
-              <button
-                type="button"
-                onClick={closeUploadModal}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="min-w-0">
+                <h2 className="confirm-dialog__title">{editingDoc ? 'Hujjatni tahrirlash' : 'Yangi hujjat'}</h2>
+                <p className="users-dialog__subtitle">
+                  {editingDoc ? editingDoc.Title : 'Normativ hujjat ma’lumotlarini kiriting va faylini biriktiring'}
+                </p>
+              </div>
             </div>
 
-            <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
-              {uploadError && (
-                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{uploadError}</span>
-                </div>
-              )}
-
-              {/* Title */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Hujjat nomi <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formTitle}
-                  onChange={e => setFormTitle(e.target.value)}
-                  placeholder="Masalan: Temir yo‘llarda yuk tashish qoidalari..."
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Number and Date */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Hujjat raqami
-                    </label>
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                      (Ixtiyoriy / Propusk)
-                    </span>
+            <form className="admin-user-form" onSubmit={handleUploadSubmit}>
+              <div className="users-dialog__body">
+                {uploadError ? (
+                  <div className="ndocs-dialog__error" role="alert">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{uploadError}</span>
                   </div>
-                  <input
-                    type="text"
-                    value={formNumber}
-                    onChange={e => setFormNumber(e.target.value)}
-                    placeholder="Bilmasangiz, bo‘sh qoldiring"
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Qaror/qonun raqami noma'lum bo'lsa, kiritmasdan o'tishingiz mumkin
-                  </p>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Qabul qilingan sana
-                    </label>
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                      (Ixtiyoriy)
-                    </span>
+                ) : null}
+
+                <label className="admin-field">
+                  <span><em>*</em> Hujjat nomi</span>
+                  <div className="admin-field-control">
+                    <input
+                      required
+                      value={formTitle}
+                      onChange={e => setFormTitle(e.target.value)}
+                      placeholder="Masalan: Temir yo‘llarda yuk tashish qoidalari"
+                    />
                   </div>
-                  <input
-                    type="date"
-                    value={formDate}
-                    onChange={e => setFormDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                </label>
+
+                <div className="admin-field">
+                  <span>Turi</span>
+                  <div className="ndocs-kind-grid" role="radiogroup" aria-label="Hujjat turi">
+                    {CATEGORIES.filter(c => c.key !== 'all').map(cat => {
+                      const Icon = cat.icon;
+                      const active = formCategory === cat.key;
+                      return (
+                        <button
+                          key={cat.key}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          className={`ndocs-kind ndocs-tone--${cat.key}${active ? ' is-active' : ''}`}
+                          onClick={() => setFormCategory(cat.key)}
+                        >
+                          <span className="ndocs-kind__icon"><Icon className="w-4 h-4" /></span>
+                          <span className="ndocs-kind__label">{cat.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {/* Category */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Bo‘lim / Kategoriya
-                </label>
-                <select
-                  value={formCategory}
-                  onChange={e => setFormCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="law">Qonun va qarorlar</option>
-                  <option value="railway">O‘ztemiryo‘l qoidalari</option>
-                  <option value="internal">Korxona yo‘riqnomalari (SHGKM)</option>
-                  <option value="technical">Texnik reglamentlar (GOST / Standartlar)</option>
-                </select>
-              </div>
+                <div className="ndocs-dialog__row">
+                  <label className="admin-field">
+                    <span>Hujjat raqami</span>
+                    <div className="admin-field-control">
+                      <input
+                        value={formNumber}
+                        onChange={e => setFormNumber(e.target.value)}
+                        placeholder="Masalan: 312/SH"
+                      />
+                    </div>
+                    <small className="users-dialog__hint">Raqami bo‘lmasa, bo‘sh qoldiring</small>
+                  </label>
+                  <div className="admin-field">
+                    <span>Qabul qilingan sana</span>
+                    <DatePicker value={formDate} onChange={setFormDate} placeholder="Sanani tanlang" />
+                  </div>
+                </div>
 
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Qisqacha tavsif / Izoh
+                <label className="admin-field">
+                  <span>Qisqacha tavsif</span>
+                  <div className="admin-field-control ndocs-dialog__textarea">
+                    <textarea
+                      rows={3}
+                      value={formDescription}
+                      onChange={e => setFormDescription(e.target.value)}
+                      placeholder="Hujjat kimga mo‘ljallangan, asosiy mazmuni…"
+                    />
+                  </div>
                 </label>
-                <textarea
-                  rows={2}
-                  value={formDescription}
-                  onChange={e => setFormDescription(e.target.value)}
-                  placeholder="Hujjat kimga mo'ljallangan, asosiy mazmuni..."
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
 
-              {/* File Input */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  {editingDoc ? 'Faylni almashtirish' : 'Faylni yuklash'} {editingDoc ? <span className="normal-case font-medium text-slate-400">(ixtiyoriy — joriy: {editingDoc.FileName})</span> : <span className="text-rose-500">*</span>}
-                </label>
-                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-5 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors bg-slate-50/50 dark:bg-slate-800/40">
+                <div className="admin-field">
+                  <span>{editingDoc ? 'Fayl' : <><em>*</em> Fayl</>}</span>
                   <input
                     type="file"
                     id="normative-file-input"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                     className="hidden"
                     onChange={e => {
-                      if (e.target.files && e.target.files[0]) {
-                        setSelectedFile(e.target.files[0]);
-                      }
+                      if (e.target.files && e.target.files[0]) setSelectedFile(e.target.files[0]);
+                      e.target.value = '';
                     }}
                   />
-                  {selectedFile ? (
-                    <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div className="flex items-center gap-2.5 truncate">
-                        <FileCheck className="w-6 h-6 text-emerald-600 shrink-0" />
-                        <div className="text-left truncate">
-                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                            {selectedFile.name}
-                          </p>
-                          <p className="text-[11px] text-slate-400">
-                            {formatBytes(selectedFile.size)}
-                          </p>
-                        </div>
+                  {selectedFile || editingDoc ? (
+                    <div className="ndocs-file">
+                      <span className="ndocs-file__icon"><FileCheck className="w-5 h-5" /></span>
+                      <div className="min-w-0 flex-1">
+                        <p className="ndocs-file__name">{selectedFile ? selectedFile.name : editingDoc?.FileName}</p>
+                        <p className="ndocs-file__meta">
+                          {selectedFile ? formatBytes(selectedFile.size) : `${formatBytes(editingDoc?.FileSize ?? 0)} · joriy fayl`}
+                        </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedFile(null)}
-                        className="p-1 rounded text-slate-400 hover:text-rose-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <label htmlFor="normative-file-input" className="ndocs-file__btn">
+                        {selectedFile || editingDoc ? 'Almashtirish' : 'Tanlash'}
+                      </label>
+                      {selectedFile ? (
+                        <button type="button" className="ndocs-file__remove" onClick={() => setSelectedFile(null)} aria-label="Faylni olib tashlash">
+                          <X className="w-4 h-4" />
+                        </button>
+                      ) : null}
                     </div>
                   ) : (
                     <label
                       htmlFor="normative-file-input"
-                      className="cursor-pointer block text-slate-500 dark:text-slate-400"
+                      className="ndocs-drop"
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => {
+                        e.preventDefault();
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) setSelectedFile(f);
+                      }}
                     >
-                      <UploadCloud className="w-8 h-8 mx-auto text-blue-500 mb-2" />
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        Faylni tanlash uchun bosing yoki shu yerga tashlang
-                      </p>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        PDF, DOCX, XLSX, rasm formatlari (50 MB gacha)
-                      </p>
+                      <UploadCloud className="ndocs-drop__icon" />
+                      <strong>Faylni tanlang yoki shu yerga tashlang</strong>
+                      <small>PDF, DOCX, XLSX yoki rasm · 50 MB gacha</small>
                     </label>
                   )}
                 </div>
               </div>
 
-              {/* Modal Buttons */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={closeUploadModal}
-                  disabled={uploading}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
+              <div className="confirm-dialog__actions">
+                <button type="button" className="btn-secondary confirm-dialog__btn" onClick={closeUploadModal} disabled={uploading}>
                   Bekor qilish
                 </button>
                 <button
                   type="submit"
+                  className="btn-primary confirm-dialog__btn"
                   disabled={uploading || (!selectedFile && !editingDoc) || !formTitle.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/25 transition-all disabled:opacity-50"
                 >
-                  {uploading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Yuklanmoqda...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>{editingDoc ? 'Saqlash' : 'Yuklash va saqlash'}</span>
-                    </>
-                  )}
+                  {uploading ? 'Saqlanmoqda…' : editingDoc ? 'Saqlash' : 'Qo‘shish'}
                 </button>
               </div>
             </form>

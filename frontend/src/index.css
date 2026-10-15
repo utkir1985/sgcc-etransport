@@ -20010,3 +20010,144 @@ html.dark .order-progress-track,
 .dark .ndocs-table .ndocs-title small { color: #8592a6; }
 .dark .ndocs-table .order-sheet-annex-chip__trigger { border-color: rgb(96 165 250 / 0.28); background: rgb(59 130 246 / 0.08); color: #9dbbe6; }
 .dark .order-status-cards--four .order-status-card__icon { filter: saturate(0.8) brightness(0.92); }
+
+/* Normativ hujjat qo‘shish / tahrirlash oynasi — tizimdagi umumiy dialog andozasi */
+.admin-user-dialog.users-dialog.ndocs-dialog { width: min(100vw - 1.5rem, 44rem) !important; max-width: 44rem !important; }
+.ndocs-dialog .users-dialog__body { gap: 16px; }
+.ndocs-dialog__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 560px) { .ndocs-dialog__row { grid-template-columns: 1fr; } }
+.ndocs-dialog .admin-field { display: flex; flex-direction: column; }
+.ndocs-dialog .admin-field > span { color: #1e293b; font-size: 14px; font-weight: 600; }
+.ndocs-dialog .date-picker-trigger { min-height: 48px; border-radius: 10px; }
+.ndocs-dialog__textarea { min-height: 0 !important; padding: 0 !important; }
+.ndocs-dialog__textarea textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  padding: 12px 14px;
+  color: #0f172a;
+  font-size: 15px;
+  outline: none;
+}
+.ndocs-dialog__textarea textarea::placeholder { color: #94a3b8; }
+.ndocs-dialog__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  padding: 10px 12px;
+  color: #b91c1c;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.ndocs-kind-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 480px) { .ndocs-kind-grid { grid-template-columns: 1fr; } }
+.ndocs-kind {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d6dde6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 9px 12px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.ndocs-kind:hover { border-color: var(--nd-border); }
+.ndocs-kind__icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--nd-bg);
+  color: var(--nd-tone);
+}
+.ndocs-kind.is-active {
+  border-color: var(--nd-tone);
+  background: var(--nd-bg);
+  color: var(--nd-tone);
+  font-weight: 600;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--nd-tone) 14%, transparent);
+}
+.ndocs-kind.is-active .ndocs-kind__icon { background: var(--nd-tone); color: #fff; }
+
+.ndocs-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 22px 16px;
+  text-align: center;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.ndocs-drop:hover { border-color: #3b82f6; background: #eff6ff; }
+.ndocs-drop__icon { width: 30px; height: 30px; margin-bottom: 4px; color: #3b82f6; }
+.ndocs-drop strong { color: #1e293b; font-size: 14px; font-weight: 600; }
+.ndocs-drop small { color: #94a3b8; font-size: 12.5px; }
+
+.ndocs-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d6dde6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+}
+.ndocs-file__icon {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #ecfdf5;
+  color: #059669;
+}
+.ndocs-file__name { overflow: hidden; color: #0f172a; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.ndocs-file__meta { color: #64748b; font-size: 12.5px; }
+.ndocs-file__btn {
+  cursor: pointer;
+  border: 1px solid #d6dde6;
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ndocs-file__btn:hover { border-color: #3b82f6; color: #2563eb; }
+.ndocs-file__remove { display: inline-flex; border-radius: 8px; padding: 6px; color: #94a3b8; }
+.ndocs-file__remove:hover { background: #fef2f2; color: #dc2626; }
+
+.dark .ndocs-dialog .admin-field > span { color: #e2e8f0; }
+.dark .ndocs-dialog__textarea textarea { color: #f1f5f9; }
+.dark .ndocs-dialog__error { border-color: rgb(239 68 68 / 0.35); background: rgb(239 68 68 / 0.1); color: #fca5a5; }
+.dark .ndocs-kind { border-color: #334155; background: #0f172a; color: #cbd5e1; }
+.dark .ndocs-kind.is-active { background: var(--nd-bg); color: var(--nd-tone); box-shadow: none; }
+.dark .ndocs-kind.is-active .ndocs-kind__icon { color: #0f172a; }
+.dark .ndocs-drop { border-color: #334155; background: #0b1222; }
+.dark .ndocs-drop:hover { border-color: #3b82f6; background: rgb(59 130 246 / 0.08); }
+.dark .ndocs-drop strong { color: #e2e8f0; }
+.dark .ndocs-file { border-color: #334155; background: #0f172a; }
+.dark .ndocs-file__icon { background: rgb(16 185 129 / 0.12); color: #6ee7b7; }
+.dark .ndocs-file__name { color: #f1f5f9; }
+.dark .ndocs-file__meta { color: #94a3b8; }
+.dark .ndocs-file__btn { border-color: #334155; color: #cbd5e1; }
