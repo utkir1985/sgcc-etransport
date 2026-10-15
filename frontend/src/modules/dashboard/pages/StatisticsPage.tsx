@@ -1312,19 +1312,6 @@ export default function StatisticsPage() {
     });
   };
 
-  const openFleetDrill = (title: string, pred: (r: (typeof fleet.rows)[number]) => boolean) => {
-    openDrill({
-      title,
-      columns: [
-        { key: 'wagon', label: 'Vagon' }, { key: 'trips', label: 'Davrdagi reys', align: 'right' }, { key: 'cycle', label: 'Aylanish (kun)', align: 'right' },
-        { key: 'last', label: 'Oxirgi kelgan', align: 'center' }, { key: 'idle', label: 'Kelmaganiga (kun)', align: 'right' },
-      ],
-      rows: fleet.rows.filter(pred).sort((a, b) => b.idleDays - a.idleDays).map(r => ({
-        id: r.wagon,
-        cells: { wagon: r.wagon, trips: r.trips, cycle: r.cycle || '—', last: r.last.split('-').reverse().join('.'), idle: r.idleDays },
-      })),
-    });
-  };
 
   // Recharts bosish hodisasidan qator ma’lumotini olish
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
