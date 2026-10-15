@@ -960,7 +960,8 @@ export function buildHistoryTimeline(
         at: r.exitedToKengsoyAt,
         title: r.registryNumber || r.arrivalNumber,
         detail: `Chiqish · ${productLabel} · ${count} vagon`,
-        actor: r.shiftSupervisorApprovedByName || 'Temir yo‘l dispetcheri',
+        // Chiqishni Temir yo‘l bajaradi — smena boshlig‘ining (tasdiq) ismi bu yerga tegishli emas
+        actor: r.exitedToKengsoyByName || 'Temir yo‘l sexi xodimi',
         department: 'Temir yo‘l sexi',
         stageName: 'Zavoddan chiqarildi',
         statusBadge: 'Jo‘natildi',

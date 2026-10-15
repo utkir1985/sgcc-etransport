@@ -591,6 +591,7 @@ export interface LoadingRegistry {
   sentToENaklAt: string | null;
   handoverToMachinistAt: string | null;
   exitedToKengsoyAt: string | null;
+  exitedToKengsoyByName?: string;
   preparedAt: string;
   preparedByName?: string;
   economistApprovedByName?: string;

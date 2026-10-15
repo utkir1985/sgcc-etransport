@@ -334,6 +334,7 @@ public class LoadingRegistry
 
     // Temir yo‘l vagonlarni zavod hududidan Kengsoygacha olib chiqishi
     public DateTime? ExitedToKengsoyAt { get; set; }
+    public string ExitedToKengsoyByName { get; set; } = string.Empty;
 
     // Markaziy QR Link tizimi integratsiyasi
     public string QrGlobalId { get; set; } = string.Empty;

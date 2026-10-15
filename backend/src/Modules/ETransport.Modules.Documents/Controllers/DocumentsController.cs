@@ -1893,7 +1893,11 @@ public class DocumentsController(
         // Eski yozuvlarda alohida topshirish bo‘lmasa ham, ro‘yxatdan o‘tgan yuk xati chiqishga ochiq.
         registry.HandoverToMachinistAt ??= DateTime.UtcNow;
 
-        registry.ExitedToKengsoyAt ??= DateTime.UtcNow;
+        if (registry.ExitedToKengsoyAt is null)
+        {
+            registry.ExitedToKengsoyAt = DateTime.UtcNow;
+            registry.ExitedToKengsoyByName = CurrentUserName();
+        }
 
         var arrival = registry.EmptyWagonArrival;
         var routes = ParseWagonRoutes(registry.WagonRoutesJson);
@@ -2040,7 +2044,8 @@ public class DocumentsController(
             r.QrGlobalId ?? string.Empty,
             r.QrVerificationUrl ?? string.Empty,
             r.QrCodeBase64 ?? string.Empty,
-            r.QrRegisteredAt
+            r.QrRegisteredAt,
+            r.ExitedToKengsoyByName ?? string.Empty
         );
     }
 

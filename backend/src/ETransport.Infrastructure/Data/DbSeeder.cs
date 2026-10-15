@@ -1278,6 +1278,19 @@ public static class DbSeeder
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "IsApprovedByShiftSupervisor" boolean NOT NULL DEFAULT false;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ShiftSupervisorApprovedAt" timestamp with time zone NULL;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ShiftSupervisorApprovedByName" character varying(200) NOT NULL DEFAULT '';
+            ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ExitedToKengsoyByName" character varying(200) NOT NULL DEFAULT '';
+
+            -- Vagonlarni chiqargan xodim: eski yozuvlar uchun audit jurnalidan (WagonsDispatched) tiklanadi
+            UPDATE "LoadingRegistries" r
+            SET "ExitedToKengsoyByName" = sub."UserFullName"
+            FROM (
+              SELECT DISTINCT ON (a."EntityId") a."EntityId", a."UserFullName"
+              FROM "AuditLogs" a
+              WHERE a."Action" = 'WagonsDispatched' AND a."UserFullName" <> ''
+              ORDER BY a."EntityId", a."CreatedAt" DESC
+            ) sub
+            WHERE r."ExitedToKengsoyByName" = '' AND r."ExitedToKengsoyAt" IS NOT NULL
+              AND sub."EntityId" = r."Id"::text;
 
             -- Yangi ikki bosqichli chiqish modeliga o'tish:
             -- eski 1C demo reyestrlari avvaldan yakunlangan, joriy EWA reyestri esa

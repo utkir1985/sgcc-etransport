@@ -168,7 +168,8 @@ public record LoadingRegistryDto(
     string QrGlobalId = "",
     string QrVerificationUrl = "",
     string QrCodeBase64 = "",
-    DateTime? QrRegisteredAt = null
+    DateTime? QrRegisteredAt = null,
+    string ExitedToKengsoyByName = ""
 );
 
 public record LoadingRegistryWagonRouteDto(

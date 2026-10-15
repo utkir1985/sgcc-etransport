@@ -197,6 +197,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(r => r.PermitApprovedByName).HasMaxLength(200);
             e.Property(r => r.SecurityApprovedByName).HasMaxLength(200);
             e.Property(r => r.ShiftSupervisorApprovedByName).HasMaxLength(200);
+            e.Property(r => r.ExitedToKengsoyByName).HasMaxLength(200);
             e.Property(r => r.OrderNumber).HasMaxLength(100);
             e.Property(r => r.ContractNumber).HasMaxLength(150);
             e.Property(r => r.ContractorName).HasMaxLength(300);
