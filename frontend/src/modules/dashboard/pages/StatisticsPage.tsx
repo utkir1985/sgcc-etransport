@@ -688,7 +688,7 @@ export default function StatisticsPage() {
       cum += byDay[d];
       rows.push({
         label: String(d),
-        haqiqiy: d <= elapsed ? Math.round(cum) : undefined,
+        haqiqiy: d <= elapsed ? Math.max(0, Math.round(cum)) : undefined,
         prognoz: d >= elapsed ? Math.round(base + pace * (d - elapsed)) : undefined,
       });
     }
@@ -734,7 +734,7 @@ export default function StatisticsPage() {
       push(8, r.preparedAt, r.securityApprovedAt);
       push(9, r.preparedAt, r.economistApprovedAt);
     }
-    return steps.filter(st => st.vals.length > 0).map(st => ({ name: st.name, group: st.group, soat: r1(median(st.vals)), soni: st.vals.length }));
+    return steps.filter(st => st.vals.length > 0).map(st => ({ name: st.name, group: st.group, daqiqa: Math.round(median(st.vals) * 60), soni: st.vals.length }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders, arrivals, registries, range.from, range.to, filterKey]);
 
@@ -742,7 +742,8 @@ export default function StatisticsPage() {
     const m = new Map<string, { name: string; buyurtma: number; kirish: number; yuklash: number; yukxati: number }>();
     const add = (name: string | undefined | null, kind: 'buyurtma' | 'kirish' | 'yuklash' | 'yukxati', at?: string | null) => {
       const n = (name || '').trim();
-      if (!n || !at || !inDay(localDateKey(at), range)) return;
+      // Tizim va admin yozuvlari xodimlar reytingiga kirmaydi
+      if (!n || /tizim|admin/i.test(n) || !at || !inDay(localDateKey(at), range)) return;
       const row = m.get(n) ?? { name: n, buyurtma: 0, kirish: 0, yuklash: 0, yukxati: 0 };
       row[kind] += 1;
       m.set(n, row);
@@ -1479,15 +1480,15 @@ export default function StatisticsPage() {
             ) : null}
             {tab === 'staff' ? (
               <>
-                <ChartCard title="Kelishuv va tasdiqlash vaqti" hint="Hujjat yaratilgandan tasdiqlangungacha, mediana (soat) · davrda tasdiqlanganlar bo‘yicha">
+                <ChartCard title="Kelishuv va tasdiqlash vaqti" hint="Hujjat yaratilgandan tasdiqlangungacha, mediana (daqiqa) · davrda tasdiqlanganlar bo‘yicha">
                   {approvals.length === 0 ? empty() : (
                     <ResponsiveContainer width="100%" height={Math.max(220, approvals.length * 34 + 30)}>
                       <BarChart data={approvals} layout="vertical" margin={{ top: 4, right: 32, left: 8, bottom: 4 }}>
                         <CartesianGrid stroke={grid} horizontal={false} />
                         <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={210} />
-                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { soni?: number } }) => [`${v} soat (${it?.payload?.soni ?? 0} ta hujjat)`, 'Mediana']} />
-                        <Bar dataKey="soat" name="Mediana" radius={[0, 6, 6, 0]} maxBarSize={20}>
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { soni?: number } }) => [`${v} daqiqa (${it?.payload?.soni ?? 0} ta hujjat)`, 'Mediana']} />
+                        <Bar dataKey="daqiqa" name="Mediana" radius={[0, 6, 6, 0]} maxBarSize={20} minPointSize={2}>
                           {approvals.map((a, i) => <Cell key={i} fill={a.group === 'Buyurtma' ? '#3b82f6' : a.group === 'Kirish ruxsati' ? '#f59e0b' : '#8b5cf6'} />)}
                         </Bar>
                       </BarChart>
