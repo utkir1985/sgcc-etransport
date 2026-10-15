@@ -43,7 +43,7 @@ export function StatsPeriodPicker({ from, to, presets, years, currentYear, curre
     const update = () => {
       const r = triggerRef.current?.getBoundingClientRect();
       if (!r) return;
-      const width = 560;
+      const width = 470;
       setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)) });
     };
     update();
@@ -144,8 +144,8 @@ export function StatsPeriodPicker({ from, to, presets, years, currentYear, curre
                 const future = year > currentYear || (year === currentYear && m > currentMonth);
                 const inPending = anchorMonth !== null && m === anchorMonth;
                 return (
-                  <button key={name} type="button" disabled={future} className={`${selected.has(m) ? 'is-active' : ''}${inPending ? ' is-anchor' : ''}`} onClick={() => pickMonth(m)}>
-                    {name}
+                  <button key={name} type="button" disabled={future} title={name} className={`${selected.has(m) ? 'is-active' : ''}${inPending ? ' is-anchor' : ''}`} onClick={() => pickMonth(m)}>
+                    {name.slice(0, 3)}
                   </button>
                 );
               })}

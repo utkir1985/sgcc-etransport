@@ -20479,3 +20479,8 @@ html.dark .order-progress-track,
 }
 .stats-period__range span:first-child { width: 100%; margin-right: 0; }
 .stats-period__range input { flex: 1 1 0; min-width: 0; }
+/* Davr tanlagichi: oylar qisqa nom bilan, ixcham */
+.stats-period__menu { grid-template-columns: 136px 1fr; width: min(470px, calc(100vw - 16px)); }
+.stats-period__months { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.stats-period__months button { padding: 6px 2px; font-size: 12.5px; }
+@media (max-width: 560px) { .stats-period__months { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
