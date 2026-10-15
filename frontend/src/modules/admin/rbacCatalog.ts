@@ -1045,7 +1045,8 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Sfera Balance panelini ko‘rish',
     description: 'FB-8104 sfera va kondensat rezervuarlari real vaqt monitoringi (alohida tizim, E-Transport ichida panel)',
     flags: ['R'],
-    roles: ['Admin', 'Management', 'DeputyDirector', 'DispatchSupervisor', 'Dispatching', 'Warehouse', 'Marketing', 'Economist'],
+    // Hozircha faqat Admin; boshqa rollarga keyin Rollar va Huquqlar orqali beriladi
+    roles: ['Admin'],
   },
   {
     key: 'products.read',
