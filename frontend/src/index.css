@@ -19806,3 +19806,18 @@ html.dark .order-progress-track,
   .ndocs-row .ndocs-open-btn { padding: 7px 9px; }
   .ndocs-meta__item--user { display: none; }
 }
+
+/* Normativ hujjatlar jadvali: sarlavha va ma’lumot bir xil tekislangan */
+.ndocs-table { min-width: 62rem !important; }
+.ndocs-table th, .ndocs-table td { padding-left: 12px !important; padding-right: 12px !important; }
+.ndocs-table tbody td { padding-top: 12px !important; padding-bottom: 12px !important; }
+.ndocs-table .ndocs-th--left, .ndocs-table td { text-align: left !important; }
+.ndocs-table .ndocs-th--center, .ndocs-table .ndocs-td--center { text-align: center !important; }
+.ndocs-table .ndocs-th--right, .ndocs-table .ndocs-td--right { text-align: right !important; }
+.ndocs-table .ndocs-row__actions { justify-content: flex-end; }
+.ndocs-table .ndocs-title__icon { background: var(--nd-bg); color: var(--nd-tone); }
+.ndocs-table .ndocs-title:hover strong { color: var(--nd-tone); }
+.ndocs-table .ndocs-open-btn { padding: 5px 10px; font-size: 12.5px; }
+@media (max-width: 767px) {
+  .ndocs-table .ndocs-open-btn span { display: none; }
+}

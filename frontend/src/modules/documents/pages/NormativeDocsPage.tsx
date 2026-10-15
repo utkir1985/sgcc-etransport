@@ -523,32 +523,69 @@ export default function NormativeDocsPage() {
         ) : (
           <>
             {viewMode === 'list' ? (
-              <div className="ndocs-list" role="list">
-                {pageDocuments.map(doc => {
-                  const cat = getCategoryInfo(doc.Category);
-                  const CatIcon = cat.icon;
-                  return (
-                    <article key={doc.Id} className={`ndocs-row ndocs-tone--${cat.key}`} role="listitem">
-                      <span className="ndocs-row__icon"><CatIcon className="w-5 h-5" /></span>
-                      <div className="ndocs-row__body">
-                        <button type="button" className="ndocs-row__title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
-                          {doc.Title}
-                        </button>
-                        {doc.Description ? <p className="ndocs-row__desc">{doc.Description}</p> : null}
-                        <div className="ndocs-meta">
-                          <span className="ndocs-meta__cat">{cat.label}</span>
-                          {renderDocMeta(doc)}
-                        </div>
-                      </div>
-                      <div className="ndocs-row__actions">
-                        <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
-                          <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
-                        </button>
-                        <OrderSheetMenu items={docMenuItems(doc)} compact />
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="thub-table-wrap reestr-table-wrap">
+                <table className="thub-table reestr-table ndocs-table w-full">
+                  <colgroup>
+                    <col style={{ width: '3.5rem' }} />
+                    <col />
+                    <col style={{ width: '13rem' }} />
+                    <col style={{ width: '9rem' }} />
+                    <col style={{ width: '8rem' }} />
+                    <col style={{ width: '6rem' }} />
+                    <col style={{ width: '11rem' }} />
+                    <col style={{ width: '9.5rem' }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th className="ndocs-th--center">№</th>
+                      <th className="ndocs-th--left">Hujjat nomi</th>
+                      <th className="ndocs-th--left">Turi</th>
+                      <th className="ndocs-th--left">Raqami</th>
+                      <th className="ndocs-th--center">Sanasi</th>
+                      <th className="ndocs-th--right">Hajmi</th>
+                      <th className="ndocs-th--left">Yukladi</th>
+                      <th className="ndocs-th--right">Amallar</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageDocuments.map((doc, idx) => {
+                      const cat = getCategoryInfo(doc.Category);
+                      const CatIcon = cat.icon;
+                      const num = doc.DocumentNumber?.trim().replace(/^№\s*/, '');
+                      return (
+                        <tr key={doc.Id} className={`ndocs-tone--${cat.key}`}>
+                          <td className="ndocs-td--center tabular-nums text-slate-500">{(currentPage - 1) * pageSize + idx + 1}</td>
+                          <td>
+                            <button type="button" className="ndocs-title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
+                              <span className="ndocs-title__icon"><CatIcon className="w-4 h-4" /></span>
+                              <span className="min-w-0">
+                                <strong>{doc.Title}</strong>
+                                {doc.Description ? <small>{doc.Description}</small> : null}
+                              </span>
+                            </button>
+                          </td>
+                          <td><span className="ndocs-meta__cat">{cat.label}</span></td>
+                          <td className="truncate">
+                            {num && num.toLowerCase() !== 'raqamsiz'
+                              ? <span className="ndocs-number">{num}</span>
+                              : <span className="text-slate-400">—</span>}
+                          </td>
+                          <td className="ndocs-td--center tabular-nums">{formatDate(doc.DocumentDate)}</td>
+                          <td className="ndocs-td--right tabular-nums text-slate-500">{formatBytes(doc.FileSize)}</td>
+                          <td className="truncate text-slate-500" title={doc.UploadedBy || 'Admin'}>{doc.UploadedBy || 'Admin'}</td>
+                          <td className="ndocs-td--right">
+                            <div className="ndocs-row__actions">
+                              <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
+                                <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
+                              </button>
+                              <OrderSheetMenu items={docMenuItems(doc)} compact />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : (
               <div className="ndocs-grid" role="list">
