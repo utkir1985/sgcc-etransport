@@ -206,10 +206,8 @@ export function YukXatiView({ model }: YukXatiViewProps) {
     ? `${model.exitToKengsoyDate} ${model.exitToKengsoyTime || ''}`.trim()
     : '—';
   // Shtamp smena boshlig‘i tasdiqlagandan keyingina (eski hujjatlar — to‘liq kelishilganda)
-  const shiftApproved = Boolean(model.shiftSupervisorAt) || model.permitOk;
-  const shiftLeaderName = (model.shiftSupervisorName && personDisplayName(model.shiftSupervisorName) !== '—')
-    ? personDisplayName(model.shiftSupervisorName)
-    : 'Xayitov Anvarjon Karimovich';
+  const shiftLeaderName = personDisplayName(model.shiftSupervisorName);
+  const shiftApproved = shiftLeaderName !== '—' && (Boolean(model.shiftSupervisorAt) || model.permitOk);
 
   /* 6 ta imzo: Sex, Tarozi, Iqtisodchi, PDS smena boshlig'i, Ruxsatnoma, Qo'riqlash */
   const signers: Signer[] = [
@@ -217,14 +215,14 @@ export function YukXatiView({ model }: YukXatiViewProps) {
       key: 'warehouse',
       department: 'Tayyor mahsulotlar va xom ashyo sexi',
       status: 'Yuklandi',
-      name: (model.warehouseName && model.warehouseName.trim() && model.warehouseName.trim() !== '—') ? model.warehouseName.trim() : 'Javliyev Nematilla Tilovovich',
+      name: (model.warehouseName && model.warehouseName.trim() && model.warehouseName.trim() !== '—') ? model.warehouseName.trim() : '—',
       at: model.warehouseAt || model.formedAt || new Date().toISOString(),
     },
     {
       key: 'scale',
       department: 'Tarozi operatori',
       status: 'Tarozida tortildi',
-      name: (model.scaleOperatorName && model.scaleOperatorName.trim() && model.scaleOperatorName.trim() !== '—') ? model.scaleOperatorName.trim() : 'Kamolov Xikmat Abdurazzoq og‘li',
+      name: (model.scaleOperatorName && model.scaleOperatorName.trim() && model.scaleOperatorName.trim() !== '—') ? model.scaleOperatorName.trim() : '—',
       at: model.scaleOperatorAt || model.weighDateTime || model.formedAt || new Date().toISOString(),
     },
     {

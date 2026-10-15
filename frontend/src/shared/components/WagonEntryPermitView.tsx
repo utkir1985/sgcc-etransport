@@ -34,7 +34,7 @@ const SHIFT_SUPERVISOR_TITLE = 'ICHDX smena boshlig‘i';
 
 function shiftStampQrValue({ title, name, at, status }: SignerInfo) {
   const cleanTitle = (title || SHIFT_SUPERVISOR_TITLE).replace(/[‘’`]/g, "'");
-  const cleanName = (name || 'Xayitov Anvarjon Karimovich').replace(/[‘’`]/g, "'");
+  const cleanName = (name || '—').replace(/[‘’`]/g, "'");
   return [
     `Holat: ${at ? status : 'Tasdiqlash kutilmoqda'}`,
     `Bo'lim/sex: ${cleanTitle}`,

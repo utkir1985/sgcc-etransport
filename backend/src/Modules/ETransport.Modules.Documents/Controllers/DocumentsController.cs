@@ -853,10 +853,10 @@ public class DocumentsController(
                 ? wagonRows.Where(w => !w.IsDefective).Sum(w => w.NettoWeight)
                 : registry.OrderDeductedNetWeight;
 
-            var warehouseSignerName = !string.IsNullOrWhiteSpace(arrival.LoadingCompletedByName) ? arrival.LoadingCompletedByName : (!string.IsNullOrWhiteSpace(arrival.CreatedBy?.FullName) ? arrival.CreatedBy.FullName : "Javliyev Nematilla Tilovovich");
+            var warehouseSignerName = !string.IsNullOrWhiteSpace(arrival.LoadingCompletedByName) ? arrival.LoadingCompletedByName : (unitsByNumber.Values.Select(u => u.LoadingCompletedByName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "—");
             var warehouseSignerAt = arrival.LoadingCompletedAt ?? arrival.CreatedAt;
             var scaleSignerName = unitsByNumber.Values.Select(u => u.SealConfirmedByScaleName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))
-                ?? "Kamolov Xikmat Abdurazzoq og'li";
+                ?? "—";
             var scaleSignerAt = unitsByNumber.Values.Select(u => u.GrossWeighedAt).FirstOrDefault(t => t != null)
                 ?? unitsByNumber.Values.Select(u => u.TareWeighedAt).FirstOrDefault(t => t != null)
                 ?? registry.PreparedAt;
@@ -1566,10 +1566,10 @@ public class DocumentsController(
                     ? wagonRows.Where(w => !w.IsDefective).Sum(w => w.NettoWeight)
                     : registry.OrderDeductedNetWeight;
 
-                var warehouseSignerName = !string.IsNullOrWhiteSpace(registry.EmptyWagonArrival?.LoadingCompletedByName) ? registry.EmptyWagonArrival.LoadingCompletedByName : (!string.IsNullOrWhiteSpace(registry.EmptyWagonArrival?.CreatedBy?.FullName) ? registry.EmptyWagonArrival.CreatedBy.FullName : "Javliyev Nematilla Tilovovich");
+                var warehouseSignerName = !string.IsNullOrWhiteSpace(registry.EmptyWagonArrival?.LoadingCompletedByName) ? registry.EmptyWagonArrival.LoadingCompletedByName : (unitsByNumber.Values.Select(u => u.LoadingCompletedByName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "—");
                 var warehouseSignerAt = registry.EmptyWagonArrival?.LoadingCompletedAt ?? registry.EmptyWagonArrival?.CreatedAt ?? registry.PreparedAt;
                 var scaleSignerName = unitsByNumber.Values.Select(u => u.SealConfirmedByScaleName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))
-                    ?? "Kamolov Xikmat Abdurazzoq og'li";
+                    ?? "—";
                 var scaleSignerAt = unitsByNumber.Values.Select(u => u.GrossWeighedAt).FirstOrDefault(t => t != null)
                     ?? unitsByNumber.Values.Select(u => u.TareWeighedAt).FirstOrDefault(t => t != null)
                     ?? registry.PreparedAt;

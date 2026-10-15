@@ -390,17 +390,17 @@ export function buildYukXatiModel(
     registryUnits,
     u => u.loadingCompletedAt,
     u => u.loadingCompletedByName,
-  ) || arrival?.loadingCompletedByName || arrival?.createdByName;
+  ) || arrival?.loadingCompletedByName;
   const warehouseName = (safeTrim(rawWarehouseName) && safeTrim(rawWarehouseName) !== '—')
     ? safeTrim(rawWarehouseName)
-    : 'Javliyev Nematilla Tilovovich';
+    : '—';
 
   const rawScaleOperatorName = latestUnitName(registryUnits, u => u.sealConfirmedByScaleAt, u => u.sealConfirmedByScaleName)
     || latestUnitName(registryUnits, u => u.grossWeighedAt, u => u.sealConfirmedByScaleName)
     || latestUnitName(registryUnits, u => u.tareWeighedAt, u => u.sealConfirmedByScaleName);
   const scaleOperatorName = (safeTrim(rawScaleOperatorName) && safeTrim(rawScaleOperatorName) !== '—')
     ? safeTrim(rawScaleOperatorName)
-    : 'Kamolov Xikmat Abdurazzoq og‘li';
+    : '—';
   const securityName = registry.securityApprovedByName
     || latestUnitName(registryUnits, u => u.sealConfirmedBySecurityAt, u => u.sealConfirmedBySecurityName);
   const economistName = registry.economistApprovedByName

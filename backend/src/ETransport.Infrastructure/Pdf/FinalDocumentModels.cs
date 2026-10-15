@@ -104,10 +104,10 @@ public static class FinalDocumentModels
             ? wagonRows.Where(w => !w.IsDefective).Sum(w => w.NettoWeight)
             : reg.OrderDeductedNetWeight;
 
-        var warehouseSignerName = !string.IsNullOrWhiteSpace(arrival?.LoadingCompletedByName) ? arrival.LoadingCompletedByName : (!string.IsNullOrWhiteSpace(arrival?.CreatedBy?.FullName) ? arrival.CreatedBy.FullName : "Javliyev Nematilla Tilovovich");
+        var warehouseSignerName = !string.IsNullOrWhiteSpace(arrival?.LoadingCompletedByName) ? arrival.LoadingCompletedByName : (unitsByNumber.Values.Select(u => u.LoadingCompletedByName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "—");
         var warehouseSignerAt = arrival?.LoadingCompletedAt ?? arrival?.CreatedAt ?? reg.PreparedAt;
         var scaleSignerName = unitsByNumber.Values.Select(u => u.SealConfirmedByScaleName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))
-            ?? "Kamolov Xikmat Abdurazzoq og'li";
+            ?? "—";
         var scaleSignerAt = unitsByNumber.Values.Select(u => u.GrossWeighedAt).FirstOrDefault(t => t != null)
             ?? unitsByNumber.Values.Select(u => u.TareWeighedAt).FirstOrDefault(t => t != null)
             ?? reg.PreparedAt;
@@ -117,10 +117,6 @@ public static class FinalDocumentModels
         var isSecurityApproved = reg.IsApprovedBySecurity;
 
         var economistSignerName = FirstName(reg.EconomistApprovedByName, reg.PreparedByName);
-        if (string.IsNullOrWhiteSpace(economistSignerName) || economistSignerName == "—")
-        {
-            economistSignerName = "Toshpulatov Abror Yuldoshevich";
-        }
         var economistSignerAt = reg.EconomistApprovedWithPermitAt ?? reg.EconomistApprovedAt ?? reg.PreparedAt;
 
         var shiftSignerName = isShiftApproved ? (reg.ShiftSupervisorApprovedByName ?? "—") : "—";

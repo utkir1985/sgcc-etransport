@@ -7,6 +7,9 @@ namespace ETransport.Infrastructure.Pdf;
 
 public class DocumentPdfGenerator : IDocumentPdfGenerator
 {
+    private static string FirstNonEmpty(params string?[] names) =>
+        names.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n) && n.Trim() != "—")?.Trim() ?? "—";
+
     static DocumentPdfGenerator()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -192,9 +195,9 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
 
         var mainQrBytes = GenerateQrPngBytes(mainQrTarget);
 
-        var shiftLeaderName = !string.IsNullOrWhiteSpace(model.ShiftLeaderName) ? model.ShiftLeaderName : (model.InspectorName ?? "Xayitov Anvarjon Karimovich");
-        if (shiftLeaderName == "—") shiftLeaderName = "Xayitov Anvarjon Karimovich";
-        var shiftApproved = model.ShiftLeaderAt != null || !string.IsNullOrWhiteSpace(model.InspectorName) || model.PermitOk;
+        // To'qima ism qo'yilmaydi: tasdiqlagan smena boshlig'i bo'lmasa "—" va KUTILMOQDA
+        var shiftLeaderName = FirstNonEmpty(model.ShiftLeaderName, model.InspectorName);
+        var shiftApproved = shiftLeaderName != "—" && (model.ShiftLeaderAt != null || !string.IsNullOrWhiteSpace(model.InspectorName) || model.PermitOk);
         // Tepa o'ng QR: Bosh direktor nomidan ishonchnoma asosida tasdiqlagan ICHDX smena boshlig'i (havolasiz)
         var shiftQrPayload = $"Holat: {(shiftApproved ? "Tasdiqlandi" : "Kutilmoqda")}\nBo'lim/sex: ICHDX smena boshlig'i\nF.I.Sh.: {shiftLeaderName}\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {FormatUzt(model.ShiftLeaderAt ?? model.PreparedAt)}";
         var shiftQrBytes = GenerateQrPngBytes(shiftQrPayload);
@@ -694,8 +697,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
         var mainQrBytes = GenerateQrPngBytes(mainQrTarget);
 
         const string directorName = "Sh. Aslanov";
-        var shiftLeaderName = !string.IsNullOrWhiteSpace(model.ShiftLeaderName) && model.ShiftLeaderName != "—" && model.ShiftLeaderName != "Sh. Aslanov" ? model.ShiftLeaderName : "Xayitov Anvarjon Karimovich";
-        var shiftApproved = model.ShiftLeaderApproved || model.ShiftLeaderAt != null || !string.IsNullOrWhiteSpace(model.ShiftLeaderName);
+        var shiftLeaderName = !string.IsNullOrWhiteSpace(model.ShiftLeaderName) && model.ShiftLeaderName != "—" && model.ShiftLeaderName != "Sh. Aslanov" ? model.ShiftLeaderName : "—";
+        var shiftApproved = shiftLeaderName != "—" && (model.ShiftLeaderApproved || model.ShiftLeaderAt != null);
         var shiftQrPayload = $"Holat: Tasdiqlandi\nBo'lim/sex: ICHDX smena boshlig'i\nF.I.Sh.: {shiftLeaderName}\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {(model.ShiftLeaderAt ?? model.CreatedAt):dd.MM.yyyy HH:mm}";
         var shiftQrBytes = GenerateQrPngBytes(shiftQrPayload);
 
