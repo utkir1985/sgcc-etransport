@@ -19630,7 +19630,10 @@ html.dark .order-progress-track,
 }
 .dark .ndocs-number { background: #1e293b; color: #e2e8f0; }
 
-.ndocs-mobile-list { display: flex; flex-direction: column; gap: 10px; }
+.ndocs-mobile-list { display: none; flex-direction: column; gap: 10px; }
+@media (max-width: 767px) { .ndocs-mobile-list { display: flex; } }
+.ndocs-table { table-layout: fixed; min-width: 0 !important; }
+.order-status-cards--four .order-status-card__text strong { white-space: normal; }
 .ndocs-mobile-card {
   display: grid;
   gap: 8px;

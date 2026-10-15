@@ -565,7 +565,7 @@ export default function NormativeDocsPage() {
                     </span>
                   </button>
                   <div className="ndocs-mobile-card__meta">
-                    <span>{doc.DocumentNumber?.trim() ? `№ ${doc.DocumentNumber}` : 'Raqamsiz'}</span>
+                    <span>{doc.DocumentNumber?.trim() ? `№ ${doc.DocumentNumber.trim().replace(/^№\s*/, '')}` : 'Raqamsiz'}</span>
                     <span>{formatDate(doc.DocumentDate)}</span>
                     <span>{formatBytes(doc.FileSize)}</span>
                   </div>
