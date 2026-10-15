@@ -20239,3 +20239,110 @@ html.dark .order-progress-track,
 .stat-grid--1-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .stat-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 1100px) { .stat-grid--1-1, .stat-grid--3 { grid-template-columns: 1fr; } }
+
+/* ==== Statistika filtrlari ==== */
+.stats-filters { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #edf1f6; }
+.stats-filters__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.stats-filters__spacer { flex: 1 1 auto; }
+.stats-presets, .stats-compare, .stats-months { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.stats-chip, .stats-month {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 11px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.stats-month { min-width: 44px; padding: 5px 8px; font-size: 12.5px; }
+.stats-chip:hover:not(:disabled), .stats-month:hover:not(:disabled) { border-color: #93c5fd; color: #1d4ed8; }
+.stats-chip.is-active, .stats-month.is-active { border-color: #2563eb; background: #2563eb; color: #fff; }
+.stats-chip:disabled, .stats-month:disabled { cursor: not-allowed; opacity: 0.45; }
+.stats-year {
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+}
+.stats-compare { margin-left: 4px; padding-left: 10px; border-left: 1px solid #e2e8f0; color: #64748b; }
+.stats-reset { display: inline-flex; align-items: center; gap: 4px; border-radius: 8px; padding: 6px 10px; color: #dc2626; font-size: 13px; font-weight: 600; }
+.stats-reset:hover { background: #fef2f2; }
+.stats-compare-note { color: #64748b; font-size: 12.5px; }
+.stats-tabs { margin-top: 2px; flex-wrap: wrap; }
+
+.stat-delta { margin-left: 6px; border-radius: 6px; padding: 1px 6px; font-size: 11.5px; font-weight: 700; color: #64748b; background: rgb(148 163 184 / 0.15); white-space: nowrap; }
+.stat-delta.is-good { color: #15803d; background: #dcfce7; }
+.stat-delta.is-bad { color: #b91c1c; background: #fee2e2; }
+
+/* Ko‘p tanlovli filtr */
+.stats-ms { position: relative; }
+.stats-ms__trigger {
+  display: inline-flex;
+  max-width: 17rem;
+  height: 36px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.stats-ms__trigger:hover, .stats-ms__trigger.is-open { border-color: #93c5fd; }
+.stats-ms__trigger.has-value { border-color: #2563eb; background: #eff6ff; }
+.stats-ms__label { color: #64748b; font-weight: 500; }
+.stats-ms__value { overflow: hidden; color: #0f172a; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.stats-ms__chev { width: 14px; height: 14px; flex-shrink: 0; color: #94a3b8; }
+.stats-ms__clear { display: inline-flex; flex-shrink: 0; border-radius: 6px; padding: 2px; color: #2563eb; cursor: pointer; }
+.stats-ms__clear:hover { background: #dbeafe; }
+.stats-ms__menu {
+  position: fixed;
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.14);
+}
+.stats-ms__search { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #eef2f7; padding: 8px 10px; color: #94a3b8; }
+.stats-ms__search input { width: 100%; border: 0; background: transparent; color: #0f172a; font-size: 13px; outline: none; }
+.stats-ms__list { max-height: 300px; overflow-y: auto; padding: 4px; }
+.stats-ms__item { display: flex; width: 100%; align-items: center; gap: 8px; border-radius: 8px; padding: 7px 8px; color: #334155; font-size: 13px; text-align: left; }
+.stats-ms__item:hover { background: #f1f5f9; }
+.stats-ms__item.is-on { color: #1d4ed8; font-weight: 600; }
+.stats-ms__box { display: inline-flex; width: 16px; height: 16px; flex-shrink: 0; align-items: center; justify-content: center; border: 1.5px solid #cbd5e1; border-radius: 4px; color: #fff; }
+.stats-ms__box.is-radio { border-radius: 999px; }
+.stats-ms__item.is-on .stats-ms__box { border-color: #2563eb; background: #2563eb; }
+.stats-ms__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats-ms__empty { padding: 14px; color: #94a3b8; font-size: 13px; text-align: center; }
+.stats-ms__foot { display: flex; justify-content: space-between; border-top: 1px solid #eef2f7; padding: 6px 8px; }
+.stats-ms__foot button { border-radius: 7px; padding: 4px 10px; color: #2563eb; font-size: 12.5px; font-weight: 600; }
+.stats-ms__foot button.is-primary { background: #2563eb; color: #fff; }
+
+.dark .stats-filters { border-color: #1e293b; }
+.dark .stats-chip, .dark .stats-month, .dark .stats-year, .dark .stats-ms__trigger { border-color: #334155; background: #0f172a; color: #cbd5e1; }
+.dark .stats-chip.is-active, .dark .stats-month.is-active { border-color: #3b82f6; background: #2563eb; color: #fff; }
+.dark .stats-compare { border-color: #334155; color: #94a3b8; }
+.dark .stats-ms__trigger.has-value { border-color: #3b82f6; background: rgb(59 130 246 / 0.12); }
+.dark .stats-ms__value { color: #f1f5f9; }
+.dark .stats-ms__menu { border-color: #334155; background: #0f172a; box-shadow: 0 18px 40px rgb(0 0 0 / 0.5); }
+.dark .stats-ms__search { border-color: #1e293b; }
+.dark .stats-ms__search input { color: #f1f5f9; }
+.dark .stats-ms__item { color: #cbd5e1; }
+.dark .stats-ms__item:hover { background: #1e293b; }
+.dark .stats-ms__item.is-on { color: #93c5fd; }
+.dark .stats-ms__box { border-color: #475569; }
+.dark .stats-ms__foot { border-color: #1e293b; }
+.dark .stats-reset:hover { background: rgb(239 68 68 / 0.1); }
+.dark .stat-delta.is-good { color: #86efac; background: rgb(34 197 94 / 0.15); }
+.dark .stat-delta.is-bad { color: #fca5a5; background: rgb(239 68 68 / 0.15); }
+@media (max-width: 767px) {
+  .stats-compare { margin-left: 0; padding-left: 0; border-left: 0; }
+  .stats-filters__spacer { display: none; }
+}
