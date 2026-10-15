@@ -15,7 +15,6 @@ import {
   Bot,
   Layers,
 } from 'lucide-react';
-import { ReportsHistoryTabs } from '../components/ReportsHistoryTabs';
 import { api } from '../../../shared/services/api';
 import {
   getTelegramConfig,
@@ -139,7 +138,6 @@ export function TelegramAlertsPage() {
 
   return (
     <div className="thub min-h-screen pb-12 w-full max-w-full overflow-x-hidden">
-      <ReportsHistoryTabs active="telegram" />
 
       {/* Hero Header */}
       <header className="thub__hero">

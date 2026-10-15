@@ -9,10 +9,7 @@ import ProfilePage from '../modules/auth/pages/ProfilePage';
 import DashboardPage from '../modules/dashboard/pages/DashboardPage';
 import TransportVehiclesPage from '../modules/dashboard/pages/TransportVehiclesPage';
 import HistoryPage from '../modules/dashboard/pages/HistoryPage';
-import ReportsPage from '../modules/dashboard/pages/ReportsPage';
 import StatisticsPage from '../modules/dashboard/pages/StatisticsPage';
-import { LogisticsTariffsPage } from '../modules/dashboard/pages/LogisticsTariffsPage';
-import { TelegramAlertsPage } from '../modules/dashboard/pages/TelegramAlertsPage';
 import OrdersPage from '../modules/marketing/pages/OrdersPage';
 import ShipmentsPage from '../modules/dispatching/pages/ShipmentsPage';
 import DispatchJournalPage from '../modules/dispatching/pages/DispatchJournalPage';
@@ -31,14 +28,6 @@ import AuditPage from '../modules/admin/pages/AuditPage';
 import TrashPage from '../modules/admin/pages/TrashPage';
 import ServerStatusPage from '../modules/admin/pages/ServerStatusPage';
 import { ForceChangePasswordModal } from '../shared/components/ForceChangePasswordModal';
-
-/** Rol bo'yicha boshqariladigan sahifa: menyuda bo'lmasa, ochilmaydi. */
-function MenuGuardedRoute({ menuKey, children }: { menuKey: string; children: React.ReactNode }) {
-  const { menu } = useAuth();
-  if (menu.length === 0) return null; // menyu hali yuklanmagan
-  const allowed = menu.some(entry => entry.key === menuKey);
-  return allowed ? <>{children}</> : <Navigate to="/dashboard" replace />;
-}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -140,13 +129,13 @@ export default function App() {
         {/* 08 Dashboard */}
         <Route path="transport" element={<Navigate to="/transport/tared" replace />} />
         <Route path="transport/:zone" element={<TransportVehiclesPage />} />
-        <Route path="reports" element={<MenuGuardedRoute menuKey="reports"><ReportsPage /></MenuGuardedRoute>} />
+        <Route path="reports" element={<Navigate to="/stats" replace />} />
         <Route path="reports/demurrage" element={<Navigate to="/stats" replace />} />
         <Route path="reports/weight-control" element={<Navigate to="/stats" replace />} />
         <Route path="reports/contractor-limits" element={<Navigate to="/stats" replace />} />
         <Route path="reports/defects-gu23" element={<Navigate to="/stats" replace />} />
-        <Route path="reports/tariffs" element={<AdminOnlyRoute><LogisticsTariffsPage /></AdminOnlyRoute>} />
-        <Route path="reports/telegram" element={<AdminOnlyRoute><TelegramAlertsPage /></AdminOnlyRoute>} />
+        <Route path="reports/tariffs" element={<Navigate to="/stats" replace />} />
+        <Route path="reports/telegram" element={<Navigate to="/admin/integrations/telegram" replace />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="analytics" element={<Navigate to="/reports" replace />} />
         <Route path="monitoring" element={<ServerStatusPage />} />

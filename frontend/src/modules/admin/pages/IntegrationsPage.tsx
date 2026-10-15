@@ -8,6 +8,7 @@ import {
   Flame,
   Lock,
   Plug,
+  Send,
   Scale,
   TrainFront,
   Truck,
@@ -19,6 +20,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { AdminSectionDetail, AdminSectionHub } from '../../../shared/components/AdminSectionHub';
+import { TelegramAlertsPage } from '../../dashboard/pages/TelegramAlertsPage';
 import { HubZoneTabs, type HubZoneTone } from '../../../shared/components/HubZoneTabs';
 import { DateRangePicker } from '../../../shared/components/DateRangePicker';
 import { api } from '../../../shared/services/api';
@@ -45,6 +47,10 @@ const SECTIONS = {
   api: {
     title: 'API sozlamalari',
     description: 'Tashqi tizimlar login/paroli — parol hech qachon ochiq ko‘rsatilmaydi.',
+  },
+  telegram: {
+    title: 'Telegram bildirishnomalar',
+    description: 'Telegram bot orqali avtomatik xabarlar va qabul qiluvchilar.',
   },
 } as const;
 
@@ -90,6 +96,14 @@ const HUB_ITEMS = [
     path: '/admin/integrations/api',
     icon: Plug,
     tone: 'cyan' as const,
+  },
+  {
+    key: 'telegram',
+    title: 'Telegram',
+    description: 'Bot · avtomatik bildirishnomalar',
+    path: '/admin/integrations/telegram',
+    icon: Send,
+    tone: 'blue' as const,
   },
 ];
 
@@ -1266,6 +1280,18 @@ export default function IntegrationsPage() {
         backTo="/admin/integrations"
       >
         <OneCWeighingsPanel />
+      </AdminSectionDetail>
+    );
+  }
+
+  if (system === 'telegram') {
+    return (
+      <AdminSectionDetail
+        title="Telegram bildirishnomalar"
+        description=""
+        backTo="/admin/integrations"
+      >
+        <TelegramAlertsPage />
       </AdminSectionDetail>
     );
   }

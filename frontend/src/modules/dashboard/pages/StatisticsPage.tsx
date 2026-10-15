@@ -15,10 +15,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Activity, CheckCircle2, Clock3, Hourglass, Scale, Target, Truck, Wrench } from 'lucide-react';
+import { Activity, CheckCircle2, FileSpreadsheet, Clock3, Hourglass, Scale, Target, Truck, Wrench } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 import type { EmptyWagonArrival, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
-import { ReportsHistoryTabs } from '../components/ReportsHistoryTabs';
 import { DateRangePicker } from '../../../shared/components/DateRangePicker';
 import { ProductTypeFilter } from '../../../shared/components/ProductTypeFilter';
 import { getProductLabel } from '../../../shared/constants/productTypes';
@@ -26,6 +25,7 @@ import { logisticsFromRoute } from '../../../shared/constants/logisticsTypes';
 import { matchesPeriodRange, MONTH_NAMES_UZ, todayIso } from '../../../shared/utils/dates';
 import { formatTons } from '../../../shared/utils/orderQuantity';
 import { excludeOneCArrivals } from '../../../shared/utils/oneCSources';
+import { exportSheets, todayStamp } from '../../../shared/utils/excelExport';
 import { buildDefectsGu23Analysis, buildDemurrageAnalysis, buildWeightAnalysis } from '../utils/demurrageUtils';
 import { DEFECT_ACT_TYPE_LABEL } from '../../../shared/constants/defectActTypes';
 import { loadedWagonCountOf, localDateKey, registryWagonCountOf, wagonCountOf } from '../utils/sharedPanels';
@@ -322,11 +322,24 @@ export default function StatisticsPage() {
     };
   }, [arrivals, registries, periodFrom, periodTo]);
 
+  const exportAll = () => {
+    const r1 = (v: number) => Math.round(v * 10) / 10;
+    exportSheets(`Statistika_${todayStamp()}`, [
+      { name: 'Reja ijrosi (oylar)', rows: [['Oy', 'Reja (t)', 'Bajarildi (t)', 'Bajarilish (%)'], ...monthly.map(m => [m.label, m.reja, m.bajarildi, m.reja > 0 ? `${Math.round((m.bajarildi / m.reja) * 100)}%` : '—'])] },
+      { name: 'Mahsulotlar', rows: [['Mahsulot', 'Yuklandi (t)'], ...byProduct.map(p => [p.name, p.value])] },
+      { name: 'Kontragent qoldig‘i', rows: [['Kontragent', 'Qoldiq (t)'], ...topRemaining.map(c => [c.name, c.qoldiq])] },
+      { name: 'Kunlik vagonlar', rows: [['Sana', 'Kirdi', 'Yuklandi', 'Chiqdi'], ...daily.map(d => [d.day, d.kirdi, d.yuklandi, d.chiqdi])] },
+      { name: 'Bekor turish (bosqich)', rows: [['Bosqich', 'Me’yor (soat)', 'Haqiqiy, mediana (soat)'], ...stageChart.map(st => [st.label, st.meyor, st.haqiqiy])] },
+      { name: 'Turish vaqti (kunlik)', rows: [['Sana', 'Mediana (soat)', 'Chiqqan vagon', 'Me’yordan oshgan'], ...stayTrend.map(t => [t.day, t.soat, t.jami, t.oshgan])] },
+      { name: 'Yuklash sifati', rows: [['Mahsulot', 'Tortilgan', 'Kam yuklash', 'Me’yorda', 'Ortiqcha yuklash', 'O‘rtacha netto (t)'], ...weight.rows.map(w => [w.name, w.n, w.kam, w.meyorda, w.ortiqcha, r1(w.ortacha)])] },
+      { name: 'Nosozliklar', rows: [['Stansiya', 'Dalolatnoma'], ...defects.byStation.map(d => [d.name, d.soni])] },
+    ]);
+  };
+
   const empty = (text: string) => <div className="stat-empty">{text}</div>;
 
   return (
     <div className="space-y-4">
-      <ReportsHistoryTabs active="charts" />
       <div className="order-status-cards order-status-cards--four plan-kpis">
         <div className="order-status-card order-status-card--blue">
           <span className="order-status-card__icon"><Target strokeWidth={1.9} aria-hidden /></span>
@@ -356,6 +369,14 @@ export default function StatisticsPage() {
             <ProductTypeFilter value={product} options={productOptions} onChange={setProduct} allowEmpty fieldLabel="" emptyLabel="Barcha mahsulotlar" />
             <div className="marketing-orders-toolbar__field marketing-orders-toolbar__field--period">
               <DateRangePicker from={periodFrom} to={periodTo} onFromChange={setPeriodFrom} onToChange={setPeriodTo} />
+            </div>
+          </div>
+          <div className="marketing-orders-toolbar__right">
+            <div className="flex flex-nowrap items-center gap-2">
+              <button type="button" className="btn-secondary inline-flex items-center gap-1.5 whitespace-nowrap" onClick={exportAll} disabled={loading}>
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Excel</span>
+              </button>
             </div>
           </div>
         </div>
