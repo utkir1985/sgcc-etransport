@@ -594,7 +594,7 @@ public class DocumentsController(
                     ? unit.ProductType.Trim()
                     : unit.Arrival?.ProductType?.Trim() ?? "";
                 if (!string.IsNullOrWhiteSpace(unitProduct)
-                    && !string.Equals(selectedOrder.ProductType.Trim(), unitProduct, StringComparison.OrdinalIgnoreCase))
+                    && !IsProductCompatible(selectedOrder.ProductType, unitProduct))
                     return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
                         $"{unit.WagonNumber}: buyurtma mahsuloti yuklangan mahsulotga mos emas"));
                 // Muddat ixtiyoriy: qatorda belgilangan bo‘lsa, istalgan mahsulot uchun cheklaydi.
@@ -1375,7 +1375,7 @@ public class DocumentsController(
                 if (requested.MonthlyOrderLineId is not Guid lineId || selectedOrder.Lines.FirstOrDefault(x => x.Id == lineId) is not { } selectedLine)
                     return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null, $"{requested.WagonNumber}: jo‘natish stansiyasini tanlang"));
                 var unitProduct = !string.IsNullOrWhiteSpace(unit.ProductType) ? unit.ProductType.Trim() : unit.Arrival?.ProductType?.Trim() ?? "";
-                if (!string.IsNullOrWhiteSpace(unitProduct) && !string.Equals(selectedOrder.ProductType.Trim(), unitProduct, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(unitProduct) && !IsProductCompatible(selectedOrder.ProductType, unitProduct))
                     return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null, $"{unit.WagonNumber}: buyurtma mahsuloti yuklangan mahsulotga mos emas"));
                 var routeStation = ResolveRouteStation(selectedLine, requested.DestinationStation);
                 if (routeStation.Length == 0 && unit.Status != EmptyWagonUnitStatuses.Returned)
@@ -2236,6 +2236,36 @@ public class DocumentsController(
     }
 
     /// <summary>Buyurtma qatoridagi stansiya; bo‘sh bo‘lsa yuk xatida tanlangani olinadi.</summary>
+
+
+
+
+
+
+    private static bool IsProductCompatible(string? orderProduct, string? unitProduct)
+    {
+        if (string.IsNullOrWhiteSpace(orderProduct) || string.IsNullOrWhiteSpace(unitProduct))
+            return true;
+        if (string.Equals(orderProduct.Trim(), unitProduct.Trim(), StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        static string Normalize(string? s)
+        {
+            var v = (s ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(v)) return "";
+            if (v.Contains("suyultirilgan") || v.Contains("propan") || v.Contains("butan") || v.Contains("lpg") || v.Contains("spbt")) return "lpg";
+            if (v.Contains("polietilen") || v.Contains("etilen") || v.Contains("pe")) return "polietilen";
+            if (v.Contains("oltingugurt") || v.Contains("sulfur") || v.Contains("ol")) return "oltingugurt";
+            if (v.Contains("kondensat") || v.Contains("gk")) return "kondensat";
+            if (v.Contains("buten") || v.Contains("b1")) return "buten";
+            return v;
+        }
+
+        var left = Normalize(orderProduct);
+        var right = Normalize(unitProduct);
+        return !string.IsNullOrEmpty(left) && left == right;
+    }
+
     private static string ResolveRouteStation(MonthlyOrderLine line, string? requestedStation) =>
         !string.IsNullOrWhiteSpace(line.DestinationStation)
             ? line.DestinationStation.Trim()

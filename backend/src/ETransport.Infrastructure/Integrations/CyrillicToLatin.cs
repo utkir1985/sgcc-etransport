@@ -17,6 +17,10 @@ public static class CyrillicToLatin
         ["бутен-1"] = "Buten-1",
         ["полиэтилен отход"] = "Polietilen otxod",
         ["полиэтилен отьод"] = "Polietilen otxod",
+        ["техник пропан"] = "Texnik Propan",
+        ["пропан"] = "Texnik Propan",
+        ["пропан техник"] = "Texnik Propan",
+        ["суг (пропан)"] = "Texnik Propan",
     };
 
     private static readonly Dictionary<char, string> CharMap = new()

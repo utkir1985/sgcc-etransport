@@ -1293,6 +1293,29 @@ function PartySelect({
 
 
 /** Yuk xati (reyestr) tanlash — yuklash va chiqarish jarayoni doirasi. */
+function getRegistryPeriod(r: LoadingRegistry): { year: number; month: number } {
+  const d = r.preparedAt || r.economistApprovedAt || r.exitedToKengsoyAt;
+  if (d) {
+    const dt = new Date(d);
+    if (!isNaN(dt.getTime())) {
+      return { year: dt.getFullYear(), month: dt.getMonth() + 1 };
+    }
+  }
+  const m = (r.registryNumber || '').match(/WB-(\d{2})(\d{2})-/i);
+  if (m) {
+    return {
+      month: parseInt(m[1], 10),
+      year: 2000 + parseInt(m[2], 10),
+    };
+  }
+  const now = new Date();
+  return {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+  };
+}
+
+/** Yuk xati (reyestr) tanlash — yuklash va chiqarish jarayoni doirasi. */
 function RegistrySelect({
   registries,
   poolCount,
@@ -1308,6 +1331,8 @@ function RegistrySelect({
 }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'active' | 'all'>('active');
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1318,9 +1343,62 @@ function RegistrySelect({
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
+  const availableYears = useMemo(() => {
+    const set = new Set<number>();
+    for (const r of registries) {
+      set.add(getRegistryPeriod(r).year);
+    }
+    return Array.from(set).sort((a, b) => b - a);
+  }, [registries]);
+
+  useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+      setSelectedYear(availableYears[0]);
+    }
+  }, [availableYears, selectedYear]);
+
+  const availableMonthsForYear = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const r of registries) {
+      const period = getRegistryPeriod(r);
+      if (period.year === selectedYear) {
+        map.set(period.month, (map.get(period.month) || 0) + 1);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([m, count]) => ({
+        month: m,
+        label: UZ_MONTHS[m - 1] || `${m}-oy`,
+        count,
+      }))
+      .sort((a, b) => b.month - a.month);
+  }, [registries, selectedYear]);
+
+  useEffect(() => {
+    if (availableMonthsForYear.length > 0 && !availableMonthsForYear.some(m => m.month === selectedMonth)) {
+      setSelectedMonth(availableMonthsForYear[0].month);
+    }
+  }, [availableMonthsForYear, selectedMonth]);
+
   const sorted = useMemo(() => sortRegistriesNewestFirst(registries), [registries]);
   const activeCount = sorted.filter(r => !isRegistryFullyFinished(r)).length;
-  const list = tab === 'active' ? sorted.filter(r => !isRegistryFullyFinished(r)) : sorted;
+
+  useEffect(() => {
+    if (activeCount === 0 && tab === 'active') {
+      setTab('all');
+    }
+  }, [activeCount, tab]);
+
+  const list = useMemo(() => {
+    if (tab === 'active') {
+      return sorted.filter(r => !isRegistryFullyFinished(r));
+    }
+    return sorted.filter(r => {
+      const period = getRegistryPeriod(r);
+      return period.year === selectedYear && period.month === selectedMonth;
+    });
+  }, [sorted, tab, selectedYear, selectedMonth]);
+
   const selected = value && value !== POOL_SCOPE_ID ? registries.find(r => r.id === value) : null;
   const label = value === POOL_SCOPE_ID
     ? 'Yuk xatisiz vagonlar'
@@ -1348,7 +1426,8 @@ function RegistrySelect({
 
       {open && hasOptions ? (
         <div className="party-select__menu" onClick={e => e.stopPropagation()}>
-          <div className="p-2 border-b border-gray-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+          {/* Holat tablari va Yil/Oy filtrlari */}
+          <div className="p-2 border-b border-gray-100 dark:border-slate-800 space-y-1.5 bg-slate-50/70 dark:bg-slate-900/70">
             <div className="flex gap-1 p-0.5 rounded-lg bg-slate-200/70 dark:bg-slate-800 text-[11px] font-medium">
               {(['active', 'all'] as const).map(t => (
                 <button
@@ -1365,67 +1444,115 @@ function RegistrySelect({
                 </button>
               ))}
             </div>
+
+            {/* Yil va Oy filtrlari (Faqat Barchasi tabida ko‘rinadi) */}
+            {tab === 'all' && availableYears.length > 0 ? (
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1 shrink-0">
+                  <Calendar className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                  Davr:
+                </span>
+                <select
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(Number(e.target.value))}
+                  className="w-[5.4rem] text-[11px] font-medium py-1 px-1.5 rounded-md border border-slate-200 bg-white text-slate-800 shadow-2xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
+                  title="Yilni tanlash"
+                >
+                  {availableYears.map(yr => (
+                    <option key={yr} value={yr}>
+                      {yr}-yil
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(Number(e.target.value))}
+                  className="flex-1 text-[11px] font-medium py-1 px-1.5 rounded-md border border-slate-200 bg-white text-slate-800 shadow-2xs focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
+                  title="Oyni tanlash"
+                >
+                  {availableMonthsForYear.map(m => (
+                    <option key={m.month} value={m.month}>
+                      {m.label} ({m.count} ta)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
 
           <ul className="party-select__list" role="listbox" aria-label="Yuk xatlari">
-            <li>
-              <button
-                type="button"
-                role="option"
-                aria-selected={value === POOL_SCOPE_ID}
-                className={`party-select__item${value === POOL_SCOPE_ID ? ' party-select__item--active' : ''}`}
-                onClick={() => { onChange(POOL_SCOPE_ID); setOpen(false); }}
-              >
-                <div className="flex items-center justify-between gap-2 w-full leading-tight">
-                  <span className="party-select__item-main text-[12px] truncate">Yuk xatisiz vagonlar</span>
-                  <span className="shrink-0 whitespace-nowrap rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                    {poolCount} ta
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
-                  Yuklash / brutto / plomba jarayonida, hali reyestrga kiritilmagan
-                </div>
-              </button>
-            </li>
-            {list.map(r => {
-              const isCurrent = r.id === value;
-              const finished = isRegistryFullyFinished(r);
-              return (
-                <li key={r.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isCurrent}
-                    className={`party-select__item${isCurrent ? ' party-select__item--active' : ''}`}
-                    onClick={() => { onChange(r.id); setOpen(false); }}
-                  >
-                    <div className="flex items-center justify-between gap-2 w-full leading-tight">
-                      <span className="party-select__item-main font-mono text-[12px] truncate">{r.registryNumber || '—'}</span>
-                      {finished ? (
-                        <span className="shrink-0 whitespace-nowrap rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                          Yakunlangan
+            {tab === 'active' || poolCount > 0 ? (
+              <li>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={value === POOL_SCOPE_ID}
+                  className={`party-select__item${value === POOL_SCOPE_ID ? ' party-select__item--active' : ''}`}
+                  onClick={() => { onChange(POOL_SCOPE_ID); setOpen(false); }}
+                >
+                  <div className="flex items-center justify-between gap-2 w-full leading-tight">
+                    <span className="party-select__item-main text-[12px] truncate">Yuk xatisiz vagonlar</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                      {poolCount} ta
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                    Yuklash / brutto / plomba jarayonida, hali reyestrga kiritilmagan
+                  </div>
+                </button>
+              </li>
+            ) : null}
+            {list.length > 0 ? (
+              list.map(r => {
+                const isCurrent = r.id === value;
+                const finished = isRegistryFullyFinished(r);
+                return (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isCurrent}
+                      className={`party-select__item${isCurrent ? ' party-select__item--active' : ''}`}
+                      onClick={() => { onChange(r.id); setOpen(false); }}
+                    >
+                      <div className="flex items-center justify-between gap-2 w-full leading-tight">
+                        <span className="party-select__item-main font-mono text-[12px] truncate">{r.registryNumber || '—'}</span>
+                        {finished ? (
+                          <span className="shrink-0 whitespace-nowrap rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                            Yakunlangan
+                          </span>
+                        ) : (
+                          <span className="shrink-0 whitespace-nowrap rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
+                            Jarayonda
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                        <span className="truncate">
+                          Manba: {r.arrivalNumber || '—'} · {(r.wagonRoutes?.length || r.wagonCount || 0)} ta{r.productType ? ` · ${r.productType}` : ''}
                         </span>
-                      ) : (
-                        <span className="shrink-0 whitespace-nowrap rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
-                          Jarayonda
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
-                      <span className="truncate">
-                        Manba: {r.arrivalNumber || '—'} · {(r.wagonRoutes?.length || r.wagonCount || 0)} ta{r.productType ? ` · ${r.productType}` : ''}
-                      </span>
-                      {r.preparedAt ? (
-                        <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">
-                          {new Date(r.preparedAt).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' })}
-                        </span>
-                      ) : null}
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
+                        {r.preparedAt ? (
+                          <span className="text-[10px] text-slate-400 shrink-0 whitespace-nowrap">
+                            {new Date(r.preparedAt).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' })}
+                          </span>
+                        ) : null}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })
+            ) : (
+              <div className="py-6 px-3 text-center text-xs text-slate-400">
+                <p>Mos keluvchi yuk xati topilmadi</p>
+              </div>
+            )}
           </ul>
+
+          {/* Pastki statistika */}
+          <div className="px-2.5 py-1.5 border-t border-gray-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 text-[10px] text-slate-400 flex items-center justify-between shrink-0">
+            <span className="shrink-0 whitespace-nowrap">Ko‘rsatilmoqda: {list.length} ta</span>
+            <span className="shrink-0 whitespace-nowrap">Audit va arxiv</span>
+          </div>
         </div>
       ) : null}
     </div>

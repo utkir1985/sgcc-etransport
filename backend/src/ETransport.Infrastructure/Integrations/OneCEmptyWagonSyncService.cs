@@ -268,10 +268,18 @@ public partial class OneCEmptyWagonSyncService(
                 var prod = CyrillicToLatin.ToProductName(item.ProductName);
                 if (!string.IsNullOrWhiteSpace(prod))
                 {
-                    if (string.IsNullOrWhiteSpace(unit.ProductType) || unit.ProductType != prod)
+                    var isGenericLpg = prod.Equals("Suyultirilgan gaz", StringComparison.OrdinalIgnoreCase);
+                    var hasSpecificLpg = !string.IsNullOrWhiteSpace(unit.ProductType)
+                        && (unit.ProductType.Contains("Propan", StringComparison.OrdinalIgnoreCase)
+                            || unit.ProductType.Contains("Butan", StringComparison.OrdinalIgnoreCase));
+
+                    if (!isGenericLpg || !hasSpecificLpg)
                     {
-                        unit.ProductType = prod;
-                        changed = true;
+                        if (string.IsNullOrWhiteSpace(unit.ProductType) || unit.ProductType != prod)
+                        {
+                            unit.ProductType = prod;
+                            changed = true;
+                        }
                     }
                     if (string.IsNullOrWhiteSpace(unit.Arrival.ProductType) || unit.Arrival.ProductType != prod)
                     {
