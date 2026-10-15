@@ -85,6 +85,8 @@ function getCategoryInfo(catKey?: string) {
   };
 }
 
+const MISSING_FILE = 'Hujjat fayli tizimda topilmadi. Faylni qayta yuklang.';
+
 function formatBytes(bytes: number | string): string {
   const b = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
   if (!b || isNaN(b) || b === 0) return '0 B';
@@ -176,6 +178,7 @@ export default function NormativeDocsPage() {
   const [preview, setPreview] = useState<{ doc: NormativeDocument; url: string; mime: string; revoke: boolean } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<NormativeDocument | null>(null);
 
   const closePreview = useCallback(() => {
     setPreview(prev => {
@@ -200,6 +203,7 @@ export default function NormativeDocsPage() {
 
   const handleOpenPreview = async (doc: NormativeDocument) => {
     setPreviewError(null);
+    setPreviewDoc(doc);
     const mimeOf = (fallback?: string) => doc.MimeType || fallback || 'application/pdf';
     if (
       doc.Id.startsWith('seed-') ||
@@ -210,7 +214,19 @@ export default function NormativeDocsPage() {
         'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'
       ].includes(doc.FileName))
     ) {
-      setPreview({ doc, url: `/normative-files/${doc.FileName}`, mime: mimeOf(), revoke: false });
+      setPreview(null);
+      setPreviewLoading(true);
+      try {
+        const res = await fetch(`/normative-files/${encodeURIComponent(doc.FileName)}`);
+        const blob = res.ok ? await res.blob() : null;
+        // Fayl yo‘q bo‘lsa server sayt sahifasini (HTML) qaytaradi — uni hujjat sifatida ko‘rsatmaymiz
+        if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);
+        setPreview({ doc, url: URL.createObjectURL(blob), mime: mimeOf(blob.type), revoke: true });
+      } catch (err: any) {
+        setPreviewError(err?.message || MISSING_FILE);
+      } finally {
+        setPreviewLoading(false);
+      }
       return;
     }
 
@@ -222,6 +238,10 @@ export default function NormativeDocsPage() {
         setPreview({ doc, url: URL.createObjectURL(blob), mime: mimeOf(blob.type), revoke: true });
       } catch {
         const { blob, url } = await api.fetchNormativeDocumentBlob(doc.Id);
+        if (blob.type.includes('text/html') || blob.size === 0) {
+          URL.revokeObjectURL(url);
+          throw new Error(MISSING_FILE);
+        }
         setPreview({ doc, url, mime: mimeOf(blob.type), revoke: true });
       }
     } catch (err: any) {
@@ -778,7 +798,7 @@ export default function NormativeDocsPage() {
         <div className="yx-preview-root" role="dialog" aria-modal="true" aria-label="Normativ hujjat">
           <div className="yx-preview-bar">
             <div className="min-w-0">
-              <div className="yx-preview-bar__title truncate">{preview?.doc.Title || 'Normativ hujjat'}</div>
+              <div className="yx-preview-bar__title truncate">{preview?.doc.Title || previewDoc?.Title || 'Normativ hujjat'}</div>
               {preview ? (
                 <div className="text-xs text-slate-400 mt-0.5 truncate">
                   {getCategoryInfo(preview.doc.Category).label}
