@@ -256,12 +256,17 @@ export default function NormativeDocsPage() {
     try {
       // If it is a seed document with a static file, download directly
       if (doc.Id.startsWith('seed-') || (doc.FileName && ['SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf', 'SHGKM_ichki_transport_yoriqnomasi_312.pdf', 'SUG_xavfsizlik_reglamenti_84.pdf', 'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'].includes(doc.FileName))) {
+        const res = await fetch(`/normative-files/${encodeURIComponent(doc.FileName)}`);
+        const blob = res.ok ? await res.blob() : null;
+        if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = `/normative-files/${doc.FileName}`;
+        a.href = url;
         a.download = doc.FileName || `${doc.Title}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         return;
       }
 
