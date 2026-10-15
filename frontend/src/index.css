@@ -19926,3 +19926,30 @@ html.dark .order-progress-track,
 .ndocs-table th[data-fit], .ndocs-table td:not(:nth-child(2)) { padding-left: 16px !important; padding-right: 16px !important; }
 .ndocs-table td:nth-child(2) { min-width: 18rem; }
 .ndocs-card__foot .order-sheet-annex-chip__trigger { margin-left: auto; }
+
+/* Normativ hujjat — yuk xati kabi sahifa ichidagi oynada */
+.ndocs-preview-scroll { display: flex; justify-content: center; padding: 16px; }
+.ndocs-preview-frame {
+  width: min(1100px, 100%);
+  height: 100%;
+  min-height: calc(100vh - 100px);
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.35);
+}
+.ndocs-preview-image { max-width: min(1100px, 100%); height: auto; align-self: flex-start; border-radius: 6px; background: #fff; box-shadow: 0 20px 50px rgb(0 0 0 / 0.35); }
+.ndocs-preview-msg {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  max-width: 28rem;
+  border-radius: 14px;
+  background: #fff;
+  padding: 24px 28px;
+  color: #334155;
+  font-size: 14px;
+  text-align: center;
+}
+.ndocs-preview-msg--error { color: #b91c1c; }
+.dark .ndocs-preview-msg { background: #0f172a; color: #e2e8f0; }

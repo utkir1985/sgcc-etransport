@@ -172,9 +172,35 @@ export default function NormativeDocsPage() {
     fetchDocs();
   }, [fetchDocs]);
 
-  // Open document directly in a new browser tab/window (fast, full Chrome PDF reader)
+  // Hujjat yuk xatlaridagidek shu sahifaning o‘zida (oyna ichida) ochiladi
+  const [preview, setPreview] = useState<{ doc: NormativeDocument; url: string; mime: string; revoke: boolean } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const closePreview = useCallback(() => {
+    setPreview(prev => {
+      if (prev?.revoke) URL.revokeObjectURL(prev.url);
+      return null;
+    });
+    setPreviewError(null);
+    setPreviewLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!preview && !previewLoading && !previewError) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closePreview(); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [preview, previewLoading, previewError, closePreview]);
+
   const handleOpenPreview = async (doc: NormativeDocument) => {
-    // 1. If it is a seed document with a static file, open directly
+    setPreviewError(null);
+    const mimeOf = (fallback?: string) => doc.MimeType || fallback || 'application/pdf';
     if (
       doc.Id.startsWith('seed-') ||
       (doc.FileName && [
@@ -184,23 +210,24 @@ export default function NormativeDocsPage() {
         'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'
       ].includes(doc.FileName))
     ) {
-      window.open(`/normative-files/${doc.FileName}`, '_blank');
+      setPreview({ doc, url: `/normative-files/${doc.FileName}`, mime: mimeOf(), revoke: false });
       return;
     }
 
-    // 2. Try get file from local storage (IndexedDB)
+    setPreview(null);
+    setPreviewLoading(true);
     try {
-      const { blob } = await getLocalNormativeDocFile(doc.Id);
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-    } catch {
-      // 3. Fallback to API
       try {
-        const { url } = await api.fetchNormativeDocumentBlob(doc.Id);
-        window.open(url, '_blank');
+        const { blob } = await getLocalNormativeDocFile(doc.Id);
+        setPreview({ doc, url: URL.createObjectURL(blob), mime: mimeOf(blob.type), revoke: true });
       } catch {
-        window.open(api.getNormativeDocViewUrl(doc.Id), '_blank');
+        const { blob, url } = await api.fetchNormativeDocumentBlob(doc.Id);
+        setPreview({ doc, url, mime: mimeOf(blob.type), revoke: true });
       }
+    } catch (err: any) {
+      setPreviewError(err?.message || 'Hujjatni ochib bo‘lmadi');
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -746,6 +773,64 @@ export default function NormativeDocsPage() {
           </div>
         </div>
       )}
+
+      {preview || previewLoading || previewError ? (
+        <div className="yx-preview-root" role="dialog" aria-modal="true" aria-label="Normativ hujjat">
+          <div className="yx-preview-bar">
+            <div className="min-w-0">
+              <div className="yx-preview-bar__title truncate">{preview?.doc.Title || 'Normativ hujjat'}</div>
+              {preview ? (
+                <div className="text-xs text-slate-400 mt-0.5 truncate">
+                  {getCategoryInfo(preview.doc.Category).label}
+                  {preview.doc.DocumentNumber?.trim() ? ` · № ${preview.doc.DocumentNumber.trim().replace(/^№\s*/, '')}` : ''}
+                  {preview.doc.DocumentDate ? ` · ${formatDate(preview.doc.DocumentDate)}` : ''}
+                </div>
+              ) : null}
+            </div>
+            <div className="yx-preview-bar__actions">
+              {preview ? (
+                <button
+                  type="button"
+                  className="btn-primary !px-3 !py-1.5 !text-xs inline-flex items-center gap-1.5"
+                  onClick={() => { void handleDownload(preview.doc); }}
+                >
+                  <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  Yuklab olish
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="btn-secondary !px-2.5 !py-1.5 !text-xs !bg-slate-800 !text-slate-100 !border-slate-600"
+                onClick={closePreview}
+                aria-label="Yopish"
+              >
+                <X className="w-4 h-4" strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
+          <div
+            className="yx-preview-scroll ndocs-preview-scroll"
+            onClick={e => { if (e.target === e.currentTarget) closePreview(); }}
+          >
+            {previewLoading ? (
+              <div className="ndocs-preview-msg">Hujjat yuklanmoqda…</div>
+            ) : previewError ? (
+              <div className="ndocs-preview-msg ndocs-preview-msg--error">{previewError}</div>
+            ) : preview && preview.mime.startsWith('image/') ? (
+              <img src={preview.url} alt={preview.doc.Title} className="ndocs-preview-image" />
+            ) : preview && (preview.mime.includes('pdf') || /\.pdf$/i.test(preview.doc.FileName || '')) ? (
+              <iframe src={preview.url} title={preview.doc.Title} className="ndocs-preview-frame" />
+            ) : preview ? (
+              <div className="ndocs-preview-msg">
+                Bu turdagi faylni ({preview.doc.FileName}) brauzer ichida ko‘rsatib bo‘lmaydi.
+                <button type="button" className="btn-primary mx-auto mt-3" onClick={() => { void handleDownload(preview.doc); }}>
+                  <Download className="h-4 w-4" /> Yuklab olish
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={docToDelete !== null}
