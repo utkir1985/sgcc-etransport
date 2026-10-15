@@ -9,12 +9,13 @@ import {
   LineChart,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-import { Activity, CheckCircle2, Hourglass, Target, TrendingUp, Truck } from 'lucide-react';
+import { Activity, CheckCircle2, Clock3, Hourglass, Scale, Target, Truck, Wrench } from 'lucide-react';
 import { api } from '../../../shared/services/api';
 import type { EmptyWagonArrival, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
 import { ReportsHistoryTabs } from '../components/ReportsHistoryTabs';
@@ -25,6 +26,8 @@ import { logisticsFromRoute } from '../../../shared/constants/logisticsTypes';
 import { matchesPeriodRange, MONTH_NAMES_UZ, todayIso } from '../../../shared/utils/dates';
 import { formatTons } from '../../../shared/utils/orderQuantity';
 import { excludeOneCArrivals } from '../../../shared/utils/oneCSources';
+import { buildDefectsGu23Analysis, buildDemurrageAnalysis, buildWeightAnalysis } from '../utils/demurrageUtils';
+import { DEFECT_ACT_TYPE_LABEL } from '../../../shared/constants/defectActTypes';
 import { loadedWagonCountOf, localDateKey, registryWagonCountOf, wagonCountOf } from '../utils/sharedPanels';
 
 const PRODUCT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
@@ -213,6 +216,106 @@ export default function StatisticsPage() {
     return { ...sum, avgOut: Math.round((sum.chiqdi / n) * 10) / 10, days: daily.length };
   }, [daily]);
 
+  // Davr filtri (kun darajasida) — tanlanmagan bo‘lsa barcha ma’lumot
+  const inPeriod = (iso?: string | null) => {
+    if (!iso) return !periodFrom && !periodTo;
+    const day = localDateKey(iso);
+    if (periodFrom && day < periodFrom) return false;
+    if (periodTo && day > periodTo) return false;
+    return true;
+  };
+
+  // ---- Bekor turish vaqti ----
+  const demurrage = useMemo(() => (arrivals.length ? buildDemurrageAnalysis(arrivals, registries) : null), [arrivals, registries]);
+
+  const stageChart = useMemo(() => {
+    const STAGES = [
+      { key: 'toTare', label: 'Kirish va tara', norm: 98 },
+      { key: 'loading', label: 'Estakada va yuklash', norm: 225 },
+      { key: 'toGross', label: 'Brutto tortish', norm: 80 },
+      { key: 'sealing', label: 'Ko‘rik va hujjat', norm: 100 },
+      { key: 'dispatch', label: 'Stansiyaga chiqarish', norm: 30 },
+    ] as const;
+    const items = (demurrage?.items ?? []).filter(i => i.isExited && inPeriod(i.exitedAt));
+    return STAGES.map(st => {
+      const vals = items.map(i => i.stepHours[st.key]).filter(v => v > 0);
+      const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      return { label: st.label, haqiqiy: Math.round(avg * 10) / 10, meyor: Math.round((st.norm / 60) * 10) / 10 };
+    });
+  }, [demurrage, periodFrom, periodTo]);
+
+  const stayTrend = useMemo(() => {
+    const map = new Map<string, { sum: number; n: number; over: number }>();
+    for (const i of demurrage?.items ?? []) {
+      if (!i.isExited || !i.exitedAt || !inPeriod(i.exitedAt)) continue;
+      const day = localDateKey(i.exitedAt);
+      const row = map.get(day) ?? { sum: 0, n: 0, over: 0 };
+      row.sum += i.hoursInPlant;
+      row.n += 1;
+      if (i.hoursInPlant > 8.9) row.over += 1;
+      map.set(day, row);
+    }
+    return Array.from(map, ([day, r]) => ({
+      day,
+      label: `${day.slice(8, 10)}.${day.slice(5, 7)}`,
+      soat: Math.round((r.sum / r.n) * 10) / 10,
+      oshgan: r.over,
+      jami: r.n,
+    })).sort((a, b) => a.day.localeCompare(b.day)).slice(-45);
+  }, [demurrage, periodFrom, periodTo]);
+
+  const stayTotals = useMemo(() => {
+    const exited = stayTrend.reduce((s, r) => s + r.jami, 0);
+    const over = stayTrend.reduce((s, r) => s + r.oshgan, 0);
+    const avg = exited ? stayTrend.reduce((s, r) => s + r.soat * r.jami, 0) / exited : 0;
+    return { exited, over, avg: Math.round(avg * 10) / 10, inPlant: demurrage?.summary.totalActive ?? 0, red: demurrage?.summary.redCount ?? 0 };
+  }, [stayTrend, demurrage]);
+
+  // ---- Yuklash sifati (og‘irlik) ----
+  const weight = useMemo(() => {
+    const res = arrivals.length ? buildWeightAnalysis(arrivals, registries) : null;
+    const items = (res?.items ?? []).filter(i => inPeriod(i.date) && (!product || i.productType === product || i.productType?.toLowerCase().includes(product.toLowerCase())));
+    const map = new Map<string, { name: string; ortiqcha: number; meyorda: number; kam: number; netto: number; n: number }>();
+    for (const i of items) {
+      const name = i.productType || 'Boshqa';
+      const row = map.get(name) ?? { name, ortiqcha: 0, meyorda: 0, kam: 0, netto: 0, n: 0 };
+      if (i.status === 'overload') row.ortiqcha += 1;
+      else if (i.status === 'underload') row.kam += 1;
+      else row.meyorda += 1;
+      row.netto += i.nettoWeight;
+      row.n += 1;
+      map.set(name, row);
+    }
+    const rows = Array.from(map.values()).map(r => ({ ...r, ortacha: Math.round((r.netto / Math.max(1, r.n)) * 10) / 10 })).sort((a, b) => b.n - a.n);
+    const total = items.length;
+    const over = items.filter(i => i.status === 'overload').length;
+    const under = items.filter(i => i.status === 'underload').length;
+    return { rows, total, over, under };
+  }, [arrivals, registries, periodFrom, periodTo, product]);
+
+  // ---- Nosozliklar (GU-23) ----
+  const defects = useMemo(() => {
+    const res = arrivals.length ? buildDefectsGu23Analysis(arrivals, registries) : null;
+    const items = (res?.items ?? []).filter(i => inPeriod(i.arrivalDate));
+    const station = new Map<string, number>();
+    const type = new Map<string, number>();
+    const month = new Map<string, number>();
+    for (const i of items) {
+      station.set(i.station || 'Noma’lum', (station.get(i.station || 'Noma’lum') || 0) + 1);
+      const t = (DEFECT_ACT_TYPE_LABEL as Record<string, string>)[i.actType] || i.actType || 'Boshqa';
+      type.set(t, (type.get(t) || 0) + 1);
+      const m = (i.arrivalDate || '').slice(0, 7);
+      if (m) month.set(m, (month.get(m) || 0) + 1);
+    }
+    const toRows = (m: Map<string, number>) => Array.from(m, ([name, soni]) => ({ name, soni })).sort((a, b) => b.soni - a.soni);
+    return {
+      total: items.length,
+      byStation: toRows(station).slice(0, 8),
+      byType: toRows(type),
+      byMonth: Array.from(month, ([k, soni]) => ({ k, label: `${(MONTH_NAMES_UZ[Number(k.slice(5, 7)) - 1] || '').slice(0, 3)} ${k.slice(2, 4)}`, soni })).sort((a, b) => a.k.localeCompare(b.k)).slice(-12),
+    };
+  }, [arrivals, registries, periodFrom, periodTo]);
+
   const empty = (text: string) => <div className="stat-empty">{text}</div>;
 
   return (
@@ -318,7 +421,118 @@ export default function StatisticsPage() {
               </ResponsiveContainer>
             </ChartCard>
 
-            <p className="stat-note"><TrendingUp className="w-3.5 h-3.5" /> Bekor turish vaqti, yuklash sifati (ortiqcha va kam yuklash) va nosozliklar bo‘limlari keyingi bosqichda qo‘shiladi.</p>
+            <h2 className="stat-section"><Clock3 className="w-4 h-4" /> Bekor turish vaqti</h2>
+            <div className="stat-grid stat-grid--1-1">
+              <ChartCard
+                title="Bosqichlar bo‘yicha o‘rtacha vaqt"
+                hint="Chiqib ketgan vagonlar, soat · kulrang — reglament me’yori (jami 533 daqiqa)"
+              >
+                {stayTotals.exited === 0 ? empty('Tanlangan davrda chiqib ketgan vagon yo‘q') : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={stageChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={4} barCategoryGap="24%">
+                      <CartesianGrid stroke={grid} vertical={false} />
+                      <XAxis dataKey="label" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
+                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
+                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: dark ? 'rgb(148 163 184 / 0.08)' : 'rgb(148 163 184 / 0.12)' }} formatter={(v: number) => `${v} soat`} />
+                      <Legend wrapperStyle={{ fontSize: 13 }} />
+                      <Bar dataKey="meyor" name="Me’yor" fill={dark ? '#334155' : '#cbd5e1'} radius={[6, 6, 0, 0]} maxBarSize={40} />
+                      <Bar dataKey="haqiqiy" name="Haqiqiy (o‘rtacha)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                        {stageChart.map((r, i) => <Cell key={i} fill={r.haqiqiy > r.meyor ? '#ef4444' : '#10b981'} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+              <ChartCard
+                title="Vagonning zavodda turgan o‘rtacha vaqti"
+                hint={`O‘rtacha ${stayTotals.avg} soat · me’yordan oshgan: ${stayTotals.over} / ${stayTotals.exited} vagon · hozir hududda: ${stayTotals.inPlant} (me’yordan oshgani: ${stayTotals.red})`}
+              >
+                {stayTrend.length === 0 ? empty('Ma’lumot yo‘q') : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={stayTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke={grid} vertical={false} />
+                      <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
+                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => (n === 'soat' ? `${v} soat` : v)} />
+                      <ReferenceLine y={8.9} stroke="#ef4444" strokeDasharray="5 4" label={{ value: 'Me’yor 8.9 soat', position: 'insideTopRight', fill: '#ef4444', fontSize: 12 }} />
+                      <Line type="monotone" dataKey="soat" name="soat" stroke="#8b5cf6" strokeWidth={2.2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+            </div>
+
+            <h2 className="stat-section"><Scale className="w-4 h-4" /> Yuklash sifati</h2>
+            <ChartCard
+              title="Mahsulotlar bo‘yicha yuklash natijasi"
+              hint={`Tortilgan: ${weight.total} vagon · ortiqcha yuklash: ${weight.over} · kam yuklash: ${weight.under} · ≈ vagon sig‘imi mahsulot turi bo‘yicha taxminiy olingan`}
+            >
+              {weight.rows.length === 0 ? empty('Tortilgan vagon yo‘q') : (
+                <ResponsiveContainer width="100%" height={Math.max(200, weight.rows.length * 46 + 50)}>
+                  <BarChart data={weight.rows} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                    <CartesianGrid stroke={grid} horizontal={false} />
+                    <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={200} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      cursor={{ fill: dark ? 'rgb(148 163 184 / 0.08)' : 'rgb(148 163 184 / 0.12)' }}
+                      formatter={(v: number, n: string) => [`${v} vagon`, n]}
+                      labelFormatter={(label: string) => {
+                        const r = weight.rows.find(x => x.name === label);
+                        return r ? `${label} · o‘rtacha netto ${r.ortacha} t` : label;
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 13 }} />
+                    <Bar dataKey="kam" name="Kam yuklash" stackId="w" fill="#f59e0b" maxBarSize={26} />
+                    <Bar dataKey="meyorda" name="Me’yorda" stackId="w" fill="#10b981" maxBarSize={26} />
+                    <Bar dataKey="ortiqcha" name="Ortiqcha yuklash" stackId="w" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={26} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+
+            <h2 className="stat-section"><Wrench className="w-4 h-4" /> Nosozliklar (GU-23)</h2>
+            <div className="stat-grid stat-grid--3">
+              <ChartCard title="Stansiyalar bo‘yicha" hint={`Jami ${defects.total} ta dalolatnoma`}>
+                {defects.byStation.length === 0 ? empty('Dalolatnoma yo‘q') : (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={defects.byStation} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
+                      <CartesianGrid stroke={grid} horizontal={false} />
+                      <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={110} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} ta`} />
+                      <Bar dataKey="soni" name="Dalolatnoma" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={22} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+              <ChartCard title="Nosozlik turlari">
+                {defects.byType.length === 0 ? empty('Dalolatnoma yo‘q') : (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart>
+                      <Pie data={defects.byType} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={82} paddingAngle={2} stroke="none">
+                        {defects.byType.map((_, i) => <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'][i % 4]} />)}
+                      </Pie>
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} ta`} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+              <ChartCard title="Oylar bo‘yicha">
+                {defects.byMonth.length === 0 ? empty('Dalolatnoma yo‘q') : (
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={defects.byMonth} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke={grid} vertical={false} />
+                      <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={30} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} ta`} />
+                      <Bar dataKey="soni" name="Dalolatnoma" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+            </div>
           </>
         )}
       </div>

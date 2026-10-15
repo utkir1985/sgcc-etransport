@@ -20236,3 +20236,6 @@ html.dark .order-progress-track,
 .dark .stat-card__head h3 { color: #e2e8f0; }
 .dark .stat-card__head p { color: #94a3b8; }
 .dark .stat-card .recharts-legend-item-text { color: #cbd5e1 !important; }
+.stat-grid--1-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stat-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .stat-grid--1-1, .stat-grid--3 { grid-template-columns: 1fr; } }
