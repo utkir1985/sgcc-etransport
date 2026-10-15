@@ -1068,7 +1068,6 @@ export default function StatisticsPage() {
   ].filter(Boolean).join(' · ');
 
   const hasFilters = Boolean(filters.products.length || filters.transport || filters.contractors.length || filters.stations.length || filters.ownership || range.from || range.to || compare !== 'none');
-  const needRange = !range.from || !range.to;
 
   return (
     <div className={`space-y-4${printAll ? ' stat-printing' : ''}`}>
