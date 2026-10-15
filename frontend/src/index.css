@@ -20504,3 +20504,5 @@ html.dark .order-progress-track,
 .stat-subsection svg { color: #2563eb; }
 .dark .stat-subsection { border-color: #1e293b; color: #e2e8f0; }
 .dark .stat-subsection svg { color: #60a5fa; }
+.stat-mini-title { margin: 6px 0 -4px; color: #475569; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.dark .stat-mini-title { color: #94a3b8; }

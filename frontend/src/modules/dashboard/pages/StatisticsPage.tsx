@@ -36,7 +36,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
-import type { EmptyWagonArrival, EmptyWagonUnit, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
+import type { CatalogFleetWagon, EmptyWagonArrival, EmptyWagonUnit, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
 import { getProductLabel } from '../../../shared/constants/productTypes';
 import { logisticsFromRoute } from '../../../shared/constants/logisticsTypes';
 import { DEFECT_ACT_TYPE_LABEL } from '../../../shared/constants/defectActTypes';
@@ -301,6 +301,7 @@ export default function StatisticsPage() {
   const [orders, setOrders] = useState<MonthlyOrder[]>([]);
   const [arrivals, setArrivals] = useState<EmptyWagonArrival[]>([]);
   const [registries, setRegistries] = useState<LoadingRegistry[]>([]);
+  const [fleetCatalog, setFleetCatalog] = useState<CatalogFleetWagon[]>([]);
   const [loading, setLoading] = useState(true);
   const [drill, setDrill] = useState<DrillState | null>(null);
   const [printAll, setPrintAll] = useState(false);
@@ -345,6 +346,8 @@ export default function StatisticsPage() {
       setArrivals(a?.data ?? []);
       setRegistries(r?.data ?? []);
       setLoading(false);
+      const fc = await api.getFleetWagons('majmua').catch(() => null);
+      if (alive && fc?.data) setFleetCatalog(fc.data);
     })();
     return () => { alive = false; };
   }, []);
@@ -970,6 +973,153 @@ export default function StatisticsPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrivals, range.from, range.to]);
+
+  // ============================================================
+  // Vagon parki — ma’lumotnoma + harakat (texnik holat, joylashuv, yo‘nalish, samaradorlik, nosozlik)
+  // ============================================================
+  const fleet2 = useMemo(() => {
+    const today = todayIso();
+    const majmua = new Set<string>(fleetCatalog.map(w => w.wagonNumber.trim()));
+    for (const a of arrivals) for (const u of a.wagons ?? []) if (normalizeWagonOwnership(u.ownership) === 'majmua' && u.wagonNumber) majmua.add(u.wagonNumber.trim());
+
+    // 1. Texnik holat va depo ta’miri muddati
+    const cond = (w: CatalogFleetWagon) => {
+      const k = (w.serviceability || '').trim().toLowerCase();
+      if (k === 'yaroqli' || k === 'eslatma' || k === 'yaroqsiz') return k;
+      const d = w.daysUntilNextDepotRepair;
+      if (typeof d === 'number' && d < 0) return 'yaroqsiz';
+      if (typeof d === 'number' && d <= 30) return 'eslatma';
+      return 'yaroqli';
+    };
+    const condCount = { yaroqli: 0, eslatma: 0, yaroqsiz: 0 } as Record<string, number>;
+    fleetCatalog.forEach(w => { condCount[cond(w)] += 1; });
+    const repairBuckets = [
+      { id: 'over', name: 'Muddati o‘tgan', test: (d: number) => d < 0, color: '#ef4444' },
+      { id: 'd30', name: '30 kun ichida', test: (d: number) => d >= 0 && d <= 30, color: '#f59e0b' },
+      { id: 'd60', name: '31–60 kun', test: (d: number) => d > 30 && d <= 60, color: '#eab308' },
+      { id: 'ok', name: '60 kundan ko‘p', test: (d: number) => d > 60, color: '#10b981' },
+    ];
+    const repair = repairBuckets.map(b => ({ id: b.id, name: b.name, color: b.color, soni: fleetCatalog.filter(w => typeof w.daysUntilNextDepotRepair === 'number' && b.test(w.daysUntilNextDepotRepair)).length }));
+    const repairUnknown = fleetCatalog.filter(w => typeof w.daysUntilNextDepotRepair !== 'number').length;
+
+    // Har bir vagonning tashriflari (kelish, chiqish)
+    const visits = new Map<string, { at: string; exit?: string | null; status: string; defect: boolean; arrivalId: string }[]>();
+    for (const a of excludeOneCArrivals(arrivals)) {
+      const at = a.arrivalDate || a.createdAt;
+      if (!at) continue;
+      for (const u of a.wagons ?? []) {
+        const n = (u.wagonNumber || '').trim();
+        if (!majmua.has(n)) continue;
+        const arr = visits.get(n) ?? [];
+        arr.push({ at, exit: u.scaleExitedAt, status: u.status, defect: u.status === 'Returned' || Boolean(u.defectActType || u.defectActNumber), arrivalId: a.id });
+        visits.set(n, arr);
+      }
+    }
+    visits.forEach(v => v.sort((a, b) => a.at.localeCompare(b.at)));
+
+    // 2. Hozir qayerda
+    const where = { zavod: 0, yolda: 0, nomalum: 0 };
+    const whereRows: { wagon: string; place: string; since: string; days: number }[] = [];
+    for (const n of majmua) {
+      const v = visits.get(n);
+      const last = v?.[v.length - 1];
+      if (!last) { where.nomalum += 1; whereRows.push({ wagon: n, place: 'Ma’lumot yo‘q', since: '', days: 0 }); continue; }
+      if (last.exit) { where.yolda += 1; whereRows.push({ wagon: n, place: 'Yo‘lda (zavoddan chiqqan)', since: localDateKey(last.exit), days: daysBetween(localDateKey(last.exit), today) - 1 }); }
+      else if (last.status === 'Returned') { where.yolda += 1; whereRows.push({ wagon: n, place: 'Qaytarilgan', since: localDateKey(last.at), days: daysBetween(localDateKey(last.at), today) - 1 }); }
+      else { where.zavod += 1; whereRows.push({ wagon: n, place: 'Zavod hududida', since: localDateKey(last.at), days: daysBetween(localDateKey(last.at), today) - 1 }); }
+    }
+
+    // 3–4. Yo‘nalishlar (stansiya → qaytib kelgunicha kun) va vagon bo‘yicha tashilgan tonna
+    const stationTrips = new Map<string, number[]>();
+    const stationOpen = new Map<string, number>();
+    const perWagon = new Map<string, { reys: number; tonna: number }>();
+    for (const r of registries) {
+      if (!r.exitedToKengsoyAt) continue;
+      for (const w of r.wagonRoutes ?? []) {
+        const n = (w.wagonNumber || '').trim();
+        if (w.isDefective || !majmua.has(n)) continue;
+        const exitAt = r.exitedToKengsoyAt;
+        if (inDay(localDateKey(exitAt), range)) {
+          const pw = perWagon.get(n) ?? { reys: 0, tonna: 0 };
+          pw.reys += 1; pw.tonna += routeTons(w.netWeight ?? w.NetWeight ?? w.nettoWeight);
+          perWagon.set(n, pw);
+        }
+        const st = (w.destinationStation || r.destinationStation || 'Ko‘rsatilmagan').trim();
+        const next = (visits.get(n) ?? []).find(v => v.at > exitAt);
+        if (next) {
+          const d = (new Date(next.at).getTime() - new Date(exitAt).getTime()) / 86400000;
+          if (d > 0 && d < 120 && inDay(localDateKey(exitAt), range)) {
+            const arr = stationTrips.get(st) ?? [];
+            arr.push(d);
+            stationTrips.set(st, arr);
+          }
+        } else {
+          stationOpen.set(st, (stationOpen.get(st) || 0) + 1);
+        }
+      }
+    }
+    const stations = Array.from(new Set([...stationTrips.keys(), ...stationOpen.keys()]))
+      .map(st => ({ name: st, kun: r1(median(stationTrips.get(st) ?? [])), reys: (stationTrips.get(st) ?? []).length, yolda: stationOpen.get(st) || 0 }))
+      .filter(x => x.reys > 0 || x.yolda > 0)
+      .sort((a, b) => b.kun - a.kun)
+      .slice(0, 12);
+    const wagonsTons = Array.from(perWagon, ([name, x]) => ({ name, tonna: r1(x.tonna), reys: x.reys })).sort((a, b) => b.tonna - a.tonna);
+
+    // 5. Eng ko‘p nosozlik / qaytarish bo‘lgan vagonlar
+    const defectsTop = Array.from(visits, ([name, v]) => ({ name, soni: v.filter(x => x.defect && inDay(localDateKey(x.at), range)).length }))
+      .filter(x => x.soni > 0).sort((a, b) => b.soni - a.soni).slice(0, 12);
+
+    return {
+      catalogCount: fleetCatalog.length,
+      cond: [
+        { id: 'yaroqli', name: 'Yaroqli', soni: condCount.yaroqli, color: '#10b981' },
+        { id: 'eslatma', name: 'Eslatma (ta’mir yaqin)', soni: condCount.eslatma, color: '#f59e0b' },
+        { id: 'yaroqsiz', name: 'Yaroqsiz', soni: condCount.yaroqsiz, color: '#ef4444' },
+      ].filter(x => x.soni > 0),
+      repair, repairUnknown,
+      where: [
+        { id: 'zavod', name: 'Zavod hududida', soni: where.zavod, color: '#3b82f6' },
+        { id: 'yolda', name: 'Yo‘lda', soni: where.yolda, color: '#f59e0b' },
+        { id: 'nomalum', name: 'Ma’lumot yo‘q', soni: where.nomalum, color: '#cbd5e1' },
+      ].filter(x => x.soni > 0),
+      whereRows, stations, wagonsTons,
+      tonsTop: wagonsTons.slice(0, 12),
+      tonsLow: [...wagonsTons].reverse().slice(0, 8),
+      defectsTop,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fleetCatalog, arrivals, registries, range.from, range.to]);
+
+  const openFleetCatalogDrill = (title: string, pred: (w: CatalogFleetWagon) => boolean) => {
+    openDrill({
+      title,
+      columns: [
+        { key: 'wagon', label: 'Vagon' }, { key: 'kind', label: 'Turi' }, { key: 'cond', label: 'Holati' },
+        { key: 'built', label: 'Qurilgan', align: 'center' }, { key: 'depot', label: 'Oxirgi depo ta’miri', align: 'center' },
+        { key: 'days', label: 'Ta’mirgacha (kun)', align: 'right' }, { key: 'station', label: 'Stansiya' },
+      ],
+      rows: fleetCatalog.filter(pred).sort((a, b) => (a.daysUntilNextDepotRepair ?? 9999) - (b.daysUntilNextDepotRepair ?? 9999)).map(w => ({
+        id: w.id,
+        cells: {
+          wagon: w.wagonNumber, kind: w.wagonKind || '—', cond: w.serviceability || '—',
+          built: w.builtAt ? w.builtAt.slice(0, 10).split('-').reverse().join('.') : '—',
+          depot: w.lastDepotRepairAt ? w.lastDepotRepairAt.slice(0, 10).split('-').reverse().join('.') : '—',
+          days: typeof w.daysUntilNextDepotRepair === 'number' ? w.daysUntilNextDepotRepair : '—',
+          station: w.destinationStation || '—',
+        },
+      })),
+    });
+  };
+  const openWhereDrill = (title: string, pred: (r: (typeof fleet2.whereRows)[number]) => boolean) => {
+    openDrill({
+      title,
+      columns: [{ key: 'wagon', label: 'Vagon' }, { key: 'place', label: 'Joylashuv' }, { key: 'since', label: 'Qachondan', align: 'center' }, { key: 'days', label: 'Necha kun', align: 'right' }],
+      rows: fleet2.whereRows.filter(pred).sort((a, b) => b.days - a.days).map(r => ({
+        id: r.wagon,
+        cells: { wagon: r.wagon, place: r.place, since: r.since ? r.since.split('-').reverse().join('.') : '—', days: r.since ? r.days : '—' },
+      })),
+    });
+  };
 
   // ============================================================
   // Tafsilot (drill-down) — diagramma bo‘lagi bosilganda
@@ -1944,6 +2094,114 @@ export default function StatisticsPage() {
                 <div className="stat-actions-row">
                   <button type="button" className="btn-secondary" onClick={() => openFleetDrill('Majmua vagonlari — to‘liq ro‘yxat', () => true)}>Barcha majmua vagonlari</button>
                   <button type="button" className="btn-secondary" onClick={() => openFleetDrill('15 kundan ortiq kelmagan vagonlar', r => r.idleDays >= 15)} disabled={fleet.idle.length === 0}>15+ kun kelmagan ({fleet.idle.length})</button>
+                </div>
+                <h3 className="stat-mini-title">Park holati</h3>
+                {fleet2.catalogCount === 0 ? (
+                  <p className="stat-note">Vagonlar ma’lumotnomasi bo‘sh yoki ochib bo‘lmadi — texnik holat va ta’mir ko‘rsatkichlari ma’lumotnoma to‘ldirilgach chiqadi.</p>
+                ) : null}
+                <div className="stat-grid stat-grid--3">
+                  <ChartCard title="Texnik holati" hint={`Ma’lumotnomada ${fleet2.catalogCount} ta majmua vagoni · bo‘lak bosilsa — ro‘yxat`}>
+                    {fleet2.cond.length === 0 ? empty('Ma’lumotnoma bo‘sh') : (
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie data={fleet2.cond} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); openFleetCatalogDrill(`${r.name} vagonlar`, w => { const k = (w.serviceability || '').toLowerCase(); const dd = w.daysUntilNextDepotRepair; const c = k === 'yaroqli' || k === 'eslatma' || k === 'yaroqsiz' ? k : typeof dd === 'number' && dd < 0 ? 'yaroqsiz' : typeof dd === 'number' && dd <= 30 ? 'eslatma' : 'yaroqli'; return c === r.id; }); }}>
+                            {fleet2.cond.map(c => <Cell key={c.id} fill={c.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Depo ta’miri muddati" hint={`Keyingi ta’mirgacha qolgan kun${fleet2.repairUnknown ? ` · ${fleet2.repairUnknown} ta vagonda sana kiritilmagan` : ''}`}>
+                    {fleet2.repair.every(r => r.soni === 0) ? empty('Ta’mir sanalari kiritilmagan') : (
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={fleet2.repair} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid stroke={grid} vertical={false} />
+                          <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
+                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Bar dataKey="soni" name="Vagon" radius={[6, 6, 0, 0]} maxBarSize={48} cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); const test: Record<string, (x: number) => boolean> = { over: x => x < 0, d30: x => x >= 0 && x <= 30, d60: x => x > 30 && x <= 60, ok: x => x > 60 }; openFleetCatalogDrill(`Depo ta’miri: ${r.name}`, w => typeof w.daysUntilNextDepotRepair === 'number' && test[r.id](w.daysUntilNextDepotRepair)); }}>
+                            {fleet2.repair.map(r => <Cell key={r.id} fill={r.color} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Hozir qayerda" hint="Oxirgi harakat bo‘yicha · bo‘lak bosilsa — ro‘yxat">
+                    {fleet2.where.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie data={fleet2.where} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); openWhereDrill(`${r.name} — vagonlar`, x => (r.id === 'zavod' ? x.place === 'Zavod hududida' : r.id === 'yolda' ? x.place !== 'Zavod hududida' && x.place !== 'Ma’lumot yo‘q' : x.place === 'Ma’lumot yo‘q')); }}>
+                            {fleet2.where.map(c => <Cell key={c.id} fill={c.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+
+                <h3 className="stat-mini-title">Yo‘nalishlar va samaradorlik</h3>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Stansiyalar bo‘yicha qaytish vaqti" hint="Zavoddan chiqib, qaytib kelgunicha (mediana, kun) · hozir yo‘ldagilar tooltipda">
+                    {fleet2.stations.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={Math.max(220, fleet2.stations.length * 30 + 40)}>
+                        <BarChart data={fleet2.stations} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={130} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { reys?: number; yolda?: number } }) => [`${v} kun · ${it?.payload?.reys ?? 0} reys · hozir yo‘lda: ${it?.payload?.yolda ?? 0}`, 'Qaytish']} />
+                          <Bar dataKey="kun" name="Kun" fill="#f59e0b" radius={[0, 6, 6, 0]} maxBarSize={20} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Vagon bo‘yicha tashilgan yuk" hint="Davrda eng ko‘p tonna tashigan majmua vagonlari (top 12)">
+                    {fleet2.tonsTop.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={Math.max(220, fleet2.tonsTop.length * 28 + 40)}>
+                        <BarChart data={fleet2.tonsTop} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { reys?: number } }) => [`${tons(v)} · ${it?.payload?.reys ?? 0} reys`, 'Tashildi']} />
+                          <Bar dataKey="tonna" name="Tonna" fill="#10b981" radius={[0, 6, 6, 0]} maxBarSize={18} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Eng kam ishlagan vagonlar" hint="Davrda ishlaganlar ichida eng kam tonna tashiganlar">
+                    {fleet2.tonsLow.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={Math.max(200, fleet2.tonsLow.length * 28 + 40)}>
+                        <BarChart data={fleet2.tonsLow} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { reys?: number } }) => [`${tons(v)} · ${it?.payload?.reys ?? 0} reys`, 'Tashildi']} />
+                          <Bar dataKey="tonna" name="Tonna" fill="#94a3b8" radius={[0, 6, 6, 0]} maxBarSize={18} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Eng ko‘p nosozlik bergan vagonlar" hint="Qaytarilgan yoki dalolatnoma tuzilgan tashriflar soni">
+                    {fleet2.defectsTop.length === 0 ? empty('Nosozlik qayd etilmagan') : (
+                      <ResponsiveContainer width="100%" height={Math.max(200, fleet2.defectsTop.length * 28 + 40)}>
+                        <BarChart data={fleet2.defectsTop} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} marta`} />
+                          <Bar dataKey="soni" name="Nosozlik" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={18} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
                 </div>
               </>
             ) : null}
