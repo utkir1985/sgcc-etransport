@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../../shared/contexts/AuthContext';
 
 export type ReportsHistoryTabKey =
+  | 'charts'
   | 'stats'
   | 'demurrage'
   | 'weight'
@@ -45,6 +46,15 @@ type ReportsHistorySection = {
  */
 const SECTIONS: ReportsHistorySection[] = [
   {
+    key: 'charts',
+    label: 'Statistika',
+    path: '/stats',
+    icon: BarChart3,
+    title: 'Reja ijrosi va yuklash dinamikasi diagrammalari',
+    colorClass: 'text-violet-500 dark:text-violet-400',
+    activeColorClass: 'text-violet-600 dark:text-violet-400',
+  },
+  {
     key: 'history',
     label: 'Jarayonlar tarixi',
     path: '/history',
@@ -64,7 +74,7 @@ const SECTIONS: ReportsHistorySection[] = [
   },
   {
     key: 'stats',
-    label: 'Statistika',
+    label: 'Umumiy hisobot',
     path: '/reports',
     icon: BarChart3,
     title: 'Umumiy hisobotlar va tahliliy ko‘rsatkichlar',
@@ -139,12 +149,14 @@ export function ReportsHistoryTabs({ active }: { active: ReportsHistoryTabKey })
 
   // Tartib: Reja va ijro → Nazorat (prostoy, og‘irlik, nosozliklar) → Jarayonlar tarixi → qo‘shimchalar.
   // «Mijozlar limiti» «Reja va ijro» ichidagi «Kontragentlar» ko‘rinishiga birlashtirilgan.
-  const ORDER: ReportsHistoryTabKey[] = ['plans', 'demurrage', 'weight', 'defects', 'history', 'stats', 'tariffs', 'telegram'];
+  const ORDER: ReportsHistoryTabKey[] = ['charts', 'stats', 'tariffs', 'telegram'];
   const visibleSections = ORDER.map(key => SECTIONS.find(s => s.key === key)!).filter(section => {
     if (section.key === 'stats' && !hasReportsAccess) return false;
     if (section.adminOnly && !isAdmin) return false;
     return true;
   });
+
+  if (visibleSections.length <= 1) return null;
 
   return (
     <div className="rhub-navigation mb-6">

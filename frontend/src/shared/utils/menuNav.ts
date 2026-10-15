@@ -128,19 +128,13 @@ function buildTransportItem(byKey: Map<string, MenuItem>): MenuItem {
   };
 }
 
-function buildReportsHubItem(byKey: Map<string, MenuItem>): MenuItem {
-  const base = fromMap(
-    byKey,
-    'history',
-    item('history', 'Reja va nazorat', '/plans', 'BarChart3'),
-  );
-
-  return {
-    ...base,
-    label: 'Reja va nazorat',
-    path: '/plans',
-    children: undefined,
-  };
+function buildReportsHubItem(byKey: Map<string, MenuItem>): MenuItem[] {
+  // Statistika (diagrammalar) va Jarayonlar tarixi (jurnal) — ikki alohida band
+  const base = fromMap(byKey, 'history', item('history', 'Jarayonlar tarixi', '/history', 'History'));
+  return [
+    item('statistics', 'Statistika', '/stats', 'BarChart3'),
+    { ...base, label: 'Jarayonlar tarixi', path: '/history', icon: 'History', children: undefined },
+  ];
 }
 
 function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
@@ -199,7 +193,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       wagonReestr,
       loadingWork,
@@ -216,7 +210,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       wagonIntake,
       ...(wagonReestr ? [wagonReestr] : []),
@@ -232,7 +226,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       ...rest,
       ...agreePermit,
@@ -247,7 +241,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       buildGateCheckItem(),
       ...rest,
@@ -262,7 +256,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       ...rest,
     ];
@@ -276,7 +270,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       loadingWork,
       ...rest,
@@ -294,7 +288,7 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       createPanel,
       ...extras.filter(entry => entry.key !== 'seals' && entry.key !== 'registry-create'),
@@ -312,14 +306,14 @@ export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
       orders,
       loadingDocs,
       transport,
-      reportsHub,
+      ...reportsHub,
       normativeDocs,
       approvePanel,
       ...extras.filter(entry => entry.key !== 'registry-approve'),
     ];
   }
 
-  return [dashboard, orders, loadingDocs, transport, reportsHub, normativeDocs, ...extras];
+  return [dashboard, orders, loadingDocs, transport, ...reportsHub, normativeDocs, ...extras];
 }
 
 export function menuHasKey(items: MenuItem[], key: string): boolean {
@@ -330,11 +324,11 @@ export function menuItemMatches(entry: MenuItem, pathname: string, search = ''):
   const [path, query] = entry.path.split('?');
 
   // Umumiy band barcha ichki bo‘limlarda, jumladan filtrlangan tarixda ham faol qoladi.
-  if (entry.key === 'history' && (path === '/history' || path === '/plans') && !query) {
-    return pathname === '/history'
-      || pathname === '/plans'
-      || pathname === '/reports'
-      || pathname.startsWith('/reports/');
+  if (entry.key === 'history' && path === '/history' && !query) {
+    return pathname === '/history';
+  }
+  if (entry.key === 'statistics') {
+    return pathname === '/stats' || pathname === '/plans' || pathname === '/reports' || pathname.startsWith('/reports/');
   }
 
   if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;

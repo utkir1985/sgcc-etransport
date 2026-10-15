@@ -18,7 +18,6 @@ import { api } from '../../../shared/services/api';
 import type { EmptyWagonArrival, LoadingRegistry } from '../../../shared/types';
 import { DateRangePicker } from '../../../shared/components/DateRangePicker';
 import { HubZoneTabs, type HubZoneTone } from '../../../shared/components/HubZoneTabs';
-import { ReportsHistoryTabs } from '../components/ReportsHistoryTabs';
 import { isOneCArrival } from '../../../shared/utils/oneCSources';
 import { subscribeOrdersChanged } from '../../../shared/utils/realtimeSync';
 import { exportSheet, todayStamp } from '../../../shared/utils/excelExport';
@@ -802,7 +801,6 @@ export default function HistoryPage() {
   return (
     <div className="thub reestr thub-history">
       <section className="thub__main reestr-main">
-        <ReportsHistoryTabs active="history" />
         <HubZoneTabs
           label="Jarayon turi"
           columns={5}

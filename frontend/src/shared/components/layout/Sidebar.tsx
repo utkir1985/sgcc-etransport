@@ -46,7 +46,8 @@ const MENU_ITEM_COLORS: Record<string, string> = {
   'transport-loading': '#fbbf24',// Amber: Yuklanmoqda
   'transport-loaded': '#34d399',// Emerald: Yuklangan
   'transport-dispatched': '#22d3ee', // Cyan: Chiqishga tayyor
-  history: '#c084fc',           // Purple: Hisobotlar va reja
+  history: '#94a3b8',           // Slate: Jarayonlar tarixi
+  statistics: '#c084fc',        // Purple: Statistika
   reports: '#c084fc',           // Purple: Hisobotlar
   plans: '#a855f7',             // Purple: Rejalar
   'normative-docs': '#2dd4bf',  // Teal: Normativ hujjatlar

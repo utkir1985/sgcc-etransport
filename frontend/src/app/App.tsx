@@ -10,10 +10,7 @@ import DashboardPage from '../modules/dashboard/pages/DashboardPage';
 import TransportVehiclesPage from '../modules/dashboard/pages/TransportVehiclesPage';
 import HistoryPage from '../modules/dashboard/pages/HistoryPage';
 import ReportsPage from '../modules/dashboard/pages/ReportsPage';
-import PlanExecutionPage from '../modules/dashboard/pages/PlanExecutionPage';
-import { DemurrageControlPage } from '../modules/dashboard/pages/DemurrageControlPage';
-import { WeightControlPage } from '../modules/dashboard/pages/WeightControlPage';
-import { DefectsGu23Page } from '../modules/dashboard/pages/DefectsGu23Page';
+import StatisticsPage from '../modules/dashboard/pages/StatisticsPage';
 import { LogisticsTariffsPage } from '../modules/dashboard/pages/LogisticsTariffsPage';
 import { TelegramAlertsPage } from '../modules/dashboard/pages/TelegramAlertsPage';
 import OrdersPage from '../modules/marketing/pages/OrdersPage';
@@ -108,7 +105,8 @@ export default function App() {
         <Route path="order-deputy-approvals" element={<ProcessRedirect to="/orders/railway?view=tasdiq" />} />
         <Route path="empty-wagons" element={<EmptyWagonsPage />} />
         <Route path="railway-intake" element={<RailwayWagonIntakePage />} />
-        <Route path="plans" element={<PlanExecutionPage />} />
+        <Route path="stats" element={<StatisticsPage />} />
+        <Route path="plans" element={<Navigate to="/stats" replace />} />
         <Route path="shipments" element={<ShipmentsPage />} />
         <Route path="dispatch" element={<DispatchJournalPage />} />
         {/* 03 Temir yo'l */}
@@ -143,10 +141,10 @@ export default function App() {
         <Route path="transport" element={<Navigate to="/transport/tared" replace />} />
         <Route path="transport/:zone" element={<TransportVehiclesPage />} />
         <Route path="reports" element={<MenuGuardedRoute menuKey="reports"><ReportsPage /></MenuGuardedRoute>} />
-        <Route path="reports/demurrage" element={<DemurrageControlPage />} />
-        <Route path="reports/weight-control" element={<WeightControlPage />} />
-        <Route path="reports/contractor-limits" element={<Navigate to="/plans?view=contractors" replace />} />
-        <Route path="reports/defects-gu23" element={<DefectsGu23Page />} />
+        <Route path="reports/demurrage" element={<Navigate to="/stats" replace />} />
+        <Route path="reports/weight-control" element={<Navigate to="/stats" replace />} />
+        <Route path="reports/contractor-limits" element={<Navigate to="/stats" replace />} />
+        <Route path="reports/defects-gu23" element={<Navigate to="/stats" replace />} />
         <Route path="reports/tariffs" element={<AdminOnlyRoute><LogisticsTariffsPage /></AdminOnlyRoute>} />
         <Route path="reports/telegram" element={<AdminOnlyRoute><TelegramAlertsPage /></AdminOnlyRoute>} />
         <Route path="history" element={<HistoryPage />} />
