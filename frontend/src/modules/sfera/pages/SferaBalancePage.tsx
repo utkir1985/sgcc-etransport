@@ -15,15 +15,15 @@ const SFERA_URL = (import.meta.env.VITE_SFERA_URL as string | undefined)
 const SFERA_ORIGIN = new URL(SFERA_URL).origin;
 
 const PAGES: Record<string, { group: string; title: string; route: string }> = {
-  lpg: { group: 'Suyultirilgan gaz', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/' },
-  'lpg-daily': { group: 'Suyultirilgan gaz', title: 'Sutkalik ko‘rsatkichlar', route: '/balance/daily' },
-  'lpg-monthly': { group: 'Suyultirilgan gaz', title: 'Oylik ko‘rsatkichlar', route: '/balance/monthly' },
-  'lpg-yearly': { group: 'Suyultirilgan gaz', title: 'Yillik ko‘rsatkichlar', route: '/balance/yearly' },
-  cond: { group: 'Gaz kondensati', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/condensate/monitoring' },
-  'cond-hourly': { group: 'Gaz kondensati', title: 'Soatlik ko‘rsatkichlar', route: '/condensate/hourly' },
-  'cond-daily': { group: 'Gaz kondensati', title: 'Sutkalik ko‘rsatkichlar', route: '/condensate/daily' },
-  'cond-monthly': { group: 'Gaz kondensati', title: 'Oylik ko‘rsatkichlar', route: '/condensate/monthly' },
-  'cond-yearly': { group: 'Gaz kondensati', title: 'Yillik ko‘rsatkichlar', route: '/condensate/yearly' },
+  lpg: { group: 'Suyultirilgan gaz sfera', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/' },
+  'lpg-daily': { group: 'Suyultirilgan gaz sfera', title: 'Sutkalik ko‘rsatkichlar', route: '/balance/daily' },
+  'lpg-monthly': { group: 'Suyultirilgan gaz sfera', title: 'Oylik ko‘rsatkichlar', route: '/balance/monthly' },
+  'lpg-yearly': { group: 'Suyultirilgan gaz sfera', title: 'Yillik ko‘rsatkichlar', route: '/balance/yearly' },
+  cond: { group: 'Gaz kondensati sfera', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/condensate/monitoring' },
+  'cond-hourly': { group: 'Gaz kondensati sfera', title: 'Soatlik ko‘rsatkichlar', route: '/condensate/hourly' },
+  'cond-daily': { group: 'Gaz kondensati sfera', title: 'Sutkalik ko‘rsatkichlar', route: '/condensate/daily' },
+  'cond-monthly': { group: 'Gaz kondensati sfera', title: 'Oylik ko‘rsatkichlar', route: '/condensate/monthly' },
+  'cond-yearly': { group: 'Gaz kondensati sfera', title: 'Yillik ko‘rsatkichlar', route: '/condensate/yearly' },
 };
 
 type Status = 'checking' | 'online' | 'offline';
@@ -78,7 +78,7 @@ export default function SferaBalancePage() {
     <div className="sfera-page">
       <div className="sfera-page__bar">
         <nav className="sfera-page__crumbs" aria-label="Sfera bo‘limi">
-          <span>Sfera Balance</span><i>›</i><span>{page.group}</span><i>›</i><b>{page.title}</b>
+          <span>{page.group}</span><i>›</i><b>{page.title}</b>
         </nav>
         <span className={`sfera-page__status is-${status}`} title={status === 'online' ? 'Sfera Balance serveri ulangan' : undefined}>
           <i />{status === 'online' ? 'Ulangan' : status === 'offline' ? 'Mavjud emas' : 'Tekshirilmoqda…'}

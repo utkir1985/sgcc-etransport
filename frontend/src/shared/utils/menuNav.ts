@@ -145,25 +145,29 @@ function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
   );
 }
 
-/** Sfera Balance — alohida tizim, E-Transport ichida faqat panel sifatida ochiladi. */
-function buildSferaItem(): MenuItem {
-  // path '' bo‘lgan bola — guruh sarlavhasi (havola emas)
-  return {
-    ...item('sfera', 'Sfera Balance', '/sfera?p=lpg', 'Gauge'),
-    children: [
-      item('sfera-cap-lpg', 'Suyultirilgan gaz', '', 'Flame'),
-      item('sfera-lpg', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=lpg', 'Activity'),
-      item('sfera-lpg-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=lpg-daily', 'CalendarRange'),
-      item('sfera-lpg-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=lpg-monthly', 'CalendarRange'),
-      item('sfera-lpg-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=lpg-yearly', 'CalendarDays'),
-      item('sfera-cap-cond', 'Gaz kondensati', '', 'Droplets'),
-      item('sfera-cond', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=cond', 'Activity'),
-      item('sfera-cond-hourly', 'Soatlik ko‘rsatkichlar', '/sfera?p=cond-hourly', 'Clock'),
-      item('sfera-cond-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=cond-daily', 'CalendarRange'),
-      item('sfera-cond-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=cond-monthly', 'CalendarRange'),
-      item('sfera-cond-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=cond-yearly', 'CalendarDays'),
-    ],
-  };
+/** Sfera Balance — alohida tizim; E-Transport ichida ikki panel (LPG sfera va kondensat) sifatida ochiladi. */
+function buildSferaItems(): MenuItem[] {
+  return [
+    {
+      ...item('sfera-lpg-group', 'Suyultirilgan gaz sfera', '/sfera?p=lpg', 'Flame'),
+      children: [
+        item('sfera-lpg', 'Real vaqt', '/sfera?p=lpg', 'Activity'),
+        item('sfera-lpg-daily', 'Sutkalik', '/sfera?p=lpg-daily', 'CalendarRange'),
+        item('sfera-lpg-monthly', 'Oylik', '/sfera?p=lpg-monthly', 'CalendarRange'),
+        item('sfera-lpg-yearly', 'Yillik', '/sfera?p=lpg-yearly', 'CalendarDays'),
+      ],
+    },
+    {
+      ...item('sfera-cond-group', 'Gaz kondensati sfera', '/sfera?p=cond', 'Droplets'),
+      children: [
+        item('sfera-cond', 'Real vaqt', '/sfera?p=cond', 'Activity'),
+        item('sfera-cond-hourly', 'Soatlik', '/sfera?p=cond-hourly', 'Clock'),
+        item('sfera-cond-daily', 'Sutkalik', '/sfera?p=cond-daily', 'CalendarRange'),
+        item('sfera-cond-monthly', 'Oylik', '/sfera?p=cond-monthly', 'CalendarRange'),
+        item('sfera-cond-yearly', 'Yillik', '/sfera?p=cond-yearly', 'CalendarDays'),
+      ],
+    },
+  ];
 }
 
 function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
@@ -180,11 +184,11 @@ function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
  * Tarozi, TM/XA va boshqa ish panellari faqat tegishli rolning qo‘shimcha bandlari.
  */
 export function augmentMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
-  // Sfera Balance paneli Normativ hujjatlardan keyin turadi
+  // Sfera panellari Normativ hujjatlardan keyin turadi
   const base = buildMenuItems(menu, role);
   const at = base.findIndex(entry => entry.key === 'normative-docs');
-  const sfera = buildSferaItem();
-  return at >= 0 ? [...base.slice(0, at + 1), sfera, ...base.slice(at + 1)] : [...base, sfera];
+  const sfera = buildSferaItems();
+  return at >= 0 ? [...base.slice(0, at + 1), ...sfera, ...base.slice(at + 1)] : [...base, ...sfera];
 }
 
 function buildMenuItems(menu: MenuItem[], role?: string): MenuItem[] {
@@ -357,7 +361,7 @@ export function menuItemMatches(entry: MenuItem, pathname: string, search = ''):
     if (pathname !== '/sfera') return false;
     const want = new URLSearchParams(query ?? '').get('p') ?? 'lpg';
     const have = new URLSearchParams(search.startsWith('?') ? search : `?${search}`).get('p') || 'lpg';
-    return entry.key === 'sfera' || want === have;
+    return want === have;
   }
 
   // Umumiy band barcha ichki bo‘limlarda, jumladan filtrlangan tarixda ham faol qoladi.

@@ -52,7 +52,8 @@ const MENU_ITEM_COLORS: Record<string, string> = {
   reports: '#c084fc',           // Purple: Hisobotlar
   plans: '#a855f7',             // Purple: Rejalar
   'normative-docs': '#2dd4bf',  // Teal: Normativ hujjatlar
-  sfera: '#f97316',             // Orange: Sfera Balance
+  'sfera-lpg-group': '#f97316', // Orange: Suyultirilgan gaz sfera
+  'sfera-cond-group': '#38bdf8',// Sky: Gaz kondensati sfera
   'railway-intake': '#22d3ee',  // Cyan: Vagonlar reestri
   'wagon-registry': '#22d3ee',  // Cyan
   loading: '#fb923c',           // Orange: Yuklash (TM va XA)
@@ -331,7 +332,7 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
   const { can } = useRbacPermission();
   const canSfera = can('sfera.view');
   const items = useMemo(
-    () => augmentMenuItems(menu, user?.role).filter(entry => entry.key !== 'sfera' || canSfera),
+    () => augmentMenuItems(menu, user?.role).filter(entry => !entry.key.startsWith('sfera-') || canSfera),
     [menu, user?.role, canSfera],
   );
   const [emptyWagonAlertCount, setEmptyWagonAlertCount] = useState(0);
