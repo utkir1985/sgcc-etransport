@@ -78,7 +78,8 @@ const daysBetween = (a: string, b: string) => Math.round((new Date(`${b}T00:00:0
 const monthStart = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-01`;
 const monthEnd = (y: number, m: number) => iso(new Date(y, m, 0));
 const periodKeyOf = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}`;
-const shortNum = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(Math.abs(v) >= 10000 ? 0 : 1)}k` : `${Math.round(v)}`);
+// O‘q yozuvlari: «22k» emas — «22 000» (minglar bo‘sh joy bilan)
+const shortNum = (v: number) => formatTons(Math.round(v));
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const monthLabel = (k: string) => `${(MONTH_NAMES_UZ[Number(k.slice(5, 7)) - 1] || '').slice(0, 3)} ${k.slice(2, 4)}`;
 
@@ -387,6 +388,8 @@ export default function StatisticsPage() {
     color: dark ? '#e2e8f0' : '#0f172a',
   };
   const tons = (v: number) => `${formatTons(r1(v))} t`;
+  // O‘qning o‘lchov birligi (yuqorida, chap burchakda)
+  const yUnit = (unit: string) => ({ value: unit, position: 'top' as const, offset: 12, fill: axis, fontSize: 11.5, dx: 14 });
   const empty = (text = 'Tanlangan filtr bo‘yicha ma’lumot yo‘q') => <div className="stat-empty">{text}</div>;
   const prodLabel = (p: string) => productOptions.find(o => o.value === p)?.label || p;
   const pct = (d: number, p: number) => (p > 0 ? Math.round((d / p) * 100) : 0);
@@ -919,10 +922,10 @@ export default function StatisticsPage() {
     <ChartCard title="Oylar bo‘yicha reja va bajarilish" hint={`${compare === 'yoy' && prev ? 'Tonna · och ko‘k — o‘tgan yilning shu oyi' : 'Tasdiqlangan buyurtmalar, tonna'} · ustun bosilsa — buyurtmalar ro‘yxati`}>
       {monthly.length === 0 ? empty() : (
         <ResponsiveContainer width="100%" height={290}>
-          <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={6} barCategoryGap="28%">
+          <BarChart data={monthly} margin={{ top: 22, right: 8, left: 0, bottom: 0 }} barGap={6} barCategoryGap="28%">
             <CartesianGrid stroke={grid} vertical={false} />
             <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={44} />
+            <YAxis label={yUnit('tonna')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={60} />
             <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => tons(v)} />
             <Legend wrapperStyle={{ fontSize: 13 }} />
             <Bar dataKey="reja" name="Reja" fill={ghost} radius={[6, 6, 0, 0]} maxBarSize={56} cursor="pointer" onClick={d => { const r = payloadOf(d); drillOrders(`${r.label} — buyurtmalar`, l => periodKeyOf(l.order.year, l.order.month) === r.key); }} />
@@ -952,7 +955,7 @@ export default function StatisticsPage() {
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={series}
-          margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+          margin={{ top: 22, right: 12, left: 0, bottom: 0 }}
           onClick={st => {
             const row = linePayload(st);
             if (row) drillExits(`${row.label} — chiqqan vagonlar`, periodPred(row));
@@ -961,15 +964,15 @@ export default function StatisticsPage() {
         >
           <CartesianGrid stroke={grid} vertical={false} />
           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
-          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={dailyMetric === 'tonna'} width={44} tickFormatter={shortNum} />
+          <YAxis label={yUnit(dailyMetric === 'tonna' ? 'tonna' : 'vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={dailyMetric === 'tonna'} width={60} tickFormatter={shortNum} />
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => (dailyMetric === 'tonna' ? tons(v) : `${v} vagon`)} />
           <Legend wrapperStyle={{ fontSize: 13 }} />
           {/* Recharts Fragment ichidagi chiziqlarni ko‘rmaydi — har biri alohida shart bilan */}
-          {dailyMetric === 'vagon' ? <Line type="monotone" dataKey="kirdi" name="Kirdi" stroke="#f59e0b" strokeWidth={2.2} dot={false} /> : null}
-          {dailyMetric === 'vagon' ? <Line type="monotone" dataKey="yuklandi" name="Yuklandi" stroke="#3b82f6" strokeWidth={2.2} dot={false} /> : null}
-          {dailyMetric === 'vagon' ? <Line type="monotone" dataKey="chiqdi" name="Chiqdi" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} /> : null}
-          {dailyMetric === 'tonna' ? <Line type="monotone" dataKey="chiqdiT" name="Jo‘natildi (t)" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} /> : null}
-          {prev ? <Line type="monotone" dataKey="oldin" name="Solishtirma davr" stroke="#10b981" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={2} dot={false} /> : null}
+          {dailyMetric === 'vagon' ? <Line type="linear" dataKey="kirdi" name="Kirdi" stroke="#f59e0b" strokeWidth={2.2} dot={false} /> : null}
+          {dailyMetric === 'vagon' ? <Line type="linear" dataKey="yuklandi" name="Yuklandi" stroke="#3b82f6" strokeWidth={2.2} dot={false} /> : null}
+          {dailyMetric === 'vagon' ? <Line type="linear" dataKey="chiqdi" name="Chiqdi" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} /> : null}
+          {dailyMetric === 'tonna' ? <Line type="linear" dataKey="chiqdiT" name="Jo‘natildi (t)" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} /> : null}
+          {prev ? <Line type="linear" dataKey="oldin" name="Solishtirma davr" stroke="#10b981" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={2} dot={false} /> : null}
         </LineChart>
       </ResponsiveContainer>
     </ChartCard>
@@ -979,10 +982,10 @@ export default function StatisticsPage() {
     <ChartCard title="Bosqichlar bo‘yicha vaqt" hint={`${cur.stays.length} ta chiqqan vagon · mediana, soat · kulrang — reglament me’yori (jami 533 daqiqa) · ustun bosilsa — vagonlar`}>
       {cur.stays.length === 0 ? empty() : (
         <ResponsiveContainer width="100%" height={290}>
-          <BarChart data={stageChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={4} barCategoryGap="22%">
+          <BarChart data={stageChart} margin={{ top: 22, right: 8, left: 0, bottom: 0 }} barGap={4} barCategoryGap="22%">
             <CartesianGrid stroke={grid} vertical={false} />
             <XAxis dataKey="label" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
-            <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
+            <YAxis label={yUnit('soat')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
             <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} soat`} />
             <Legend wrapperStyle={{ fontSize: 13 }} />
             <Bar dataKey="meyor" name="Me’yor" fill={ghost} radius={[6, 6, 0, 0]} maxBarSize={40} />
@@ -1002,7 +1005,7 @@ export default function StatisticsPage() {
         <ResponsiveContainer width="100%" height={Math.max(160, topRemaining.length * 32 + 30)}>
           <BarChart data={topRemaining} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
             <CartesianGrid stroke={grid} horizontal={false} />
-            <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
+            <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `${shortNum(v)}`} />
             <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={190} />
             <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => tons(v)} />
             <Bar dataKey="qoldiq" name="Qoldiq" fill="#f59e0b" radius={[0, 6, 6, 0]} maxBarSize={22} cursor="pointer" onClick={d => { const r = payloadOf(d); drillOrders(`${r.name} — qoldiqli buyurtmalar`, l => shortContractor(l.contractor) === r.name && l.remain > 0); }} />
@@ -1183,15 +1186,15 @@ export default function StatisticsPage() {
               >
                 {forecast.plan === 0 ? empty('Joriy oy uchun tasdiqlangan buyurtma yo‘q') : (
                   <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={forecast.rows} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                    <LineChart data={forecast.rows} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
                       <CartesianGrid stroke={grid} vertical={false} />
                       <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval={2} />
-                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={44} domain={[0, (dataMax: number) => Math.max(dataMax, forecast.plan) * 1.05]} />
+                      <YAxis label={yUnit('tonna')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={60} domain={[0, (dataMax: number) => Math.max(dataMax, forecast.plan) * 1.05]} />
                       <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => tons(v)} labelFormatter={l => `${l}-${MONTH_NAMES_UZ[cm - 1].toLowerCase()}`} />
                       <Legend wrapperStyle={{ fontSize: 13 }} />
                       <ReferenceLine y={forecast.plan} stroke="#64748b" strokeDasharray="6 4" label={{ value: 'Reja', position: 'insideTopLeft', fill: axis, fontSize: 12 }} />
-                      <Line type="monotone" dataKey="haqiqiy" name="Bajarildi (yig‘ma)" stroke="#3b82f6" strokeWidth={2.6} dot={false} connectNulls={false} />
-                      <Line type="monotone" dataKey="prognoz" name="Prognoz" stroke={forecast.pct >= 100 ? '#10b981' : '#f59e0b'} strokeWidth={2.2} strokeDasharray="6 4" dot={false} connectNulls={false} />
+                      <Line type="linear" dataKey="haqiqiy" name="Bajarildi (yig‘ma)" stroke="#3b82f6" strokeWidth={2.6} dot={false} connectNulls={false} />
+                      <Line type="linear" dataKey="prognoz" name="Prognoz" stroke={forecast.pct >= 100 ? '#10b981' : '#f59e0b'} strokeWidth={2.2} strokeDasharray="6 4" dot={false} connectNulls={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 )}
@@ -1233,10 +1236,10 @@ export default function StatisticsPage() {
                   </div>
                   {byStation.length === 0 ? empty() : (
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={byStation} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <BarChart data={byStation} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid stroke={grid} vertical={false} />
                         <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={60} />
-                        <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={44} />
+                        <YAxis label={yUnit(stationMetric === 'tonna' ? 'tonna' : 'vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={60} />
                         <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => (stationMetric === 'tonna' ? tons(v) : `${v} vagon`)} />
                         <Bar dataKey={stationMetric} name={stationMetric === 'tonna' ? 'Tonna' : 'Vagon'} fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer" onClick={d => { const r = payloadOf(d); drillExits(`${r.name} — chiqqan vagonlar`, e => (e.station || 'Ko‘rsatilmagan') === r.name); }} />
                       </BarChart>
@@ -1253,10 +1256,10 @@ export default function StatisticsPage() {
                 <div className="stat-grid stat-grid--1-1">
                   <ChartCard title="Hafta kunlari bo‘yicha jo‘natish" hint="Bir kunda o‘rtacha chiqqan vagonlar">
                     <ResponsiveContainer width="100%" height={270}>
-                      <BarChart data={weekday} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <BarChart data={weekday} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid stroke={grid} vertical={false} />
                         <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={32} />
+                        <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
                         <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
                         <Bar dataKey="ortacha" name="O‘rtacha" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer" onClick={d => { const r = payloadOf(d); const wd = WEEKDAYS.indexOf(r.label); drillExits(`${r.label} kunlari — chiqqan vagonlar`, e => (new Date(`${e.day}T00:00:00`).getDay() + 6) % 7 === wd); }} />
                       </BarChart>
@@ -1267,10 +1270,10 @@ export default function StatisticsPage() {
               <div className="stat-grid stat-grid--1-1">
                 <ChartCard title="Soatlar bo‘yicha yuklanish" hint="Kunning qaysi soatlarida eng ko‘p ish bo‘ladi (vagon soni)">
                   <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={hourly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={1}>
+                    <BarChart data={hourly} margin={{ top: 22, right: 8, left: 0, bottom: 0 }} barGap={1}>
                       <CartesianGrid stroke={grid} vertical={false} />
                       <XAxis dataKey="label" stroke={axis} fontSize={11} tickLine={false} axisLine={false} interval={2} />
-                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={36} />
+                      <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
                       <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
                       <Legend wrapperStyle={{ fontSize: 13 }} />
                       <Bar dataKey="kirdi" name="Kirdi" fill="#f59e0b" radius={[3, 3, 0, 0]} />
@@ -1310,13 +1313,13 @@ export default function StatisticsPage() {
                   <ChartCard title="Zavodda turish vaqti (kunlar bo‘yicha)" hint={`Odatiy (mediana) ${r1(cur.stayMedian)} soat · me’yordan oshgan: ${cur.stayOver} / ${cur.stays.length} vagon`}>
                     {stayTrend.length === 0 ? empty() : (
                       <ResponsiveContainer width="100%" height={290}>
-                        <LineChart data={stayTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} style={{ cursor: 'pointer' }} onClick={st => { const r = linePayload(st); if (r) drillStays(`${r.label} — chiqqan vagonlar`, x => localDateKey(x.exitedAt!) === r.day); }}>
+                        <LineChart data={stayTrend} margin={{ top: 22, right: 12, left: 0, bottom: 0 }} style={{ cursor: 'pointer' }} onClick={st => { const r = linePayload(st); if (r) drillStays(`${r.label} — chiqqan vagonlar`, x => localDateKey(x.exitedAt!) === r.day); }}>
                           <CartesianGrid stroke={grid} vertical={false} />
                           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
-                          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
+                          <YAxis label={yUnit('soat')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
                           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} soat`} />
                           <ReferenceLine y={NORM_HOURS} stroke="#ef4444" strokeDasharray="5 4" label={{ value: 'Me’yor 8.9 soat', position: 'insideTopRight', fill: '#ef4444', fontSize: 12 }} />
-                          <Line type="monotone" dataKey="soat" name="Mediana" stroke="#8b5cf6" strokeWidth={2.2} dot={false} />
+                          <Line type="linear" dataKey="soat" name="Mediana" stroke="#8b5cf6" strokeWidth={2.2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     )}
@@ -1325,10 +1328,10 @@ export default function StatisticsPage() {
                 <div className="stat-grid stat-grid--1-1">
                   <ChartCard title="Vagon egaligi bo‘yicha" hint="Mediana turish vaqti, soat · qizil chiziq — me’yor">
                     <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={ownershipStay} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <BarChart data={ownershipStay} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid stroke={grid} vertical={false} />
                         <XAxis dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
+                        <YAxis label={yUnit('soat')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
                         <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} soat`} />
                         <ReferenceLine y={NORM_HOURS} stroke="#ef4444" strokeDasharray="5 4" />
                         <Bar dataKey="soat" name="Mediana" fill="#8b5cf6" radius={[6, 6, 0, 0]} maxBarSize={64} cursor="pointer" onClick={d => { const r = payloadOf(d); drillStays(`${r.name} — eng uzoq turganlar`, x => (r.name.startsWith('Majmua') ? x.ownership === 'majmua' : x.ownership === 'tashqi')); }} />
@@ -1340,7 +1343,7 @@ export default function StatisticsPage() {
                       <ResponsiveContainer width="100%" height={Math.max(220, culprits.length * 32 + 30)}>
                         <BarChart data={culprits} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
                           <CartesianGrid stroke={grid} horizontal={false} />
-                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={v => `${shortNum(v)}`} />
                           <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={190} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} soat`} />
                           <Bar dataKey="soat" name="Soat" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={20} cursor="pointer" onClick={d => { const r = payloadOf(d); drillStays(`${r.name} — kechikkan vagonlar`, x => (x.delayCulprit?.role || 'Boshqa') === r.name); }} />
@@ -1378,10 +1381,10 @@ export default function StatisticsPage() {
                   <ChartCard title="O‘rtacha netto" hint="Bir vagonga to‘g‘ri kelgan o‘rtacha yuk, tonna">
                     {weightRows.length === 0 ? empty() : (
                       <ResponsiveContainer width="100%" height={270}>
-                        <BarChart data={weightRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                        <BarChart data={weightRows} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
                           <CartesianGrid stroke={grid} vertical={false} />
                           <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
-                          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
+                          <YAxis label={yUnit('tonna')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} t`} />
                           <Bar dataKey="ortacha" name="O‘rtacha netto" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={56} />
                         </BarChart>
@@ -1391,14 +1394,14 @@ export default function StatisticsPage() {
                   <ChartCard title="Ortiqcha va kam yuklash ulushi (oylar)" hint="Tortilgan vagonlarga nisbatan, %">
                     {weightTrend.length === 0 ? empty() : (
                       <ResponsiveContainer width="100%" height={270}>
-                        <LineChart data={weightTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                        <LineChart data={weightTrend} margin={{ top: 22, right: 12, left: 0, bottom: 0 }}>
                           <CartesianGrid stroke={grid} vertical={false} />
                           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${v}%`} />
+                          <YAxis label={yUnit('%')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} tickFormatter={v => `${v}%`} />
                           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v}%`} />
                           <Legend wrapperStyle={{ fontSize: 13 }} />
-                          <Line type="monotone" dataKey="ortiqcha" name="Ortiqcha yuklash" stroke="#ef4444" strokeWidth={2.2} />
-                          <Line type="monotone" dataKey="kam" name="Kam yuklash" stroke="#f59e0b" strokeWidth={2.2} />
+                          <Line type="linear" dataKey="ortiqcha" name="Ortiqcha yuklash" stroke="#ef4444" strokeWidth={2.2} />
+                          <Line type="linear" dataKey="kam" name="Kam yuklash" stroke="#f59e0b" strokeWidth={2.2} />
                         </LineChart>
                       </ResponsiveContainer>
                     )}
@@ -1443,10 +1446,10 @@ export default function StatisticsPage() {
                   <ChartCard title="Oylar bo‘yicha">
                     {defectCharts.byMonth.length === 0 ? empty('Dalolatnoma yo‘q') : (
                       <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={defectCharts.byMonth} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                        <BarChart data={defectCharts.byMonth} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
                           <CartesianGrid stroke={grid} vertical={false} />
                           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={30} />
+                          <YAxis label={yUnit('dalolatnoma')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} ta`} />
                           <Bar dataKey="soni" name="Dalolatnoma" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer" onClick={d => { const r = payloadOf(d); drillDefects(`${r.label} — dalolatnomalar`, x => localDateKey(x.arrivalDate).slice(0, 7) === r.k); }} />
                         </BarChart>
