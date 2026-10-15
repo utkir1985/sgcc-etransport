@@ -2122,7 +2122,7 @@ export default function StatisticsPage() {
                   </ChartCard>
                 </div>
 
-                <h3 className="stat-mini-title">Yo‘nalishlar va samaradorlik</h3>
+                <h3 className="stat-mini-title">Aylanish va yo‘nalishlar</h3>
                 <div className="stat-grid stat-grid--1-1">
                   <ChartCard title="Stansiyalar bo‘yicha qaytish vaqti" hint="Zavoddan chiqib, qaytib kelgunicha (mediana, kun) · hozir yo‘ldagilar tooltipda">
                     {fleet2.stations.length === 0 ? empty() : (
@@ -2149,19 +2149,6 @@ export default function StatisticsPage() {
                     </ResponsiveContainer>
                   </ChartCard>
                 </div>
-                  <ChartCard title="Vagon bo‘yicha tashilgan yuk" hint="Davrda eng ko‘p tonna tashigan majmua vagonlari (top 12)">
-                    {fleet2.tonsTop.length === 0 ? empty() : (
-                      <ResponsiveContainer width="100%" height={Math.max(220, fleet2.tonsTop.length * 28 + 40)}>
-                        <BarChart data={fleet2.tonsTop} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-                          <CartesianGrid stroke={grid} horizontal={false} />
-                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
-                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { reys?: number } }) => [`${tons(v)} · ${it?.payload?.reys ?? 0} reys`, 'Tashildi']} />
-                          <Bar dataKey="tonna" name="Tonna" fill="#10b981" radius={[0, 6, 6, 0]} maxBarSize={18} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
               </>
             ) : null}
 
