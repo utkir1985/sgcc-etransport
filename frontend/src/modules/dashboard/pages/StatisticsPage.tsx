@@ -43,6 +43,7 @@ import { exportSheets, todayStamp } from '../../../shared/utils/excelExport';
 import { buildDefectsGu23Analysis, buildDemurrageAnalysis, buildWeightAnalysis } from '../utils/demurrageUtils';
 import { loadedWagonCountOf, localDateKey, wagonCountOf } from '../utils/sharedPanels';
 import { StatsMultiSelect, type StatsOption } from '../components/StatsMultiSelect';
+import { StatsDrillTable, type DrillColumn, type DrillRow, type DrillState } from '../components/StatsDrillTable';
 
 const PRODUCT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
 const WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
@@ -153,7 +154,7 @@ function computeAll(
   }
 
   // Jo‘natish — yuk xatidagi har bir vagon
-  const exits: { day: string; tons: number; product: string; station: string }[] = [];
+  const exits: { day: string; tons: number; product: string; station: string; contractor: string; wagonNumber: string; registryId: string; registryNumber: string }[] = [];
   if (!f.transport || f.transport === 'Railway') {
     for (const r of registries) {
       if (!r.exitedToKengsoyAt) continue;
@@ -168,6 +169,10 @@ function computeAll(
           tons: routeTons(w.netWeight ?? w.NetWeight ?? w.nettoWeight),
           product: product || 'Boshqa',
           station: (w.destinationStation || r.destinationStation || '').trim(),
+          contractor: (w.contractorName || r.contractorName || '').trim(),
+          wagonNumber: w.wagonNumber,
+          registryId: r.id,
+          registryNumber: r.registryNumber,
         });
       }
     }
@@ -262,6 +267,10 @@ export default function StatisticsPage() {
   const [arrivals, setArrivals] = useState<EmptyWagonArrival[]>([]);
   const [registries, setRegistries] = useState<LoadingRegistry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [drill, setDrill] = useState<DrillState | null>(null);
+  const [gran, setGran] = useState<'day' | 'week' | 'month'>('day');
+  const [dailyMetric, setDailyMetric] = useState<'vagon' | 'tonna'>('vagon');
+  const [stationMetric, setStationMetric] = useState<'tonna' | 'vagon'>('tonna');
 
   // Filtrlar havolada saqlanadi — ko‘rinishni havola orqali boshqa xodimga yuborish mumkin
   const list = (k: string) => (sp.get(k) || '').split('|').filter(Boolean);
@@ -381,6 +390,7 @@ export default function StatisticsPage() {
       : { from: shiftDays(range.from, -daysBetween(range.from, range.to)), to: shiftDays(range.from, -1) };
 
   const filterKey = JSON.stringify(filters);
+  useEffect(() => { setDrill(null); }, [tab, range.from, range.to, filterKey]);
   /* eslint-disable react-hooks/exhaustive-deps */
   const cur = useMemo(() => computeAll(range, filters, orders, arrivals, registries, demurrage, weight, defects),
     [range.from, range.to, filterKey, orders, arrivals, registries, demurrage, weight, defects]);
@@ -463,27 +473,54 @@ export default function StatisticsPage() {
       row.tonna += e.tons;
       m.set(k, row);
     }
-    return Array.from(m.values()).map(r => ({ ...r, tonna: r1(r.tonna) })).sort((a, b) => b.tonna - a.tonna).slice(0, 12);
-  }, [cur]);
+    return Array.from(m.values()).map(r => ({ ...r, tonna: r1(r.tonna) })).sort((a, b) => (stationMetric === 'tonna' ? b.tonna - a.tonna : b.vagon - a.vagon)).slice(0, 12);
+  }, [cur, stationMetric]);
 
   const daily = useMemo(() => {
     const end = range.to && range.to < todayIso() ? range.to : todayIso();
     let start = range.from || shiftDays(end, -29);
     if (daysBetween(start, end) > 120) start = shiftDays(end, -119);
-    const rows = new Map<string, { day: string; label: string; kirdi: number; yuklandi: number; chiqdi: number; oldin?: number }>();
-    for (let d = start; d <= end; d = shiftDays(d, 1)) rows.set(d, { day: d, label: `${d.slice(8, 10)}.${d.slice(5, 7)}`, kirdi: 0, yuklandi: 0, chiqdi: 0 });
+    const rows = new Map<string, { day: string; label: string; kirdi: number; yuklandi: number; chiqdi: number; chiqdiT: number; oldin?: number }>();
+    for (let d = start; d <= end; d = shiftDays(d, 1)) rows.set(d, { day: d, label: `${d.slice(8, 10)}.${d.slice(5, 7)}`, kirdi: 0, yuklandi: 0, chiqdi: 0, chiqdiT: 0 });
     cur.entries.forEach(e => { const r = rows.get(e.day); if (r) r.kirdi += e.n; });
     cur.loads.forEach(e => { const r = rows.get(e.day); if (r) r.yuklandi += e.n; });
-    cur.exits.forEach(e => { const r = rows.get(e.day); if (r) r.chiqdi += 1; });
+    cur.exits.forEach(e => { const r = rows.get(e.day); if (r) { r.chiqdi += 1; r.chiqdiT += e.tons; } });
     const out = Array.from(rows.values());
     if (prev && cmpRange && range.from) {
-      const pmap = new Map<string, number>();
-      prev.exits.forEach(e => pmap.set(e.day, (pmap.get(e.day) || 0) + 1));
+      const pmap = new Map<string, { n: number; t: number }>();
+      prev.exits.forEach(e => { const x = pmap.get(e.day) ?? { n: 0, t: 0 }; x.n += 1; x.t += e.tons; pmap.set(e.day, x); });
       const offset = daysBetween(cmpRange.from, range.from) - 1;
-      out.forEach(r => { r.oldin = pmap.get(compare === 'yoy' ? shiftYears(r.day, -1) : shiftDays(r.day, -offset)) || 0; });
+      out.forEach(r => {
+        const x = pmap.get(compare === 'yoy' ? shiftYears(r.day, -1) : shiftDays(r.day, -offset));
+        r.oldin = x ? (dailyMetric === 'tonna' ? r1(x.t) : x.n) : 0;
+      });
     }
     return out;
-  }, [cur, prev, cmpRange?.from, range.from, range.to, compare]);
+  }, [cur, prev, cmpRange?.from, range.from, range.to, compare, dailyMetric]);
+
+  // Kun → hafta / oy bo‘yicha guruhlash
+  const series = useMemo(() => {
+    if (gran === 'day') return daily.map(d => ({ ...d, chiqdiT: r1(d.chiqdiT) }));
+    const map = new Map<string, { key: string; label: string; day: string; kirdi: number; yuklandi: number; chiqdi: number; chiqdiT: number; oldin?: number }>();
+    for (const d of daily) {
+      let key: string;
+      let label: string;
+      if (gran === 'week') {
+        const dt = new Date(`${d.day}T00:00:00`);
+        const monday = shiftDays(d.day, -((dt.getDay() + 6) % 7));
+        key = monday;
+        label = `${monday.slice(8, 10)}.${monday.slice(5, 7)} hafta`;
+      } else {
+        key = d.day.slice(0, 7);
+        label = monthLabel(key);
+      }
+      const row = map.get(key) ?? { key, label, day: key, kirdi: 0, yuklandi: 0, chiqdi: 0, chiqdiT: 0, oldin: d.oldin === undefined ? undefined : 0 };
+      row.kirdi += d.kirdi; row.yuklandi += d.yuklandi; row.chiqdi += d.chiqdi; row.chiqdiT += d.chiqdiT;
+      if (d.oldin !== undefined) row.oldin = (row.oldin || 0) + d.oldin;
+      map.set(key, row);
+    }
+    return Array.from(map.values()).map(r => ({ ...r, chiqdiT: r1(r.chiqdiT), oldin: r.oldin === undefined ? undefined : r1(r.oldin) }));
+  }, [daily, gran]);
 
   const weekday = useMemo(() => {
     const sums = Array(7).fill(0);
@@ -509,7 +546,7 @@ export default function StatisticsPage() {
   const stageChart = useMemo(() => STAGES.map(st => {
     const v = cur.stays.map(i => i.stepHours[st.key]).filter(x => x > 0);
     const pv = prev ? prev.stays.map(i => i.stepHours[st.key]).filter(x => x > 0) : [];
-    return { label: st.label, meyor: r1(st.norm / 60), haqiqiy: r1(median(v)), oldin: prev ? r1(median(pv)) : undefined };
+    return { key: st.key, label: st.label, meyor: r1(st.norm / 60), haqiqiy: r1(median(v)), oldin: prev ? r1(median(pv)) : undefined };
   }), [cur, prev]);
 
   const stayTrend = useMemo(() => {
@@ -601,6 +638,138 @@ export default function StatisticsPage() {
   }, [cur]);
 
   // ============================================================
+  // Tafsilot (drill-down) — diagramma bo‘lagi bosilganda
+  // ============================================================
+
+  const openDrill = (d: DrillState) => {
+    setDrill(d);
+    window.setTimeout(() => document.getElementById('stat-drill')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
+  const orderHref = (o: MonthlyOrder) => `/orders/${o.logisticsType === 'Road' ? 'road' : 'railway'}?view=${o.status === 'Completed' ? 'yakun' : 'faol'}&open=${o.id}`;
+  const fmtDay = (iso?: string | null) => (iso ? localDateKey(iso).split('-').reverse().join('.') : '—');
+
+  const ORDER_COLS: DrillColumn[] = [
+    { key: 'num', label: 'Hujjat raqami' },
+    { key: 'period', label: 'Davr' },
+    { key: 'product', label: 'Mahsulot' },
+    { key: 'contractor', label: 'Kontragent' },
+    { key: 'plan', label: 'Reja (t)', align: 'right' },
+    { key: 'done', label: 'Bajarildi (t)', align: 'right' },
+    { key: 'remain', label: 'Qoldiq (t)', align: 'right' },
+    { key: 'status', label: 'Holat', align: 'center' },
+  ];
+  const drillOrders = (title: string, pred: (l: Computed['lines'][number]) => boolean, subtitle?: string) => {
+    const rows: DrillRow[] = cur.lines.filter(pred).map((l, i) => ({
+      id: `${l.order.id}-${i}`,
+      href: orderHref(l.order),
+      cells: {
+        num: l.order.orderNumber,
+        period: `${MONTH_NAMES_UZ[l.order.month - 1] || ''} ${l.order.year}`,
+        product: prodLabel(l.order.productType),
+        contractor: shortContractor(l.contractor),
+        plan: formatTons(r1(l.plan)),
+        done: formatTons(r1(l.done)),
+        remain: l.order.status === 'Completed' ? 'Yopildi' : formatTons(r1(l.remain)),
+        status: l.order.status === 'Completed' ? 'Yakunlangan' : 'Ijroda',
+      },
+    }));
+    openDrill({ title, subtitle, columns: ORDER_COLS, rows });
+  };
+
+  const drillExits = (title: string, pred: (e: Computed['exits'][number]) => boolean, subtitle?: string) => {
+    const rows: DrillRow[] = cur.exits.filter(pred).sort((a, b) => b.day.localeCompare(a.day)).map((e, i) => ({
+      id: `${e.registryId}-${e.wagonNumber}-${i}`,
+      href: `/registry?expanded=reg:${e.registryId}`,
+      cells: {
+        day: e.day.split('-').reverse().join('.'),
+        wagon: e.wagonNumber,
+        reg: e.registryNumber,
+        product: prodLabel(e.product),
+        contractor: shortContractor(e.contractor),
+        station: e.station || '—',
+        tons: formatTons(r1(e.tons)),
+      },
+    }));
+    openDrill({
+      title, subtitle, rows,
+      columns: [
+        { key: 'day', label: 'Chiqqan sana' }, { key: 'wagon', label: 'Vagon' }, { key: 'reg', label: 'Yuk xati' },
+        { key: 'product', label: 'Mahsulot' }, { key: 'contractor', label: 'Kontragent' }, { key: 'station', label: 'Stansiya' },
+        { key: 'tons', label: 'Netto (t)', align: 'right' },
+      ],
+    });
+  };
+
+  const drillStays = (title: string, pred: (s: Computed['stays'][number]) => boolean, sortKey?: (typeof STAGES)[number]['key'], subtitle?: string) => {
+    const list = cur.stays.filter(pred).sort((a, b) => (sortKey ? b.stepHours[sortKey] - a.stepHours[sortKey] : b.hoursInPlant - a.hoursInPlant));
+    const rows: DrillRow[] = list.map((s0, i) => ({
+      id: `${s0.id}-${i}`,
+      href: s0.arrivalId ? `/empty-wagons?arrivalId=${s0.arrivalId}` : undefined,
+      cells: {
+        wagon: s0.wagonNumber,
+        arrival: s0.arrivalNumber,
+        product: prodLabel(s0.productType),
+        exited: fmtDay(s0.exitedAt),
+        stage: sortKey ? r1(s0.stepHours[sortKey]) : '—',
+        total: r1(s0.hoursInPlant),
+        culprit: s0.delayCulprit?.role || '—',
+      },
+    }));
+    openDrill({
+      title, subtitle, rows,
+      columns: [
+        { key: 'wagon', label: 'Vagon' }, { key: 'arrival', label: 'Partiya' }, { key: 'product', label: 'Mahsulot' },
+        { key: 'exited', label: 'Chiqqan sana' },
+        ...(sortKey ? [{ key: 'stage', label: 'Bosqichda (soat)', align: 'right' as const }] : []),
+        { key: 'total', label: 'Jami (soat)', align: 'right' }, { key: 'culprit', label: 'Kechikish xizmati' },
+      ],
+    });
+  };
+
+  const drillWeights = (title: string, pred: (w: Computed['weights'][number]) => boolean) => {
+    const label = { overload: 'Ortiqcha yuklash', underload: 'Kam yuklash', normal: 'Me’yorda' } as const;
+    const rows: DrillRow[] = cur.weights.filter(pred).sort((a, b) => Math.abs(b.diffTons) - Math.abs(a.diffTons)).map((w, i) => ({
+      id: `${w.wagonNumber}-${i}`,
+      cells: {
+        wagon: w.wagonNumber, arrival: w.arrivalNumber, product: prodLabel(w.productType), day: fmtDay(w.date),
+        netto: r1(w.nettoWeight), cap: r1(w.capacityTons), diff: `${w.diffTons > 0 ? '+' : ''}${r1(w.diffTons)}`, status: label[w.status],
+      },
+    }));
+    openDrill({
+      title, rows, subtitle: '≈ sig‘im mahsulot turi bo‘yicha taxminiy',
+      columns: [
+        { key: 'wagon', label: 'Vagon' }, { key: 'arrival', label: 'Partiya' }, { key: 'product', label: 'Mahsulot' }, { key: 'day', label: 'Sana' },
+        { key: 'netto', label: 'Netto (t)', align: 'right' }, { key: 'cap', label: '≈ Sig‘im (t)', align: 'right' },
+        { key: 'diff', label: 'Farq (t)', align: 'right' }, { key: 'status', label: 'Holat', align: 'center' },
+      ],
+    });
+  };
+
+  const drillDefects = (title: string, pred: (d: Computed['defectItems'][number]) => boolean) => {
+    const rows: DrillRow[] = cur.defectItems.filter(pred).map((d, i) => ({
+      id: `${d.actNumber}-${i}`,
+      cells: {
+        act: d.actNumber || '—', wagon: d.wagonNumber, arrival: d.arrivalNumber, day: fmtDay(d.arrivalDate), station: d.station || '—',
+        type: (DEFECT_ACT_TYPE_LABEL as Record<string, string>)[d.actType] || d.actType || '—', reason: d.defectReason || '—',
+        returned: d.isReturned ? 'Ha' : 'Yo‘q',
+      },
+    }));
+    openDrill({
+      title, rows,
+      columns: [
+        { key: 'act', label: 'Dalolatnoma' }, { key: 'wagon', label: 'Vagon' }, { key: 'arrival', label: 'Partiya' }, { key: 'day', label: 'Kelgan sana' },
+        { key: 'station', label: 'Stansiya' }, { key: 'type', label: 'Turi' }, { key: 'reason', label: 'Sabab' }, { key: 'returned', label: 'Qaytarilgan', align: 'center' },
+      ],
+    });
+  };
+
+  // Recharts bosish hodisasidan qator ma’lumotini olish
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payloadOf = (d: any) => (d && d.payload ? d.payload : d);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const linePayload = (st: any) => st?.activePayload?.[0]?.payload;
+
+  // ============================================================
   // Excel
   // ============================================================
 
@@ -633,7 +802,7 @@ export default function StatisticsPage() {
   // ============================================================
 
   const monthlyChart = (
-    <ChartCard title="Oylar bo‘yicha reja va bajarilish" hint={compare === 'yoy' && prev ? 'Tonna · och ko‘k — o‘tgan yilning shu oyi' : 'Tasdiqlangan buyurtmalar, tonna'}>
+    <ChartCard title="Oylar bo‘yicha reja va bajarilish" hint={`${compare === 'yoy' && prev ? 'Tonna · och ko‘k — o‘tgan yilning shu oyi' : 'Tasdiqlangan buyurtmalar, tonna'} · ustun bosilsa — buyurtmalar ro‘yxati`}>
       {monthly.length === 0 ? empty() : (
         <ResponsiveContainer width="100%" height={290}>
           <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={6} barCategoryGap="28%">
@@ -642,8 +811,8 @@ export default function StatisticsPage() {
             <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={44} />
             <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => tons(v)} />
             <Legend wrapperStyle={{ fontSize: 13 }} />
-            <Bar dataKey="reja" name="Reja" fill={ghost} radius={[6, 6, 0, 0]} maxBarSize={56} />
-            <Bar dataKey="bajarildi" name="Bajarildi" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={56} />
+            <Bar dataKey="reja" name="Reja" fill={ghost} radius={[6, 6, 0, 0]} maxBarSize={56} cursor="pointer" onClick={d => { const r = payloadOf(d); drillOrders(`${r.label} — buyurtmalar`, l => periodKeyOf(l.order.year, l.order.month) === r.key); }} />
+            <Bar dataKey="bajarildi" name="Bajarildi" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={56} cursor="pointer" onClick={d => { const r = payloadOf(d); drillOrders(`${r.label} — buyurtmalar`, l => periodKeyOf(l.order.year, l.order.month) === r.key); }} />
             {compare === 'yoy' && prev ? <Bar dataKey="oldin" name="O‘tgan yil" fill="#93c5fd" radius={[6, 6, 0, 0]} maxBarSize={56} /> : null}
           </BarChart>
         </ResponsiveContainer>
@@ -651,30 +820,58 @@ export default function StatisticsPage() {
     </ChartCard>
   );
 
-  const dailyTotals = daily.reduce((a, d) => ({ k: a.k + d.kirdi, y: a.y + d.yuklandi, c: a.c + d.chiqdi }), { k: 0, y: 0, c: 0 });
+  const dailyTotals = daily.reduce((acc, d) => ({ k: acc.k + d.kirdi, y: acc.y + d.yuklandi, c: acc.c + d.chiqdi, t: acc.t + d.chiqdiT }), { k: 0, y: 0, c: 0, t: 0 });
+  const periodPred = (row: { day: string }) => (e: { day: string }) =>
+    gran === 'day' ? e.day === row.day : gran === 'month' ? e.day.slice(0, 7) === row.day : e.day >= row.day && e.day <= shiftDays(row.day, 6);
   const dailyChart = (
     <ChartCard
-      title="Kunlar bo‘yicha vagonlar"
-      hint={`Kirdi: ${dailyTotals.k} · Yuklandi: ${dailyTotals.y} · Chiqdi: ${dailyTotals.c} vagon (${daily.length} kun)${filters.contractors.length || filters.stations.length ? ' · kontragent/stansiya filtri faqat chiqishga qo‘llanadi' : ''}`}
+      title={gran === 'day' ? 'Kunlar bo‘yicha' : gran === 'week' ? 'Haftalar bo‘yicha' : 'Oylar bo‘yicha'}
+      hint={`Kirdi: ${dailyTotals.k} · Yuklandi: ${dailyTotals.y} · Chiqdi: ${dailyTotals.c} vagon (${formatTons(r1(dailyTotals.t))} t) · ${daily.length} kun · nuqta bosilsa — chiqqan vagonlar${filters.contractors.length || filters.stations.length ? ' · kontragent/stansiya filtri faqat chiqishga qo‘llanadi' : ''}`}
     >
+      <div className="stat-toggles">
+        <div className="stat-seg" role="group" aria-label="Davr bo‘lagi">
+          {([['day', 'Kun'], ['week', 'Hafta'], ['month', 'Oy']] as const).map(([id, l]) => (
+            <button key={id} type="button" className={gran === id ? 'is-active' : ''} onClick={() => setGran(id)}>{l}</button>
+          ))}
+        </div>
+        <div className="stat-seg" role="group" aria-label="O‘lchov">
+          {([['vagon', 'Vagon'], ['tonna', 'Tonna']] as const).map(([id, l]) => (
+            <button key={id} type="button" className={dailyMetric === id ? 'is-active' : ''} onClick={() => setDailyMetric(id)}>{l}</button>
+          ))}
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={daily} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+        <LineChart
+          data={series}
+          margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
+          onClick={st => {
+            const row = linePayload(st);
+            if (row) drillExits(`${row.label} — chiqqan vagonlar`, periodPred(row));
+          }}
+          style={{ cursor: 'pointer' }}
+        >
           <CartesianGrid stroke={grid} vertical={false} />
           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
-          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={36} />
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
+          <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={dailyMetric === 'tonna'} width={44} tickFormatter={shortNum} />
+          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => (dailyMetric === 'tonna' ? tons(v) : `${v} vagon`)} />
           <Legend wrapperStyle={{ fontSize: 13 }} />
-          <Line type="monotone" dataKey="kirdi" name="Kirdi" stroke="#f59e0b" strokeWidth={2.2} dot={false} />
-          <Line type="monotone" dataKey="yuklandi" name="Yuklandi" stroke="#3b82f6" strokeWidth={2.2} dot={false} />
-          <Line type="monotone" dataKey="chiqdi" name="Chiqdi" stroke="#10b981" strokeWidth={2.4} dot={false} />
-          {prev ? <Line type="monotone" dataKey="oldin" name="Chiqdi (solishtirma davr)" stroke="#10b981" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={2} dot={false} /> : null}
+          {dailyMetric === 'vagon' ? (
+            <>
+              <Line type="monotone" dataKey="kirdi" name="Kirdi" stroke="#f59e0b" strokeWidth={2.2} dot={false} />
+              <Line type="monotone" dataKey="yuklandi" name="Yuklandi" stroke="#3b82f6" strokeWidth={2.2} dot={false} />
+              <Line type="monotone" dataKey="chiqdi" name="Chiqdi" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} />
+            </>
+          ) : (
+            <Line type="monotone" dataKey="chiqdiT" name="Jo‘natildi (t)" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} />
+          )}
+          {prev ? <Line type="monotone" dataKey="oldin" name="Solishtirma davr" stroke="#10b981" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={2} dot={false} /> : null}
         </LineChart>
       </ResponsiveContainer>
     </ChartCard>
   );
 
   const stageChartCard = (
-    <ChartCard title="Bosqichlar bo‘yicha vaqt" hint={`${cur.stays.length} ta chiqqan vagon · mediana, soat · kulrang — reglament me’yori (jami 533 daqiqa)`}>
+    <ChartCard title="Bosqichlar bo‘yicha vaqt" hint={`${cur.stays.length} ta chiqqan vagon · mediana, soat · kulrang — reglament me’yori (jami 533 daqiqa) · ustun bosilsa — vagonlar`}>
       {cur.stays.length === 0 ? empty() : (
         <ResponsiveContainer width="100%" height={290}>
           <BarChart data={stageChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={4} barCategoryGap="22%">
@@ -684,7 +881,7 @@ export default function StatisticsPage() {
             <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} soat`} />
             <Legend wrapperStyle={{ fontSize: 13 }} />
             <Bar dataKey="meyor" name="Me’yor" fill={ghost} radius={[6, 6, 0, 0]} maxBarSize={40} />
-            <Bar dataKey="haqiqiy" name="Haqiqiy" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40}>
+            <Bar dataKey="haqiqiy" name="Haqiqiy" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40} cursor="pointer" onClick={d => { const r = payloadOf(d); drillStays(`${r.label} — eng uzoq turgan vagonlar`, () => true, r.key); }}>
               {stageChart.map((r, i) => <Cell key={i} fill={r.haqiqiy > r.meyor ? '#ef4444' : '#10b981'} />)}
             </Bar>
             {prev ? <Bar dataKey="oldin" name="Solishtirma davr" fill="#a78bfa" radius={[6, 6, 0, 0]} maxBarSize={40} /> : null}
@@ -703,19 +900,19 @@ export default function StatisticsPage() {
             <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
             <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={190} />
             <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => tons(v)} />
-            <Bar dataKey="qoldiq" name="Qoldiq" fill="#f59e0b" radius={[0, 6, 6, 0]} maxBarSize={22} />
+            <Bar dataKey="qoldiq" name="Qoldiq" fill="#f59e0b" radius={[0, 6, 6, 0]} maxBarSize={22} cursor="pointer" onClick={d => { const r = payloadOf(d); drillOrders(`${r.name} — qoldiqli buyurtmalar`, l => shortContractor(l.contractor) === r.name && l.remain > 0); }} />
           </BarChart>
         </ResponsiveContainer>
       )}
     </ChartCard>
   );
 
-  const pieCard = (title: string, data: { name: string; value: number }[], hint: string) => (
+  const pieCard = (title: string, data: { name: string; value: number }[], hint: string, onSlice?: (name: string) => void) => (
     <ChartCard title={title} hint={hint}>
       {data.length === 0 ? empty() : (
         <ResponsiveContainer width="100%" height={290}>
           <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius={62} outerRadius={100} paddingAngle={2} stroke="none">
+            <Pie data={data} dataKey="value" nameKey="name" innerRadius={62} outerRadius={100} paddingAngle={2} stroke="none" cursor={onSlice ? 'pointer' : undefined} onClick={onSlice ? d => onSlice(payloadOf(d).name) : undefined}>
               {data.map((_, i) => <Cell key={i} fill={PRODUCT_COLORS[i % PRODUCT_COLORS.length]} />)}
             </Pie>
             <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => tons(v)} />
@@ -862,7 +1059,7 @@ export default function StatisticsPage() {
                 {dailyChart}
                 <div className="stat-grid stat-grid--1-1">
                   {topRemainingChart}
-                  {pieCard('Mahsulotlar ulushi', byProduct, 'Yuklangan tonna bo‘yicha')}
+                  {pieCard('Mahsulotlar ulushi', byProduct, 'Yuklangan tonna bo‘yicha · bo‘lak bosilsa — buyurtmalar', name => drillOrders(`${name} — buyurtmalar`, l => prodLabel(l.order.productType) === name))}
                 </div>
               </>
             ) : null}
@@ -871,7 +1068,7 @@ export default function StatisticsPage() {
               <>
                 <div className="stat-grid stat-grid--2-1">
                   {monthlyChart}
-                  {pieCard('Mahsulotlar ulushi', byProduct, 'Yuklangan tonna bo‘yicha')}
+                  {pieCard('Mahsulotlar ulushi', byProduct, 'Yuklangan tonna bo‘yicha · bo‘lak bosilsa — buyurtmalar', name => drillOrders(`${name} — buyurtmalar`, l => prodLabel(l.order.productType) === name))}
                 </div>
                 <div className="stat-grid stat-grid--1-1">
                   {topRemainingChart}
@@ -883,7 +1080,7 @@ export default function StatisticsPage() {
                           <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} tickFormatter={v => `${v}%`} />
                           <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={190} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v}%`} />
-                          <Bar dataKey="foiz" name="Bajarilish" radius={[0, 6, 6, 0]} maxBarSize={20}>
+                          <Bar dataKey="foiz" name="Bajarilish" radius={[0, 6, 6, 0]} maxBarSize={20} cursor="pointer" onClick={d => { const r = payloadOf(d); drillOrders(`${r.name} — buyurtmalar`, l => shortContractor(l.contractor) === r.name); }}>
                             {contractorPct.map((c, i) => <Cell key={i} fill={c.foiz >= 100 ? '#10b981' : c.foiz >= 75 ? '#3b82f6' : c.foiz >= 40 ? '#f59e0b' : '#ef4444'} />)}
                           </Bar>
                         </BarChart>
@@ -891,15 +1088,22 @@ export default function StatisticsPage() {
                     )}
                   </ChartCard>
                 </div>
-                <ChartCard title="Stansiyalar bo‘yicha jo‘natish" hint="Yuk xatlari bo‘yicha chiqib ketgan tonna (top 12)">
+                <ChartCard title="Stansiyalar bo‘yicha jo‘natish" hint="Yuk xatlari bo‘yicha chiqib ketgan yuk (top 12) · ustun bosilsa — vagonlar">
+                  <div className="stat-toggles">
+                    <div className="stat-seg" role="group" aria-label="O‘lchov">
+                      {([['tonna', 'Tonna'], ['vagon', 'Vagon']] as const).map(([id, l]) => (
+                        <button key={id} type="button" className={stationMetric === id ? 'is-active' : ''} onClick={() => setStationMetric(id)}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
                   {byStation.length === 0 ? empty() : (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={byStation} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid stroke={grid} vertical={false} />
                         <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={60} />
                         <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={44} />
-                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => tons(v)} />
-                        <Bar dataKey="tonna" name="Tonna" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={44} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => (stationMetric === 'tonna' ? tons(v) : `${v} vagon`)} />
+                        <Bar dataKey={stationMetric} name={stationMetric === 'tonna' ? 'Tonna' : 'Vagon'} fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer" onClick={d => { const r = payloadOf(d); drillExits(`${r.name} — chiqqan vagonlar`, e => (e.station || 'Ko‘rsatilmagan') === r.name); }} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -918,11 +1122,11 @@ export default function StatisticsPage() {
                         <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
                         <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={32} />
                         <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
-                        <Bar dataKey="ortacha" name="O‘rtacha" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={44} />
+                        <Bar dataKey="ortacha" name="O‘rtacha" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer" onClick={d => { const r = payloadOf(d); const wd = WEEKDAYS.indexOf(r.label); drillExits(`${r.label} kunlari — chiqqan vagonlar`, e => (new Date(`${e.day}T00:00:00`).getDay() + 6) % 7 === wd); }} />
                       </BarChart>
                     </ResponsiveContainer>
                   </ChartCard>
-                  {pieCard('Jo‘natilgan mahsulotlar', exitByProduct, 'Yuk xatlari bo‘yicha chiqqan tonna')}
+                  {pieCard('Jo‘natilgan mahsulotlar', exitByProduct, 'Yuk xatlari bo‘yicha chiqqan tonna · bo‘lak bosilsa — vagonlar', name => drillExits(`${name} — chiqqan vagonlar`, e => prodLabel(e.product) === name))}
                 </div>
               </>
             ) : null}
@@ -934,7 +1138,7 @@ export default function StatisticsPage() {
                   <ChartCard title="Zavodda turish vaqti (kunlar bo‘yicha)" hint={`Odatiy (mediana) ${r1(cur.stayMedian)} soat · me’yordan oshgan: ${cur.stayOver} / ${cur.stays.length} vagon`}>
                     {stayTrend.length === 0 ? empty() : (
                       <ResponsiveContainer width="100%" height={290}>
-                        <LineChart data={stayTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                        <LineChart data={stayTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} style={{ cursor: 'pointer' }} onClick={st => { const r = linePayload(st); if (r) drillStays(`${r.label} — chiqqan vagonlar`, x => localDateKey(x.exitedAt!) === r.day); }}>
                           <CartesianGrid stroke={grid} vertical={false} />
                           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
                           <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
@@ -955,7 +1159,7 @@ export default function StatisticsPage() {
                         <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={36} />
                         <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} soat`} />
                         <ReferenceLine y={NORM_HOURS} stroke="#ef4444" strokeDasharray="5 4" />
-                        <Bar dataKey="soat" name="Mediana" fill="#8b5cf6" radius={[6, 6, 0, 0]} maxBarSize={64} />
+                        <Bar dataKey="soat" name="Mediana" fill="#8b5cf6" radius={[6, 6, 0, 0]} maxBarSize={64} cursor="pointer" onClick={d => { const r = payloadOf(d); drillStays(`${r.name} — eng uzoq turganlar`, x => (r.name.startsWith('Majmua') ? x.ownership === 'majmua' : x.ownership === 'tashqi')); }} />
                       </BarChart>
                     </ResponsiveContainer>
                   </ChartCard>
@@ -967,7 +1171,7 @@ export default function StatisticsPage() {
                           <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} />
                           <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={190} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} soat`} />
-                          <Bar dataKey="soat" name="Soat" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={20} />
+                          <Bar dataKey="soat" name="Soat" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={20} cursor="pointer" onClick={d => { const r = payloadOf(d); drillStays(`${r.name} — kechikkan vagonlar`, x => (x.delayCulprit?.role || 'Boshqa') === r.name); }} />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -990,9 +1194,9 @@ export default function StatisticsPage() {
                         <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={200} />
                         <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, n: string) => [`${v} vagon`, n]} />
                         <Legend wrapperStyle={{ fontSize: 13 }} />
-                        <Bar dataKey="kam" name="Kam yuklash" stackId="w" fill="#f59e0b" maxBarSize={26} />
-                        <Bar dataKey="meyorda" name="Me’yorda" stackId="w" fill="#10b981" maxBarSize={26} />
-                        <Bar dataKey="ortiqcha" name="Ortiqcha yuklash" stackId="w" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={26} />
+                        <Bar dataKey="kam" name="Kam yuklash" stackId="w" cursor="pointer" onClick={d => { const r = payloadOf(d); drillWeights(`${r.name} — kam yuklash`, w => prodLabel(w.productType || 'Boshqa') === r.name && w.status === 'underload'); }} fill="#f59e0b" maxBarSize={26} />
+                        <Bar dataKey="meyorda" name="Me’yorda" stackId="w" cursor="pointer" onClick={d => { const r = payloadOf(d); drillWeights(`${r.name} — me’yorda`, w => prodLabel(w.productType || 'Boshqa') === r.name && w.status === 'normal'); }} fill="#10b981" maxBarSize={26} />
+                        <Bar dataKey="ortiqcha" name="Ortiqcha yuklash" stackId="w" cursor="pointer" onClick={d => { const r = payloadOf(d); drillWeights(`${r.name} — ortiqcha yuklash`, w => prodLabel(w.productType || 'Boshqa') === r.name && w.status === 'overload'); }} fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={26} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -1044,7 +1248,7 @@ export default function StatisticsPage() {
                           <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                           <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={110} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} ta`} />
-                          <Bar dataKey="soni" name="Dalolatnoma" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={22} />
+                          <Bar dataKey="soni" name="Dalolatnoma" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={22} cursor="pointer" onClick={d => { const r = payloadOf(d); drillDefects(`${r.name} — dalolatnomalar`, x => (x.station || 'Noma’lum') === r.name); }} />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -1053,7 +1257,7 @@ export default function StatisticsPage() {
                     {defectCharts.byType.length === 0 ? empty('Dalolatnoma yo‘q') : (
                       <ResponsiveContainer width="100%" height={260}>
                         <PieChart>
-                          <Pie data={defectCharts.byType} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none">
+                          <Pie data={defectCharts.byType} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer" onClick={d => { const n = payloadOf(d).name; drillDefects(`${n} — dalolatnomalar`, x => ((DEFECT_ACT_TYPE_LABEL as Record<string, string>)[x.actType] || x.actType || 'Boshqa') === n); }}>
                             {defectCharts.byType.map((_, i) => <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'][i % 4]} />)}
                           </Pie>
                           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} ta`} />
@@ -1070,7 +1274,7 @@ export default function StatisticsPage() {
                           <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
                           <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={30} />
                           <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} ta`} />
-                          <Bar dataKey="soni" name="Dalolatnoma" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={44} />
+                          <Bar dataKey="soni" name="Dalolatnoma" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer" onClick={d => { const r = payloadOf(d); drillDefects(`${r.label} — dalolatnomalar`, x => localDateKey(x.arrivalDate).slice(0, 7) === r.k); }} />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -1078,6 +1282,7 @@ export default function StatisticsPage() {
                 </div>
               </>
             ) : null}
+            {drill ? <StatsDrillTable drill={drill} onClose={() => setDrill(null)} /> : null}
           </>
         )}
       </div>

@@ -20346,3 +20346,29 @@ html.dark .order-progress-track,
   .stats-compare { margin-left: 0; padding-left: 0; border-left: 0; }
   .stats-filters__spacer { display: none; }
 }
+
+/* Statistika: almashtirgichlar va tafsilot jadvali */
+.stat-toggles { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin: -34px 0 8px; }
+.stat-seg { display: inline-flex; gap: 2px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; padding: 2px; }
+.stat-seg button { border-radius: 6px; padding: 3px 10px; color: #64748b; font-size: 12.5px; font-weight: 600; }
+.stat-seg button.is-active { background: #fff; color: #1d4ed8; box-shadow: 0 1px 2px rgb(15 23 42 / 0.12); }
+@media (max-width: 767px) { .stat-toggles { margin-top: 0; justify-content: flex-start; } }
+
+.stat-drill { border: 1px solid #bfdbfe; border-radius: 14px; background: #fff; padding: 14px 16px; scroll-margin-top: 80px; }
+.stat-drill__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.stat-drill__head h3 { color: #0f172a; font-size: 15px; font-weight: 700; }
+.stat-drill__head p { color: #64748b; font-size: 12.5px; }
+.stat-drill__icon { display: inline-flex; width: 34px; height: 34px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9px; background: #eff6ff; color: #2563eb; }
+.stat-drill__actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.stat-drill__close { display: inline-flex; border-radius: 8px; padding: 7px; color: #64748b; }
+.stat-drill__close:hover { background: #f1f5f9; color: #0f172a; }
+.stat-drill__table td:first-child + td { font-weight: 600; }
+
+.dark .stat-seg { border-color: #334155; background: #0f172a; }
+.dark .stat-seg button { color: #94a3b8; }
+.dark .stat-seg button.is-active { background: #1e293b; color: #93c5fd; }
+.dark .stat-drill { border-color: rgb(59 130 246 / 0.35); background: #0b1222; }
+.dark .stat-drill__head h3 { color: #e2e8f0; }
+.dark .stat-drill__head p { color: #94a3b8; }
+.dark .stat-drill__icon { background: rgb(59 130 246 / 0.15); color: #93c5fd; }
+.dark .stat-drill__close:hover { background: #1e293b; color: #f1f5f9; }
