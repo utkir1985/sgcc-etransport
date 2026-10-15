@@ -27,6 +27,7 @@ import {
   Scale,
   Target,
   Truck,
+  Users,
   Wrench,
   X,
 } from 'lucide-react';
@@ -49,7 +50,7 @@ const PRODUCT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '
 const WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 const NORM_HOURS = 8.9;
 
-type Tab = 'overview' | 'plan' | 'loading' | 'idle' | 'quality' | 'defects';
+type Tab = 'overview' | 'plan' | 'loading' | 'idle' | 'quality' | 'defects' | 'staff';
 type Compare = 'none' | 'prev' | 'yoy';
 
 const TABS: { id: Tab; label: string; icon: typeof Target }[] = [
@@ -59,6 +60,7 @@ const TABS: { id: Tab; label: string; icon: typeof Target }[] = [
   { id: 'idle', label: 'Bekor turish vaqti', icon: Clock3 },
   { id: 'quality', label: 'Yuklash sifati', icon: Scale },
   { id: 'defects', label: 'Nosozliklar', icon: Wrench },
+  { id: 'staff', label: 'Xodimlar va xizmatlar', icon: Users },
 ];
 
 const STAGES = [
@@ -79,6 +81,14 @@ const periodKeyOf = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')
 const shortNum = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(Math.abs(v) >= 10000 ? 0 : 1)}k` : `${Math.round(v)}`);
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const monthLabel = (k: string) => `${(MONTH_NAMES_UZ[Number(k.slice(5, 7)) - 1] || '').slice(0, 3)} ${k.slice(2, 4)}`;
+
+const HOUR_FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tashkent', hour: '2-digit', hour12: false });
+const hourOf = (isoStr: string) => Number(HOUR_FMT.format(new Date(isoStr))) % 24;
+const hoursBetween = (a?: string | null, b?: string | null) => {
+  if (!a || !b) return null;
+  const h = (new Date(b).getTime() - new Date(a).getTime()) / 3600000;
+  return Number.isFinite(h) && h >= 0 ? h : null;
+};
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -154,7 +164,7 @@ function computeAll(
   }
 
   // Jo‘natish — yuk xatidagi har bir vagon
-  const exits: { day: string; tons: number; product: string; station: string; contractor: string; wagonNumber: string; registryId: string; registryNumber: string }[] = [];
+  const exits: { day: string; at: string; tons: number; product: string; station: string; contractor: string; wagonNumber: string; registryId: string; registryNumber: string }[] = [];
   if (!f.transport || f.transport === 'Railway') {
     for (const r of registries) {
       if (!r.exitedToKengsoyAt) continue;
@@ -166,6 +176,7 @@ function computeAll(
         if (!productOk(product) || !contractorOk(w.contractorName || r.contractorName) || !stationOk(w.destinationStation || r.destinationStation)) continue;
         exits.push({
           day,
+          at: r.exitedToKengsoyAt,
           tons: routeTons(w.netWeight ?? w.NetWeight ?? w.nettoWeight),
           product: product || 'Boshqa',
           station: (w.destinationStation || r.destinationStation || '').trim(),
@@ -179,25 +190,25 @@ function computeAll(
   }
 
   // Kirish va yuklash — partiyalar (kontragent/stansiya bilan bog‘lanmagan)
-  const entries: { day: string; n: number }[] = [];
-  const loads: { day: string; n: number }[] = [];
+  const entries: { day: string; n: number; at: string }[] = [];
+  const loads: { day: string; n: number; at: string }[] = [];
   if (!f.contractors.length && !f.stations.length && (!f.transport || f.transport === 'Railway')) {
     for (const a of excludeOneCArrivals(arrivals)) {
       if (!productOk(a.productType)) continue;
       const stamp = a.arrivalDate || a.createdAt;
       if (stamp) {
         const day = localDateKey(stamp);
-        if (inDay(day, range)) entries.push({ day, n: wagonCountOf(a) });
+        if (inDay(day, range)) entries.push({ day, n: wagonCountOf(a), at: stamp });
       }
       const perWagon = (a.wagons ?? []).filter(w => w.loadingCompletedAt);
       if (perWagon.length) {
         for (const w of perWagon) {
           const day = localDateKey(w.loadingCompletedAt!);
-          if (inDay(day, range)) loads.push({ day, n: 1 });
+          if (inDay(day, range)) loads.push({ day, n: 1, at: w.loadingCompletedAt! });
         }
       } else if (a.loadingCompletedAt) {
         const day = localDateKey(a.loadingCompletedAt);
-        if (inDay(day, range)) loads.push({ day, n: loadedWagonCountOf(a) });
+        if (inDay(day, range)) loads.push({ day, n: loadedWagonCountOf(a), at: a.loadingCompletedAt });
       }
     }
   }
@@ -637,6 +648,133 @@ export default function StatisticsPage() {
     };
   }, [cur]);
 
+  // ---- Soatlar bo‘yicha yuklanish ----
+  const hourly = useMemo(() => {
+    const rows = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, '0')}:00`, kirdi: 0, yuklandi: 0, chiqdi: 0 }));
+    cur.entries.forEach(e => { rows[hourOf(e.at)].kirdi += e.n; });
+    cur.loads.forEach(e => { rows[hourOf(e.at)].yuklandi += e.n; });
+    cur.exits.forEach(e => { rows[hourOf(e.at)].chiqdi += 1; });
+    return rows;
+  }, [cur]);
+  const heat = useMemo(() => {
+    const grid = Array.from({ length: 7 }, () => Array(24).fill(0) as number[]);
+    for (const e of cur.exits) {
+      const wd = (new Date(`${e.day}T00:00:00`).getDay() + 6) % 7;
+      grid[wd][hourOf(e.at)] += 1;
+    }
+    const max = Math.max(1, ...grid.flat());
+    return { grid, max };
+  }, [cur]);
+
+  // ---- Oy oxirigacha prognoz (joriy oy, tanlangan mahsulot/kontragent/stansiya bo‘yicha) ----
+  /* eslint-disable react-hooks/exhaustive-deps */
+  const forecast = useMemo(() => {
+    const today = todayIso();
+    const mFrom = monthStart(cy, cm);
+    const m = computeAll({ from: mFrom, to: today }, filters, orders, arrivals, registries, null, null, null);
+    const daysInMonth = Number(monthEnd(cy, cm).slice(8, 10));
+    const elapsed = Number(today.slice(8, 10));
+    const byDay = Array(daysInMonth + 1).fill(0) as number[];
+    m.exits.forEach(e => { byDay[Number(e.day.slice(8, 10))] += e.tons; });
+    const shipped = byDay.reduce((a, b) => a + b, 0);
+    const pace = elapsed > 0 ? shipped / elapsed : 0;
+    const plan = m.plan;
+    const base = m.done;
+    const projected = base + pace * (daysInMonth - elapsed);
+    const need = daysInMonth - elapsed > 0 ? Math.max(0, plan - base) / (daysInMonth - elapsed) : 0;
+    let cum = base - shipped;
+    const rows = [];
+    for (let d = 1; d <= daysInMonth; d += 1) {
+      cum += byDay[d];
+      rows.push({
+        label: String(d),
+        haqiqiy: d <= elapsed ? Math.round(cum) : undefined,
+        prognoz: d >= elapsed ? Math.round(base + pace * (d - elapsed)) : undefined,
+      });
+    }
+    return { rows, plan, base, pace, projected, need, elapsed, daysInMonth, pct: plan > 0 ? Math.round((projected / plan) * 100) : 0 };
+  }, [filterKey, orders, arrivals, registries, cy, cm]);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
+  // ---- Xodimlar va xizmatlar ----
+  const approvals = useMemo(() => {
+    const steps: { name: string; group: string; vals: number[] }[] = [
+      { name: 'Buxgalteriya kelishuvi', group: 'Buyurtma', vals: [] },
+      { name: 'O‘rinbosar tasdig‘i', group: 'Buyurtma', vals: [] },
+      { name: 'ICHDX ijroga qabul', group: 'Buyurtma', vals: [] },
+      { name: 'Kirish: smena boshlig‘i', group: 'Kirish ruxsati', vals: [] },
+      { name: 'Kirish: ruxsatnoma byurosi', group: 'Kirish ruxsati', vals: [] },
+      { name: 'Kirish: qo‘riqlash', group: 'Kirish ruxsati', vals: [] },
+      { name: 'Yuk xati: smena boshlig‘i', group: 'Yuk xati', vals: [] },
+      { name: 'Yuk xati: ruxsatnoma byurosi', group: 'Yuk xati', vals: [] },
+      { name: 'Yuk xati: qo‘riqlash', group: 'Yuk xati', vals: [] },
+      { name: 'Yuk xati: iqtisodchi', group: 'Yuk xati', vals: [] },
+    ];
+    const push = (i: number, a?: string | null, b?: string | null) => {
+      if (!b || !inDay(localDateKey(b), range)) return;
+      const h = hoursBetween(a, b);
+      if (h !== null && h < 24 * 30) steps[i].vals.push(h);
+    };
+    for (const o of orders) {
+      if (filters.products.length && !filters.products.includes(o.productType)) continue;
+      push(0, o.submittedAt, o.approvedAt);
+      push(1, o.approvedAt, o.deputyApprovedAt);
+      push(2, o.deputyApprovedAt, o.dispatchApprovedAt);
+    }
+    for (const a of excludeOneCArrivals(arrivals)) {
+      if (filters.products.length && !filters.products.includes(a.productType)) continue;
+      push(3, a.createdAt, a.entryPermitShiftApprovedAt);
+      push(4, a.createdAt, a.entryPermitPermitApprovedAt);
+      push(5, a.createdAt, a.entryPermitSecurityApprovedAt);
+    }
+    for (const r of registries) {
+      if (filters.products.length && !filters.products.includes(r.productType)) continue;
+      push(6, r.preparedAt, r.shiftSupervisorApprovedAt);
+      push(7, r.preparedAt, r.permitApprovedAt);
+      push(8, r.preparedAt, r.securityApprovedAt);
+      push(9, r.preparedAt, r.economistApprovedAt);
+    }
+    return steps.filter(st => st.vals.length > 0).map(st => ({ name: st.name, group: st.group, soat: r1(median(st.vals)), soni: st.vals.length }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, arrivals, registries, range.from, range.to, filterKey]);
+
+  const people = useMemo(() => {
+    const m = new Map<string, { name: string; buyurtma: number; kirish: number; yuklash: number; yukxati: number }>();
+    const add = (name: string | undefined | null, kind: 'buyurtma' | 'kirish' | 'yuklash' | 'yukxati', at?: string | null) => {
+      const n = (name || '').trim();
+      if (!n || !at || !inDay(localDateKey(at), range)) return;
+      const row = m.get(n) ?? { name: n, buyurtma: 0, kirish: 0, yuklash: 0, yukxati: 0 };
+      row[kind] += 1;
+      m.set(n, row);
+    };
+    for (const o of orders) {
+      if (filters.products.length && !filters.products.includes(o.productType)) continue;
+      add(o.accountingApproverName, 'buyurtma', o.approvedAt);
+      add(o.deputyApproverName, 'buyurtma', o.deputyApprovedAt);
+      add(o.dispatchApproverName, 'buyurtma', o.dispatchApprovedAt);
+    }
+    for (const a of excludeOneCArrivals(arrivals)) {
+      if (filters.products.length && !filters.products.includes(a.productType)) continue;
+      add(a.entryPermitShiftApprovedByName, 'kirish', a.entryPermitShiftApprovedAt);
+      add(a.entryPermitPermitApprovedByName, 'kirish', a.entryPermitPermitApprovedAt);
+      add(a.entryPermitSecurityApprovedByName, 'kirish', a.entryPermitSecurityApprovedAt);
+      for (const w of a.wagons ?? []) add(w.loadingCompletedByName, 'yuklash', w.loadingCompletedAt);
+    }
+    for (const r of registries) {
+      if (filters.products.length && !filters.products.includes(r.productType)) continue;
+      add(r.preparedByName, 'yukxati', r.preparedAt);
+      add(r.shiftSupervisorApprovedByName, 'yukxati', r.shiftSupervisorApprovedAt);
+      add(r.permitApprovedByName, 'yukxati', r.permitApprovedAt);
+      add(r.securityApprovedByName, 'yukxati', r.securityApprovedAt);
+      add(r.economistApprovedByName, 'yukxati', r.economistApprovedAt);
+    }
+    return Array.from(m.values())
+      .map(r => ({ ...r, jami: r.buyurtma + r.kirish + r.yuklash + r.yukxati }))
+      .sort((a, b) => b.jami - a.jami)
+      .slice(0, 15);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, arrivals, registries, range.from, range.to, filterKey]);
+
   // ============================================================
   // Tafsilot (drill-down) — diagramma bo‘lagi bosilganda
   // ============================================================
@@ -1064,6 +1202,28 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
+            {tab === 'plan' || tab === 'overview' ? (
+              <ChartCard
+                title={`${MONTH_NAMES_UZ[cm - 1]} oyi — oy oxirigacha prognoz`}
+                hint={`Reja: ${tons(forecast.plan)} · bajarildi: ${tons(forecast.base)} · hozirgi sur’at: ${tons(forecast.pace)}/kun · prognoz: ${tons(forecast.projected)} (${forecast.pct}%)${forecast.plan > forecast.projected ? ` · rejaga yetish uchun kuniga ${tons(forecast.need)} kerak` : ''}`}
+              >
+                {forecast.plan === 0 ? empty('Joriy oy uchun tasdiqlangan buyurtma yo‘q') : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={forecast.rows} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke={grid} vertical={false} />
+                      <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} interval={2} />
+                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortNum} width={44} domain={[0, (dataMax: number) => Math.max(dataMax, forecast.plan) * 1.05]} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => tons(v)} labelFormatter={l => `${l}-${MONTH_NAMES_UZ[cm - 1].toLowerCase()}`} />
+                      <Legend wrapperStyle={{ fontSize: 13 }} />
+                      <ReferenceLine y={forecast.plan} stroke="#64748b" strokeDasharray="6 4" label={{ value: 'Reja', position: 'insideTopLeft', fill: axis, fontSize: 12 }} />
+                      <Line type="monotone" dataKey="haqiqiy" name="Bajarildi (yig‘ma)" stroke="#3b82f6" strokeWidth={2.6} dot={false} connectNulls={false} />
+                      <Line type="monotone" dataKey="prognoz" name="Prognoz" stroke={forecast.pct >= 100 ? '#10b981' : '#f59e0b'} strokeWidth={2.2} strokeDasharray="6 4" dot={false} connectNulls={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+            ) : null}
+
             {tab === 'plan' ? (
               <>
                 <div className="stat-grid stat-grid--2-1">
@@ -1128,6 +1288,41 @@ export default function StatisticsPage() {
                   </ChartCard>
                   {pieCard('Jo‘natilgan mahsulotlar', exitByProduct, 'Yuk xatlari bo‘yicha chiqqan tonna · bo‘lak bosilsa — vagonlar', name => drillExits(`${name} — chiqqan vagonlar`, e => prodLabel(e.product) === name))}
                 </div>
+              <div className="stat-grid stat-grid--1-1">
+                <ChartCard title="Soatlar bo‘yicha yuklanish" hint="Kunning qaysi soatlarida eng ko‘p ish bo‘ladi (vagon soni)">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={hourly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={1}>
+                      <CartesianGrid stroke={grid} vertical={false} />
+                      <XAxis dataKey="label" stroke={axis} fontSize={11} tickLine={false} axisLine={false} interval={2} />
+                      <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={36} />
+                      <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                      <Legend wrapperStyle={{ fontSize: 13 }} />
+                      <Bar dataKey="kirdi" name="Kirdi" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="yuklandi" name="Yuklandi" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="chiqdi" name="Chiqdi" fill="#10b981" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+                <ChartCard title="Jo‘natish xaritasi: hafta kuni × soat" hint="Rang qanchalik to‘q — shu vaqtda shuncha ko‘p vagon chiqqan">
+                  <div className="stat-heat" role="img" aria-label="Hafta kuni va soat bo‘yicha jo‘natish">
+                    <span />
+                    {Array.from({ length: 24 }, (_, h) => <span key={h} className="stat-heat__h">{h % 3 === 0 ? String(h).padStart(2, '0') : ''}</span>)}
+                    {heat.grid.map((row, wd) => (
+                      <div key={wd} className="stat-heat__row">
+                        <span className="stat-heat__d">{WEEKDAYS[wd]}</span>
+                        {row.map((v, h) => (
+                          <span
+                            key={h}
+                            className="stat-heat__c"
+                            title={`${WEEKDAYS[wd]}, ${String(h).padStart(2, '0')}:00 — ${v} vagon`}
+                            style={{ background: v ? `rgb(16 185 129 / ${0.12 + 0.88 * (v / heat.max)})` : undefined }}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </ChartCard>
+              </div>
               </>
             ) : null}
 
@@ -1282,6 +1477,48 @@ export default function StatisticsPage() {
                 </div>
               </>
             ) : null}
+            {tab === 'staff' ? (
+              <>
+                <ChartCard title="Kelishuv va tasdiqlash vaqti" hint="Hujjat yaratilgandan tasdiqlangungacha, mediana (soat) · davrda tasdiqlanganlar bo‘yicha">
+                  {approvals.length === 0 ? empty() : (
+                    <ResponsiveContainer width="100%" height={Math.max(220, approvals.length * 34 + 30)}>
+                      <BarChart data={approvals} layout="vertical" margin={{ top: 4, right: 32, left: 8, bottom: 4 }}>
+                        <CartesianGrid stroke={grid} horizontal={false} />
+                        <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={210} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { soni?: number } }) => [`${v} soat (${it?.payload?.soni ?? 0} ta hujjat)`, 'Mediana']} />
+                        <Bar dataKey="soat" name="Mediana" radius={[0, 6, 6, 0]} maxBarSize={20}>
+                          {approvals.map((a, i) => <Cell key={i} fill={a.group === 'Buyurtma' ? '#3b82f6' : a.group === 'Kirish ruxsati' ? '#f59e0b' : '#8b5cf6'} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                  <div className="stat-legend">
+                    <span><i style={{ background: '#3b82f6' }} /> Buyurtma</span>
+                    <span><i style={{ background: '#f59e0b' }} /> Kirish ruxsati</span>
+                    <span><i style={{ background: '#8b5cf6' }} /> Yuk xati</span>
+                  </div>
+                </ChartCard>
+                <ChartCard title="Xodimlar faolligi" hint="Davrda bajarilgan amallar soni (top 15): buyurtma kelishuvi, kirish ruxsati, yuklash, yuk xati">
+                  {people.length === 0 ? empty() : (
+                    <ResponsiveContainer width="100%" height={Math.max(240, people.length * 32 + 50)}>
+                      <BarChart data={people} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                        <CartesianGrid stroke={grid} horizontal={false} />
+                        <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                        <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={210} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} ta`} />
+                        <Legend wrapperStyle={{ fontSize: 13 }} />
+                        <Bar dataKey="buyurtma" name="Buyurtma kelishuvi" stackId="p" fill="#3b82f6" maxBarSize={22} />
+                        <Bar dataKey="kirish" name="Kirish ruxsati" stackId="p" fill="#f59e0b" maxBarSize={22} />
+                        <Bar dataKey="yuklash" name="Yuklash" stackId="p" fill="#10b981" maxBarSize={22} />
+                        <Bar dataKey="yukxati" name="Yuk xati" stackId="p" fill="#8b5cf6" radius={[0, 6, 6, 0]} maxBarSize={22} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+              </>
+            ) : null}
+
             {drill ? <StatsDrillTable drill={drill} onClose={() => setDrill(null)} /> : null}
           </>
         )}
