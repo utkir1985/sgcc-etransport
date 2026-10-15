@@ -20489,3 +20489,18 @@ html.dark .order-progress-track,
 /* Davr oynasi ichidagi kalendar oyna ustida chiqsin */
 .date-picker-menu--fixed { z-index: 1100; }
 .stat-actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Bo‘lim ichidagi qism sarlavhasi */
+.stat-subsection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 -2px;
+  border-top: 1px solid #edf1f6;
+  padding-top: 14px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+.stat-subsection svg { color: #2563eb; }
+.dark .stat-subsection { border-color: #1e293b; color: #e2e8f0; }
+.dark .stat-subsection svg { color: #60a5fa; }

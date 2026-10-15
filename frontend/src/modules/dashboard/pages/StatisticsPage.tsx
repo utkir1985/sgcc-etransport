@@ -58,7 +58,8 @@ const NORM_HOURS = 8.9;
 type Tab = 'overview' | 'plan' | 'deadlines' | 'intake' | 'loading' | 'idle' | 'quality' | 'returned' | 'defects' | 'fleet' | 'staff';
 type Compare = 'none' | 'prev' | 'yoy';
 
-const TABS: { id: Tab; label: string; icon: typeof Target }[] = [
+/** Bo‘lim ichidagi qismlar (sarlavha bilan ketma-ket chiqadi) */
+const SECTIONS: { id: Tab; label: string; icon: typeof Target }[] = [
   { id: 'overview', label: 'Umumiy', icon: LayoutDashboard },
   { id: 'plan', label: 'Reja ijrosi', icon: Target },
   { id: 'deadlines', label: 'Buyurtma muddatlari', icon: CalendarClock },
@@ -70,6 +71,16 @@ const TABS: { id: Tab; label: string; icon: typeof Target }[] = [
   { id: 'defects', label: 'Nosozliklar', icon: Wrench },
   { id: 'fleet', label: 'Vagon parki', icon: TrainFront },
   { id: 'staff', label: 'Xodimlar va xizmatlar', icon: Users },
+];
+
+type Group = 'overview' | 'orders' | 'flow' | 'quality-group' | 'resources';
+/** 5 ta asosiy bo‘lim — har biri bir nechta qismni birlashtiradi */
+const TABS: { id: Group; label: string; icon: typeof Target; parts: Tab[] }[] = [
+  { id: 'overview', label: 'Umumiy', icon: LayoutDashboard, parts: ['overview'] },
+  { id: 'orders', label: 'Buyurtmalar', icon: Target, parts: ['plan', 'deadlines'] },
+  { id: 'flow', label: 'Vagon oqimi', icon: Activity, parts: ['intake', 'loading', 'idle'] },
+  { id: 'quality-group', label: 'Sifat', icon: Scale, parts: ['quality', 'returned', 'defects'] },
+  { id: 'resources', label: 'Park va xodimlar', icon: TrainFront, parts: ['fleet', 'staff'] },
 ];
 
 const STAGES = [
@@ -295,7 +306,10 @@ export default function StatisticsPage() {
 
   // Filtrlar havolada saqlanadi — ko‘rinishni havola orqali boshqa xodimga yuborish mumkin
   const list = (k: string) => (sp.get(k) || '').split('|').filter(Boolean);
-  const tab = (TABS.some(t => t.id === sp.get('tab')) ? sp.get('tab') : 'overview') as Tab;
+  // Eski havolalar (?tab=plan va h.k.) tegishli guruhga o‘tadi
+  const tabParam = sp.get('tab') || '';
+  const tab = (TABS.find(t => t.id === tabParam)?.id ?? TABS.find(t => t.parts.includes(tabParam as Tab))?.id ?? 'overview') as Group;
+  const groupParts = TABS.find(t => t.id === tab)?.parts ?? ['overview'];
   const range: Range = { from: sp.get('from') || '', to: sp.get('to') || '' };
   const filters: Filters = {
     products: list('p'),
@@ -1323,8 +1337,16 @@ export default function StatisticsPage() {
       window.removeEventListener('afterprint', done);
     };
   }, [printAll]);
-  const show = (t: Tab) => (printAll ? t !== 'overview' : tab === t);
-  const sectionTitle = (t: Tab) => (printAll ? <h2 className="stat-print-section">{TABS.find(x => x.id === t)?.label}</h2> : null);
+  const show = (t: Tab) => (printAll ? t !== 'overview' : groupParts.includes(t));
+  const sectionTitle = (t: Tab) => {
+    if (!printAll && groupParts.length < 2) return null;
+    const sec = SECTIONS.find(x => x.id === t);
+    if (!sec) return null;
+    const Icon = sec.icon;
+    return printAll
+      ? <h2 className="stat-print-section">{sec.label}</h2>
+      : <h2 className="stat-subsection"><Icon className="w-4 h-4" aria-hidden />{sec.label}</h2>;
+  };
   const filterSummary = [
     range.from || range.to ? `Davr: ${range.from || '…'} — ${range.to || '…'}` : 'Davr: barcha',
     filters.products.length ? `Mahsulot: ${filters.products.map(prodLabel).join(', ')}` : null,
@@ -1453,7 +1475,7 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
-            {printAll || tab === 'plan' || tab === 'overview' ? (
+            {printAll || tab === 'orders' || tab === 'overview' ? (
               <ChartCard
                 title={`${MONTH_NAMES_UZ[cm - 1]} oyi — oy oxirigacha prognoz`}
                 hint={`Reja: ${tons(forecast.plan)} · bajarildi: ${tons(forecast.base)} · hozirgi sur’at: ${tons(forecast.pace)}/kun · prognoz: ${tons(forecast.projected)} (${forecast.pct}%)${forecast.plan > forecast.projected ? ` · rejaga yetish uchun kuniga ${tons(forecast.need)} kerak` : ''}`}
