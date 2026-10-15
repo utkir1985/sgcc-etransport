@@ -131,7 +131,24 @@ class ApiClient {
     );
   }
 
+  /** Sfera Balance shlyuzi uchun kirish cookie'si (et_sfera, HttpOnly) — panel ochilishidan oldin. */
+  async openSferaSession(): Promise<boolean> {
+    const token = this.getToken();
+    try {
+      const res = await fetch(`${API_URL}/integrations/sfera/session`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   logout(reason?: string) {
+    // Sfera kirishini ham yopish (xatoga e'tibor berilmaydi)
+    void fetch(`${API_URL}/integrations/sfera/session`, { method: 'DELETE', credentials: 'same-origin' }).catch(() => undefined);
     const query = reason ? `?reason=${encodeURIComponent(reason)}` : '';
     return this.request<{ success: boolean; data: boolean }>(
       `/auth/logout${query}`,

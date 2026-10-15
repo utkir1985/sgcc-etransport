@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ExternalLink, Lock, RefreshCw, WifiOff } from 'lucide-react';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
+import { api } from '../../../shared/services/api';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
 
 /**
@@ -55,13 +56,9 @@ export default function SferaBalancePage() {
 
   const check = useCallback(async () => {
     setStatus('checking');
-    try {
-      // Boshqa origin: javob o‘qilmaydi (no-cors), faqat server ochilishi tekshiriladi
-      await fetch(new URL('api/health', SFERA_URL).toString(), { mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(6000) });
-      setStatus('online');
-    } catch {
-      setStatus('offline');
-    }
+    // Sfera shlyuzi faqat E-Transport kirish cookie'si bilan ochiladi
+    const ok = await api.openSferaSession();
+    setStatus(ok ? 'online' : 'offline');
   }, []);
 
   useEffect(() => { void check(); }, [check]);
@@ -110,12 +107,12 @@ export default function SferaBalancePage() {
           </a>
         </div>
       </div>
-      {status === 'offline' ? (
+      {status === 'checking' && frameKey === 0 ? null : status === 'offline' ? (
         <div className="docs-panel sfera-page__offline">
           <div className="thub-empty">
             <WifiOff className="mx-auto mb-2 h-8 w-8 text-slate-400" />
             <p className="thub-empty__title">Sfera Balance hozir mavjud emas</p>
-            <p className="thub-empty__text">Tizim serveri javob bermayapti. E-Transport ishlashiga bu ta'sir qilmaydi. Birozdan keyin «Yangilash»ni bosing.</p>
+            <p className="thub-empty__text">Sfera Balance'ga kirish ochilmadi. E-Transport ishlashiga bu ta'sir qilmaydi. Birozdan keyin «Yangilash»ni bosing.</p>
           </div>
         </div>
       ) : (
