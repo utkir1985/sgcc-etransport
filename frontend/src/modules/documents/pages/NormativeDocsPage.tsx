@@ -526,14 +526,14 @@ export default function NormativeDocsPage() {
               <div className="thub-table-wrap reestr-table-wrap">
                 <table className="thub-table reestr-table ndocs-table w-full">
                   <colgroup>
-                    <col style={{ width: '3.5rem' }} />
+                    <col style={{ width: '3rem' }} />
                     <col />
-                    <col style={{ width: '13rem' }} />
+                    <col style={{ width: '11.5rem' }} />
+                    <col style={{ width: '8rem' }} />
+                    <col style={{ width: '7rem' }} />
+                    <col style={{ width: '5rem' }} />
                     <col style={{ width: '9rem' }} />
                     <col style={{ width: '8rem' }} />
-                    <col style={{ width: '6rem' }} />
-                    <col style={{ width: '11rem' }} />
-                    <col style={{ width: '9.5rem' }} />
                   </colgroup>
                   <thead>
                     <tr>
