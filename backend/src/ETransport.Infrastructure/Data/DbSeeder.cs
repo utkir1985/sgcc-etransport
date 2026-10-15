@@ -1365,6 +1365,10 @@ public static class DbSeeder
             ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "ContractNumber" character varying(100) NOT NULL DEFAULT '';
             ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "ProductGrade" character varying(100) NOT NULL DEFAULT '';
             ALTER TABLE "MonthlyOrderLines" ADD COLUMN IF NOT EXISTS "CustomerOrderNumber" character varying(100) NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManuallyCompleted" boolean NOT NULL DEFAULT false;
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManuallyCompletedAt" timestamp with time zone NULL;
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManuallyCompletedByName" text NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManualCompletionReason" text NOT NULL DEFAULT '';
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "OrderDeductedWagons" integer NOT NULL DEFAULT 0;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "OrderDeductedNetWeight" numeric(18,3) NOT NULL DEFAULT 0;
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "DefectActNumber" character varying(40) NOT NULL DEFAULT '';

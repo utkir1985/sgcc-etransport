@@ -99,6 +99,11 @@ public class MonthlyOrder
     public string QrVerificationUrl { get; set; } = string.Empty;
     public string QrCodeBase64 { get; set; } = string.Empty;
     public DateTime? QrRegisteredAt { get; set; }
+    // Qoldig‘i bo‘lsa ham qo‘lda yopilgan buyurtma — qayta hisoblashda «Ijroda»ga qaytmaydi
+    public bool ManuallyCompleted { get; set; }
+    public DateTime? ManuallyCompletedAt { get; set; }
+    public string ManuallyCompletedByName { get; set; } = string.Empty;
+    public string ManualCompletionReason { get; set; } = string.Empty;
     public ICollection<MonthlyOrderLine> Lines { get; set; } = [];
     public ICollection<DailyPlan> DailyPlans { get; set; } = [];
     public ICollection<OrderAttachment> Attachments { get; set; } = [];

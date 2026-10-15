@@ -769,6 +769,10 @@ class ApiClient {
     return this.request(`/orders/${id}/approve-dispatch`, { method: 'POST', body: '{}' });
   }
 
+  completeOrder(id: string, reason: string) {
+    return this.request(`/orders/${id}/complete`, { method: 'POST', body: JSON.stringify({ reason }) });
+  }
+
   getContractors(logisticsType: string) {
     return this.request<{ success: boolean; data: Contractor[] }>(
       `/contractors?logisticsType=${encodeURIComponent(logisticsType)}`,

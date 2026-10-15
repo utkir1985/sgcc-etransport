@@ -37,6 +37,7 @@ import { isLineEditable } from '../../../shared/constants/lineAccountingStatuses
 import {
   lineTonCount,
   summarizeOrderQuantities,
+  formatTons,
 } from '../../../shared/utils/orderQuantity';
 import { OrderSheetView } from '../../../shared/components/OrderSheetView';
 import { OrderAccountingSheet } from '../../../shared/components/OrderAccountingSheet';
@@ -859,6 +860,37 @@ function MarketingOrdersPanel({
     setDeleteTarget(order);
   };
 
+  const [completeTarget, setCompleteTarget] = useState<MonthlyOrder | null>(null);
+  const [completeReason, setCompleteReason] = useState('');
+  const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState('');
+
+  const openCompleteDialog = (order: MonthlyOrder) => {
+    setCompleteTarget(order);
+    setCompleteReason('');
+    setCompleteError('');
+  };
+
+  const handleCompleteOrder = async () => {
+    if (!completeTarget) return;
+    if (completeReason.trim().length < 3) {
+      setCompleteError('Yakunlash sababini yozing');
+      return;
+    }
+    setCompleting(true);
+    setCompleteError('');
+    try {
+      await api.completeOrder(completeTarget.id, completeReason.trim());
+      setCompleteTarget(null);
+      notifyOrdersUpdated();
+      await load({ silent: true });
+    } catch (err) {
+      setCompleteError(err instanceof Error ? err.message : 'Yakunlashda xatolik');
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const closeDeleteDialog = () => {
     if (deleting) return;
     setDeleteTarget(null);
@@ -885,6 +917,17 @@ function MarketingOrdersPanel({
         variant: 'danger',
         disabled: deleting,
         onClick: () => openDeleteDialog(order),
+      });
+    }
+
+    if (canUpdate && order.status === 'Active') {
+      items.push({
+        key: 'complete',
+        label: 'Buyurtmani yakunlash',
+        icon: CheckCircle2,
+        title: 'Qoldig‘i bo‘lsa ham buyurtmani yopib, «Yakunlangan»ga o‘tkazish',
+        disabled: completing,
+        onClick: () => openCompleteDialog(order),
       });
     }
 
@@ -1429,6 +1472,19 @@ function MarketingOrdersPanel({
           {saveError ? (
             <p className="order-save-error" role="alert">{saveError}</p>
           ) : null}
+          {viewOrder.manuallyCompleted ? (
+            <div className="order-manual-complete-note" role="note">
+              <CheckCircle2 className="order-manual-complete-note__icon" aria-hidden />
+              <div>
+                <strong>Qo‘lda yakunlangan</strong>
+                <span>
+                  {[viewOrder.manuallyCompletedByName, viewOrder.manuallyCompletedAt ? formatDateTimeDisplay(viewOrder.manuallyCompletedAt) : '']
+                    .filter(Boolean).join(' · ')}
+                </span>
+                {viewOrder.manualCompletionReason ? <p>Sabab: {viewOrder.manualCompletionReason}</p> : null}
+              </div>
+            </div>
+          ) : null}
           {renderOrderSheet(viewOrder)}
           {(() => {
             // Ijro holati jadvalda (Bajarilish/Qoldiq) va buyurtma varag‘ida korxona bo‘yicha ko‘rinadi.
@@ -1617,6 +1673,39 @@ function MarketingOrdersPanel({
           if (approvingId) return;
           setApproveConfirmOpen(false);
         }}
+      />
+
+      <ConfirmDialog
+        open={completeTarget !== null}
+        title="Buyurtmani yakunlash"
+        message={completeTarget ? (
+          <div className="order-complete-dialog">
+            <p>
+              <strong>{completeTarget.orderNumber}</strong> buyurtmasi «Yakunlangan»ga o‘tkaziladi va unga boshqa yuk xati biriktirilmaydi.
+              {(() => {
+                const remain = (completeTarget.lines ?? []).reduce((sum, l) => sum + Math.max(0, (l.tonCount ?? 0) - (l.fulfilledNetWeight ?? 0)), 0);
+                return remain > 0 ? <> Qoldiq: <strong>{formatTons(remain)} t</strong>.</> : null;
+              })()}
+            </p>
+            <label>
+              <span>Yakunlash sababi <span className="text-rose-500">*</span></span>
+              <textarea
+                className="security-issue-note"
+                rows={3}
+                value={completeReason}
+                onChange={e => setCompleteReason(e.target.value)}
+                placeholder="Masalan: oy yakunlandi, qoldiq keyingi oy buyurtmasiga o‘tkazildi"
+                autoFocus
+              />
+            </label>
+          </div>
+        ) : ''}
+        confirmLabel="Ha, yakunlash"
+        cancelLabel="Bekor qilish"
+        loading={completing}
+        error={completeError}
+        onConfirm={() => { void handleCompleteOrder(); }}
+        onCancel={() => { if (!completing) setCompleteTarget(null); }}
       />
 
       <ConfirmDialog

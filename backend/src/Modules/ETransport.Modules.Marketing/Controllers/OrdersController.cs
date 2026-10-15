@@ -566,6 +566,23 @@ public class OrdersController(
         }
     }
 
+    [HttpPost("{id:guid}/complete")]
+    [RequirePermission("orders.update")]
+    public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> CompleteManually(Guid id, [FromBody] CompleteOrderRequest request)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var order = await orderService.CompleteManuallyAsync(id, userId, request.Reason);
+            if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
+            return Ok(new ApiResponse<MonthlyOrderDto>(true, order));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ApiResponse<MonthlyOrderDto>(false, null, ex.Message));
+        }
+    }
+
     [HttpGet("{id:guid}/pdf")]
     [AllowAnonymous]
     public async Task<IActionResult> GetOrderPdf(Guid id)

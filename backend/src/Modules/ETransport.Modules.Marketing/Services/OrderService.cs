@@ -24,6 +24,7 @@ public interface IOrderService
     Task<MonthlyOrderDto?> SubmitToDispatchAsync(Guid id, Guid userId);
     Task<MonthlyOrderDto?> ApproveDeputyAsync(Guid id, Guid userId);
     Task<MonthlyOrderDto?> ApproveDispatchAsync(Guid id, Guid userId);
+    Task<MonthlyOrderDto?> CompleteManuallyAsync(Guid id, Guid userId, string reason);
     Task<bool> DeleteAsync(Guid id);
 }
 
@@ -566,6 +567,46 @@ public class OrderService(
         return ToDto(order);
     }
 
+    public async Task<MonthlyOrderDto?> CompleteManuallyAsync(Guid id, Guid userId, string reason)
+    {
+        var order = await LoadOrderAsync(id);
+        if (order is null) return null;
+
+        if (order.Status != OrderStatus.Active)
+            throw new ArgumentException("Faqat ijrodagi buyurtmani yakunlash mumkin");
+
+        var trimmed = (reason ?? string.Empty).Trim();
+        if (trimmed.Length < 3)
+            throw new ArgumentException("Yakunlash sababini yozing");
+        if (trimmed.Length > 1000) trimmed = trimmed[..1000];
+
+        var user = await db.Users.FindAsync(userId);
+        order.ManuallyCompleted = true;
+        order.ManuallyCompletedAt = DateTime.UtcNow;
+        order.ManuallyCompletedByName = user?.FullName ?? string.Empty;
+        order.ManualCompletionReason = trimmed;
+        order.Status = OrderStatus.Completed;
+
+        var lines = order.Lines.Where(l => l.MonthlyOrderId == order.Id).ToList();
+        db.AuditLogs.Add(new AuditLog
+        {
+            UserId = userId,
+            Action = "OrderCompletedManually",
+            EntityType = nameof(MonthlyOrder),
+            EntityId = order.Id.ToString(),
+            Details = JsonSerializer.Serialize(new
+            {
+                orderNumber = order.OrderNumber,
+                reason = trimmed,
+                remainingTons = lines.Sum(l => Math.Max(0, ResolveTonCount(l) - l.FulfilledNetWeight)),
+                remainingWagons = lines.Sum(l => Math.Max(0, ResolveWagonCount(l) - l.FulfilledWagonCount)),
+            }),
+        });
+
+        await db.SaveChangesAsync();
+        return ToDto(order);
+    }
+
     public async Task<bool> DeleteAsync(Guid id)
     {
         var order = await db.MonthlyOrders
@@ -1085,7 +1126,11 @@ public class OrderService(
             o.QrVerificationUrl ?? string.Empty,
             o.QrCodeBase64 ?? string.Empty,
             o.QrRegisteredAt,
-            o.ProductGrade ?? string.Empty);
+            o.ProductGrade ?? string.Empty,
+            o.ManuallyCompleted,
+            o.ManuallyCompletedAt,
+            o.ManuallyCompletedByName ?? string.Empty,
+            o.ManualCompletionReason ?? string.Empty);
     }
 
     public static MonthlyOrderPdfModel BuildMonthlyOrderPdfModel(MonthlyOrder order)

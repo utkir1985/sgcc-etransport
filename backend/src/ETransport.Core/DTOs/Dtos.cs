@@ -41,7 +41,13 @@ public record MonthlyOrderDto(
     string QrVerificationUrl = "",
     string QrCodeBase64 = "",
     DateTime? QrRegisteredAt = null,
-    string ProductGrade = "");
+    string ProductGrade = "",
+    bool ManuallyCompleted = false,
+    DateTime? ManuallyCompletedAt = null,
+    string ManuallyCompletedByName = "",
+    string ManualCompletionReason = "");
+
+public record CompleteOrderRequest(string Reason);
 
 public record OrderAttachmentDto(
     Guid Id, string FileName, string ContentType, long SizeBytes, DateTime UploadedAt, string UploadedBy);

@@ -13,6 +13,6 @@ public static class OrderFulfillment
     public static void RefreshStatus(MonthlyOrder order)
     {
         if (order.Status is OrderStatus.Active or OrderStatus.Completed)
-            order.Status = IsComplete(order) ? OrderStatus.Completed : OrderStatus.Active;
+            order.Status = order.ManuallyCompleted || IsComplete(order) ? OrderStatus.Completed : OrderStatus.Active;
     }
 }

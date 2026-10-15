@@ -189,6 +189,10 @@ export interface MonthlyOrder {
   qrVerificationUrl?: string;
   qrCodeBase64?: string;
   qrRegisteredAt?: string | null;
+  manuallyCompleted?: boolean;
+  manuallyCompletedAt?: string | null;
+  manuallyCompletedByName?: string;
+  manualCompletionReason?: string;
 }
 
 export interface MonthlyOrderLineInput {

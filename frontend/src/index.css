@@ -19437,3 +19437,27 @@ html.dark .order-progress-track,
   .marketing-orders-home__create-extra { display: none; }
 }
 
+
+/* Qo‘lda yakunlangan buyurtma belgisi */
+.order-manual-complete-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  border-radius: 12px;
+  background: #f0fdf4;
+  padding: 10px 14px;
+  color: #14532d;
+  font-size: 13px;
+}
+.order-manual-complete-note__icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; color: #16a34a; }
+.order-manual-complete-note strong { margin-right: 8px; font-size: 13.5px; }
+.order-manual-complete-note span { color: #166534; }
+.order-manual-complete-note p { margin-top: 2px; }
+.dark .order-manual-complete-note { border-color: rgb(34 197 94 / 0.3); border-left-color: #22c55e; background: rgb(34 197 94 / 0.08); color: #bbf7d0; }
+.dark .order-manual-complete-note span { color: #86efac; }
+.dark .order-manual-complete-note__icon { color: #4ade80; }
+
+.order-complete-dialog { display: grid; gap: 12px; text-align: left; }
+.order-complete-dialog label { display: grid; gap: 6px; font-weight: 600; }
