@@ -1004,6 +1004,39 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     roles: ['Admin', 'DispatchSupervisor', 'Dispatching'],
   },
   // --- 2. MA'LUMOTNOMALAR (PRODUCTS, CONTRACTORS, STATIONS, WAGON TYPES, FLEET WAGONS) ---
+  // --- NORMATIV HUJJATLAR ---
+  {
+    key: 'normative-docs.read',
+    module: 'reports',
+    label: 'Normativ hujjatlarni ko‘rish',
+    description: 'Normativ hujjatlar ro‘yxatini ko‘rish, hujjatni ochish va yuklab olish',
+    flags: ['R'],
+    roles: ['Admin', 'Marketing', 'Accounting', 'DeputyDirector', 'DispatchSupervisor', 'Dispatching', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management'],
+  },
+  {
+    key: 'normative-docs.create',
+    module: 'reports',
+    label: 'Normativ hujjat yuklash',
+    description: 'Yangi qonun, qoida, yo‘riqnoma yoki reglament faylini yuklash',
+    flags: ['C'],
+    roles: ['Admin', 'Management', 'Dispatching', 'Marketing'],
+  },
+  {
+    key: 'normative-docs.update',
+    module: 'reports',
+    label: 'Normativ hujjatni tahrirlash',
+    description: 'Hujjat nomi, raqami, sanasi, turi, tavsifi va faylini o‘zgartirish',
+    flags: ['U'],
+    roles: ['Admin', 'Management', 'Dispatching', 'Marketing'],
+  },
+  {
+    key: 'normative-docs.delete',
+    module: 'reports',
+    label: 'Normativ hujjatni o‘chirish',
+    description: 'Normativ hujjatni bazadan butunlay o‘chirish',
+    flags: ['D'],
+    roles: ['Admin'],
+  },
   {
     key: 'products.read',
     module: 'admin',
@@ -1722,6 +1755,7 @@ export const RESOURCE_META: Record<string, ResourceMeta> = {
   road: { label: 'Chiqish / Avto jo\'natmalar', icon: TrainFront, module: 'road', order: 5 },
   plans: { label: 'Oylik reja monitoringi', icon: Target, module: 'marketing', order: 6 },
   // --- Ma\'lumotnomalar ---
+  'normative-docs': { label: 'Normativ hujjatlar', icon: BookOpen, module: 'reports', order: 19 },
   products: { label: 'Mahsulotlar katalogi', icon: Package, module: 'admin', order: 20 },
   contractors: { label: 'Kontragentlar', icon: Building2, module: 'admin', order: 21 },
   stations: { label: 'Stansiyalar', icon: MapPinned, module: 'admin', order: 22 },
@@ -1875,6 +1909,7 @@ export const RESOURCE_EXPLANATIONS: Record<string, string> = {
   flow: 'Estakadada yuklash, bo‘sh/to‘la (Tara/Brutto) tortish va rasmiy plombalash',
   road: 'Avtosisternalar navbati, tarozida tortish va nazorat punktidan chiqish',
   plans: 'Oylik va sutkalik rejalarning bajarilish monitoringi va tasdiqlash zanjiri',
+  'normative-docs': 'Qonunlar, O‘ztemiryo‘l qoidalari, korxona yo‘riqnomalari va texnik reglamentlar bazasi',
   products: 'Yuklanadigan mahsulotlar (Polietilen, Polipropilen va b.) turlari va zichlik standartlari',
   contractors: 'Mahsulot oluvchi mijozlar, yuk oluvchilar va shartnoma parametrlari',
   stations: 'Temir yo‘l stansiyalari kodlari va yo‘nalishlari katalogi',

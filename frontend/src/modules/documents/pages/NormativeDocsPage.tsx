@@ -4,6 +4,8 @@ import {
   UploadCloud,
   Search,
   Download,
+  Pencil,
+  Lock,
   Trash2,
   FileText,
   CheckCircle2,
@@ -25,9 +27,11 @@ import { DocumentPrintButton } from '../../../shared/components/DocumentPrintBut
 import { PdfPagesViewer, printPdfUrl } from '../../../shared/components/PdfPagesViewer';
 import type { NormativeDocument, CreateNormativeDocPayload } from '../../../shared/types';
 import { useAuth } from '../../../shared/contexts/AuthContext';
+import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
 import {
   getLocalNormativeDocs,
   saveLocalNormativeDoc,
+  updateLocalNormativeDoc,
   deleteLocalNormativeDoc,
   getLocalNormativeDocFile,
 } from '../../../shared/utils/normativeDocsStorage';
@@ -127,6 +131,8 @@ export default function NormativeDocsPage() {
 
   // Modals
   const [uploadModalOpen, setUploadModalOpen] = useState<boolean>(false);
+  const [editingDoc, setEditingDoc] = useState<NormativeDocument | null>(null);
+  const { canNormativeRead, canNormativeCreate, canNormativeUpdate, canNormativeDelete } = useRbacPermission();
 
   // Delete modal
   const [docToDelete, setDocToDelete] = useState<NormativeDocument | null>(null);
@@ -212,13 +218,13 @@ export default function NormativeDocsPage() {
     setPreviewDoc(doc);
     const mimeOf = (fallback?: string) => doc.MimeType || fallback || 'application/pdf';
     if (
-      doc.Id.startsWith('seed-') ||
+      !doc.LocalFile && (doc.Id.startsWith('seed-') ||
       (doc.FileName && [
         'SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf',
         'SHGKM_ichki_transport_yoriqnomasi_312.pdf',
         'SUG_xavfsizlik_reglamenti_84.pdf',
         'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'
-      ].includes(doc.FileName))
+      ].includes(doc.FileName)))
     ) {
       setPreview(null);
       setPreviewLoading(true);
@@ -261,7 +267,7 @@ export default function NormativeDocsPage() {
   const handleDownload = async (doc: NormativeDocument) => {
     try {
       // If it is a seed document with a static file, download directly
-      if (doc.Id.startsWith('seed-') || (doc.FileName && ['SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf', 'SHGKM_ichki_transport_yoriqnomasi_312.pdf', 'SUG_xavfsizlik_reglamenti_84.pdf', 'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'].includes(doc.FileName))) {
+      if (!doc.LocalFile && (doc.Id.startsWith('seed-') || (doc.FileName && ['SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf', 'SHGKM_ichki_transport_yoriqnomasi_312.pdf', 'SUG_xavfsizlik_reglamenti_84.pdf', 'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'].includes(doc.FileName)))) {
         const res = await fetch(`/normative-files/${encodeURIComponent(doc.FileName)}`);
         const blob = res.ok ? await res.blob() : null;
         if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);
@@ -320,6 +326,40 @@ export default function NormativeDocsPage() {
     }
   };
 
+  const resetUploadForm = () => {
+    setFormTitle('');
+    setFormNumber('');
+    setFormDate('');
+    setFormCategory('law');
+    setFormDescription('');
+    setSelectedFile(null);
+    setUploadError(null);
+  };
+
+  const closeUploadModal = () => {
+    setUploadModalOpen(false);
+    setEditingDoc(null);
+    resetUploadForm();
+  };
+
+  const openCreateModal = () => {
+    resetUploadForm();
+    setEditingDoc(null);
+    setUploadModalOpen(true);
+  };
+
+  const openEditModal = (doc: NormativeDocument) => {
+    resetUploadForm();
+    const num = (doc.DocumentNumber || '').trim();
+    setFormTitle(doc.Title || '');
+    setFormNumber(num.toLowerCase() === 'raqamsiz' ? '' : num);
+    setFormDate(doc.DocumentDate ? doc.DocumentDate.slice(0, 10) : '');
+    setFormCategory(getCategoryInfo(doc.Category).key === 'other' ? 'law' : getCategoryInfo(doc.Category).key);
+    setFormDescription(doc.Description || '');
+    setEditingDoc(doc);
+    setUploadModalOpen(true);
+  };
+
   // Handle upload submit
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -327,10 +367,41 @@ export default function NormativeDocsPage() {
       setUploadError('Hujjat nomini kiriting');
       return;
     }
-    if (!selectedFile) {
+    if (!selectedFile && !editingDoc) {
       setUploadError('Faylni tanlang');
       return;
     }
+
+    if (editingDoc) {
+      setUploading(true);
+      setUploadError(null);
+      try {
+        const updated: NormativeDocument = {
+          ...editingDoc,
+          Title: formTitle.trim(),
+          DocumentNumber: formNumber.trim(),
+          DocumentDate: formDate || undefined,
+          Category: formCategory,
+          Description: formDescription.trim() || undefined,
+          UpdatedAt: new Date().toISOString(),
+          ...(selectedFile ? {
+            FileName: selectedFile.name,
+            FileSize: selectedFile.size,
+            MimeType: selectedFile.type || 'application/pdf',
+            LocalFile: true,
+          } : {}),
+        };
+        await updateLocalNormativeDoc(updated, selectedFile);
+        setDocuments(prev => prev.map(d => (d.Id === updated.Id ? updated : d)));
+        closeUploadModal();
+      } catch (err: any) {
+        setUploadError(err?.message || 'Hujjatni saqlashda xatolik yuz berdi');
+      } finally {
+        setUploading(false);
+      }
+      return;
+    }
+    if (!selectedFile) return;
 
     setUploading(true);
     setUploadError(null);
@@ -403,7 +474,7 @@ export default function NormativeDocsPage() {
       setFormCategory('law');
       setFormDescription('');
       setSelectedFile(null);
-      setUploadModalOpen(false);
+      closeUploadModal();
     } catch (err: any) {
       console.error('Upload error:', err);
       setUploadError(err.message || 'Hujjatni saqlashda xatolik yuz berdi');
@@ -455,9 +526,22 @@ export default function NormativeDocsPage() {
   const pageDocuments = filteredDocuments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const docMenuItems = (doc: NormativeDocument): OrderSheetMenuItem[] => [
+    { key: 'edit', label: 'Tahrirlash', icon: Pencil, hidden: !canNormativeUpdate, onClick: () => openEditModal(doc) },
     { key: 'download', label: 'Yuklab olish', icon: Download, tone: 'emerald', onClick: () => { void handleDownload(doc); } },
-    { key: 'delete', label: 'O‘chirish', icon: Trash2, variant: 'danger', onClick: () => setDocToDelete(doc) },
+    { key: 'delete', label: 'O‘chirish', icon: Trash2, variant: 'danger', hidden: !canNormativeDelete, onClick: () => setDocToDelete(doc) },
   ];
+
+  if (!canNormativeRead) {
+    return (
+      <div className="docs-panel">
+        <div className="thub-empty">
+          <Lock className="mx-auto mb-2 h-8 w-8 text-slate-400" />
+          <p className="thub-empty__title">Ruxsat yo‘q</p>
+          <p className="thub-empty__text">Normativ hujjatlarni ko‘rish huquqi sizning rolingizga berilmagan. Administratorga murojaat qiling.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -496,14 +580,16 @@ export default function NormativeDocsPage() {
           </div>
           <div className="marketing-orders-toolbar__right">
             <div className="flex flex-nowrap items-center gap-2">
+              {canNormativeCreate ? (
               <button
                 type="button"
-                onClick={() => setUploadModalOpen(true)}
+                onClick={openCreateModal}
                 className="btn-primary marketing-orders-home__create whitespace-nowrap"
               >
                 <UploadCloud className="w-4 h-4" strokeWidth={2} />
                 <span>Hujjat<span className="marketing-orders-home__create-extra"> yuklash</span></span>
               </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -607,16 +693,16 @@ export default function NormativeDocsPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    Yangi normativ hujjat yuklash
+                    {editingDoc ? 'Normativ hujjatni tahrirlash' : 'Yangi normativ hujjat yuklash'}
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    PDF, Word, Excel yoki boshqa normativ hujjat faylini tizimga kiriting
+                    {editingDoc ? 'Ma’lumotlarni o‘zgartiring; faylni almashtirish ixtiyoriy' : 'PDF, Word, Excel yoki boshqa normativ hujjat faylini tizimga kiriting'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setUploadModalOpen(false)}
+                onClick={closeUploadModal}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -720,7 +806,7 @@ export default function NormativeDocsPage() {
               {/* File Input */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Faylni yuklash <span className="text-rose-500">*</span>
+                  {editingDoc ? 'Faylni almashtirish' : 'Faylni yuklash'} {editingDoc ? <span className="normal-case font-medium text-slate-400">(ixtiyoriy — joriy: {editingDoc.FileName})</span> : <span className="text-rose-500">*</span>}
                 </label>
                 <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-5 text-center hover:border-blue-500 dark:hover:border-blue-500 transition-colors bg-slate-50/50 dark:bg-slate-800/40">
                   <input
@@ -776,7 +862,7 @@ export default function NormativeDocsPage() {
               <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setUploadModalOpen(false)}
+                  onClick={closeUploadModal}
                   disabled={uploading}
                   className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
@@ -784,7 +870,7 @@ export default function NormativeDocsPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={uploading || !selectedFile || !formTitle.trim()}
+                  disabled={uploading || (!selectedFile && !editingDoc) || !formTitle.trim()}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/25 transition-all disabled:opacity-50"
                 >
                   {uploading ? (
@@ -795,7 +881,7 @@ export default function NormativeDocsPage() {
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Yuklash va saqlash</span>
+                      <span>{editingDoc ? 'Saqlash' : 'Yuklash va saqlash'}</span>
                     </>
                   )}
                 </button>

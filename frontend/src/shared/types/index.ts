@@ -24,6 +24,8 @@ export interface NormativeDocument {
   UploadedBy?: string;
   CreatedAt: string;
   UpdatedAt?: string;
+  /** Fayl tahrirda almashtirilgan — statik namunaviy fayl o‘rniga brauzer xotirasidagisi ishlatiladi */
+  LocalFile?: boolean;
 }
 
 export interface CreateNormativeDocPayload {

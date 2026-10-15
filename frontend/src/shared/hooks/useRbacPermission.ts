@@ -73,6 +73,12 @@ export function useRbacPermission() {
     canRoadWeighGross: can('road.weigh-gross'),
     canRoadGateExit: can('road.gate-exit'),
 
+    // Normativ hujjatlar
+    canNormativeRead: can('normative-docs.read'),
+    canNormativeCreate: can('normative-docs.create'),
+    canNormativeUpdate: can('normative-docs.update'),
+    canNormativeDelete: can('normative-docs.delete'),
+
     // Ma'lumotnomalar
     canProductsCreate: can('products.create'),
     canProductsRead: can('products.read'),

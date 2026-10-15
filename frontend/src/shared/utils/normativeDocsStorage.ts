@@ -222,6 +222,20 @@ export async function saveLocalNormativeDoc(
   });
 }
 
+/** Hujjat ma’lumotlarini yangilaydi; yangi fayl berilsa — uni ham almashtiradi. */
+export async function updateLocalNormativeDoc(doc: NormativeDocument, fileBlob?: Blob | null): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE_DOCS, STORE_FILES], 'readwrite');
+    tx.objectStore(STORE_DOCS).put(doc);
+    if (fileBlob) {
+      tx.objectStore(STORE_FILES).put({ id: doc.Id, blob: fileBlob, fileName: doc.FileName, mimeType: doc.MimeType });
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function deleteLocalNormativeDoc(id: string): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
