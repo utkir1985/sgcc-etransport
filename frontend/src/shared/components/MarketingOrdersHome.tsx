@@ -57,21 +57,27 @@ export interface OrderStatusCard {
   hint: string;
   count: number;
   icon: typeof ClipboardList;
-  tone: 'blue' | 'amber' | 'green';
+  tone: 'blue' | 'amber' | 'green' | 'violet';
 }
 
 /** KPI andozasidagi holat kartochkalari — oddiy ro‘yxat va hub ko‘rinishida bir xil. */
-function OrderStatusCards({
+export function OrderStatusCards({
   cards,
   active,
   onChange,
+  className = '',
+  ariaLabel = 'Buyurtma holati',
+  countSuffix = 'ta',
 }: {
   cards: OrderStatusCard[];
   active?: string;
   onChange?: (id: string) => void;
+  className?: string;
+  ariaLabel?: string;
+  countSuffix?: string;
 }) {
   return (
-    <div className="order-status-cards" role="tablist" aria-label="Buyurtma holati">
+    <div className={`order-status-cards${className ? ` ${className}` : ''}`} role="tablist" aria-label={ariaLabel}>
       {cards.map(card => {
         const Icon = card.icon;
         const isActive = card.id === active;
@@ -89,7 +95,7 @@ function OrderStatusCards({
               <strong>{card.label}</strong>
               <small>{card.hint}</small>
             </span>
-            <span className="order-status-card__count">{card.count} ta</span>
+            <span className="order-status-card__count">{card.count} {countSuffix}</span>
           </button>
         );
       })}

@@ -6,7 +6,6 @@ import {
   Eye,
   Download,
   Trash2,
-  Calendar,
   FileText,
   CheckCircle2,
   AlertCircle,
@@ -17,10 +16,12 @@ import {
   TrainFront,
   ShieldCheck,
   Scale,
-  LayoutGrid,
-  List,
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
+import { OrderStatusCards, type OrderStatusCard } from '../../../shared/components/MarketingOrdersHome';
+import { OrderSheetMenu, type OrderSheetMenuItem } from '../../../shared/components/OrderSheetMenu';
+import { TablePagination } from '../../../shared/components/TablePagination';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import type { NormativeDocument, CreateNormativeDocPayload } from '../../../shared/types';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import {
@@ -114,7 +115,8 @@ export default function NormativeDocsPage() {
   // Filters
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // Modals
   const [uploadModalOpen, setUploadModalOpen] = useState<boolean>(false);
@@ -384,425 +386,204 @@ export default function NormativeDocsPage() {
     return counts;
   }, [documents]);
 
+  const statusCards: OrderStatusCard[] = [
+    { id: 'law', label: 'Qonun va qarorlar', hint: 'Qonunlar, Prezident va Vazirlar Mahkamasi qarorlari', count: categoryCounts.law || 0, icon: Building2, tone: 'blue' },
+    { id: 'railway', label: 'O‘ztemiryo‘l qoidalari', hint: 'Temir yo‘l me’yorlari va tartiblari', count: categoryCounts.railway || 0, icon: TrainFront, tone: 'amber' },
+    { id: 'internal', label: 'Korxona yo‘riqnomalari', hint: 'SHGKM ichki yo‘riqnoma va tartiblari', count: categoryCounts.internal || 0, icon: ShieldCheck, tone: 'green' },
+    { id: 'technical', label: 'Texnik reglamentlar', hint: 'GOST, standartlar va xavfsizlik qoidalari', count: categoryCounts.technical || 0, icon: Scale, tone: 'violet' },
+  ];
+
+  const totalPages = Math.max(1, Math.ceil(filteredDocuments.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageDocuments = filteredDocuments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const docMenuItems = (doc: NormativeDocument): OrderSheetMenuItem[] => [
+    { key: 'view', label: 'Ko‘rish', icon: Eye, tone: 'sky', onClick: () => { void handleOpenPreview(doc); } },
+    { key: 'download', label: 'Yuklab olish', icon: Download, tone: 'emerald', onClick: () => { void handleDownload(doc); } },
+    { key: 'delete', label: 'O‘chirish', icon: Trash2, variant: 'danger', onClick: () => setDocToDelete(doc) },
+  ];
+
+  const renderCategoryChip = (doc: NormativeDocument) => {
+    const cat = getCategoryInfo(doc.Category);
+    const CatIcon = cat.icon;
+    return (
+      <span className={`ndocs-chip ndocs-chip--${cat.key}`}>
+        <CatIcon className="ndocs-chip__icon" />
+        {cat.label}
+      </span>
+    );
+  };
+
   return (
-    <div className="min-h-full space-y-6 p-4 sm:p-6 lg:p-8 max-w-[1700px] mx-auto transition-colors">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400 border border-sky-100 dark:border-sky-900/50 shrink-0">
-            <BookOpen className="w-5 h-5" />
+    <div className="space-y-4">
+      <OrderStatusCards
+        cards={statusCards}
+        active={selectedCategory}
+        onChange={id => { setSelectedCategory(prev => (prev === id ? 'all' : id)); setPage(1); }}
+        className="order-status-cards--four"
+        ariaLabel="Hujjat turi"
+      />
+
+      <div className="docs-panel">
+        <div className="marketing-orders-toolbar docs-panel__toolbar ndocs-toolbar">
+          <div className="marketing-orders-toolbar__filters">
+            <label className="thub-search marketing-orders-search">
+              <Search className="thub-search__ico" strokeWidth={1.75} aria-hidden />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                placeholder="Nomi, raqami yoki mazmuni…"
+                autoComplete="off"
+              />
+              {searchQuery ? (
+                <button type="button" className="thub-search__x" onClick={() => setSearchQuery('')} aria-label="Tozalash">
+                  <X className="w-3.5 h-3.5" strokeWidth={2} />
+                </button>
+              ) : null}
+            </label>
+            {selectedCategory !== 'all' ? (
+              <button type="button" className="ndocs-filter-pill" onClick={() => setSelectedCategory('all')}>
+                {getCategoryInfo(selectedCategory).label}
+                <X className="w-3.5 h-3.5" aria-hidden />
+              </button>
+            ) : null}
           </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-                Normativ hujjatlar
-              </h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800/60">
-                {documents.length} ta hujjat
-              </span>
+          <div className="marketing-orders-toolbar__right">
+            <div className="flex flex-nowrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fetchDocs()}
+                disabled={loading}
+                className="btn-secondary ndocs-icon-btn"
+                title="Yangilash"
+                aria-label="Yangilash"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setUploadModalOpen(true)}
+                className="btn-primary marketing-orders-home__create whitespace-nowrap"
+              >
+                <UploadCloud className="w-4 h-4" strokeWidth={2} />
+                <span>Hujjat<span className="marketing-orders-home__create-extra"> yuklash</span></span>
+              </button>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Qonunlar, O‘zbekiston temir yo‘llari me’yorlari, ichki yo‘riqnomalar va texnik standartlar bazasi
+          </div>
+        </div>
+
+        {loading && documents.length === 0 ? (
+          <div className="thub-empty">
+            <p className="thub-empty__title">Yuklanmoqda…</p>
+            <p className="thub-empty__text">Normativ hujjatlar ro‘yxati olinmoqda.</p>
+          </div>
+        ) : error && documents.length === 0 ? (
+          <div className="thub-empty">
+            <AlertCircle className="mx-auto mb-2 h-8 w-8 text-rose-500" />
+            <p className="thub-empty__title">Xatolik yuz berdi</p>
+            <p className="thub-empty__text">{error}</p>
+            <button type="button" onClick={() => fetchDocs()} className="btn-secondary mx-auto mt-3">Qayta urinish</button>
+          </div>
+        ) : filteredDocuments.length === 0 ? (
+          <div className="thub-empty">
+            <p className="thub-empty__title">Hujjatlar topilmadi</p>
+            <p className="thub-empty__text">
+              {searchQuery
+                ? `«${searchQuery}» bo‘yicha normativ hujjat topilmadi.`
+                : 'Tanlangan turda hali normativ hujjat yo‘q.'}
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => fetchDocs()}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-sm transition-all active:scale-95 disabled:opacity-50"
-            title="Yangilash"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
-            <span className="hidden sm:inline">Yangilash</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setUploadModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
-          >
-            <UploadCloud className="w-4 h-4 stroke-[2.5]" />
-            <span>Yangi hujjat yuklash</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Category Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {CATEGORIES.filter(c => c.key !== 'all').map(cat => {
-          const count = categoryCounts[cat.key] || 0;
-          const Icon = cat.icon;
-          const isSelected = selectedCategory === cat.key;
-          return (
-            <button
-              key={cat.key}
-              onClick={() => setSelectedCategory(isSelected ? 'all' : cat.key)}
-              className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-                isSelected
-                  ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-400 dark:border-blue-600 shadow-md ring-2 ring-blue-500/20'
-                  : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm hover:shadow'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cat.badgeClass}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <span className="text-2xl font-black text-slate-800 dark:text-slate-100">
-                  {count}
-                </span>
-              </div>
-              <div className="mt-3">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {cat.label}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {isSelected ? "Faol filtr (bekor qilish uchun bosing)" : "Filtrlash uchun bosing"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Search and Category Filter Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Category Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-thin">
-          {CATEGORIES.map(cat => {
-            const isSelected = selectedCategory === cat.key;
-            const count = categoryCounts[cat.key] || 0;
-            return (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => setSelectedCategory(cat.key)}
-                className={`whitespace-nowrap px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 ${
-                  isSelected
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
-                    : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/70'
-                }`}
-              >
-                <span>{cat.label}</span>
-                <span
-                  className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
-                    isSelected
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search & Layout toggle */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-80">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Nomi, raqami yoki mazmuni..."
-              className="w-full pl-9 pr-9 py-2 rounded-xl text-sm bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-              title="Karta ko‘rinishi"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-colors ${
-                viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-              title="Jadval ko‘rinishi"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      {loading && documents.length === 0 ? (
-        <div className="py-24 text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent" />
-          <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
-            Normativ hujjatlar yuklanmoqda...
-          </p>
-        </div>
-      ) : error && documents.length === 0 ? (
-        <div className="p-6 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-center">
-          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-2" />
-          <h3 className="text-base font-bold text-rose-800 dark:text-rose-200">Xatolik yuz berdi</h3>
-          <p className="text-sm text-rose-600 dark:text-rose-300 mt-1">{error}</p>
-          <button
-            onClick={() => fetchDocs()}
-            className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 shadow-sm"
-          >
-            Qayta urinish
-          </button>
-        </div>
-      ) : filteredDocuments.length === 0 ? (
-        <div className="py-20 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-8">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-3">
-            <BookOpen className="w-8 h-8" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Hujjatlar topilmadi</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
-            {searchQuery
-              ? `"${searchQuery}" bo'yicha hech qanday normativ hujjat topilmadi.`
-              : "Tanlangan toifada hali normativ hujjatlar mavjud emas."}
-          </p>
-          <button
-            onClick={() => setUploadModalOpen(true)}
-            className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 shadow"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>Birinchi hujjatni yuklash</span>
-          </button>
-        </div>
-      ) : viewMode === 'grid' ? (
-        /* GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredDocuments.map(doc => {
-            const cat = getCategoryInfo(doc.Category);
-            const CatIcon = cat.icon;
-            return (
-              <div
-                key={doc.Id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group hover:border-blue-400/70 dark:hover:border-blue-700"
-              >
-                <div className="p-5">
-                  {/* Top line: Category and Document Number */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${cat.badgeClass}`}
-                    >
-                      <CatIcon className="w-3.5 h-3.5" />
-                      <span>{cat.label}</span>
-                    </span>
-
-                    {/* Hujjat raqami bo'lsa ko'rsatiladi, bo'lmasa "Raqamsiz" belgisi chiqadi */}
-                    {doc.DocumentNumber && doc.DocumentNumber.trim() ? (
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                        {doc.DocumentNumber}
-                      </span>
-                    ) : (
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100/70 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-700">
-                        Raqamsiz
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Document Title */}
-                  <h3
-                    onClick={() => handleOpenPreview(doc)}
-                    className="text-base font-bold text-slate-900 dark:text-slate-100 line-clamp-2 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
-                    title={doc.Title}
-                  >
-                    {doc.Title}
-                  </h3>
-
-                  {/* Description */}
-                  {doc.Description && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                      {doc.Description}
-                    </p>
-                  )}
-
-                  {/* Metadata Row */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span title="Hujjat sanasi">{formatDate(doc.DocumentDate)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 justify-end truncate">
-                      <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                        {formatBytes(doc.FileSize)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card Action Footer */}
-                <div className="px-5 py-3 bg-slate-50/70 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                  <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-[130px]">
-                    {doc.UploadedBy || 'Admin'}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Preview Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPreview(doc)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 transition-colors"
-                      title="Hujjatni brauzerda ko‘rish"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Ko‘rish</span>
-                    </button>
-
-                    {/* Download Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(doc)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 dark:text-emerald-300 transition-colors"
-                      title="Faylni yuklab olish"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Yuklab olish</span>
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      type="button"
-                      onClick={() => setDocToDelete(doc)}
-                      className="p-1.5 rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/50 dark:text-rose-400 dark:hover:bg-rose-900/60 transition-all hover:scale-110 shadow-2xs cursor-pointer"
-                      title="O‘chirish"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 stroke-[2]" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* TABLE VIEW */
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-800/80 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th className="px-5 py-3.5">Hujjat raqami & Sanasi</th>
-                  <th className="px-5 py-3.5">Hujjat nomi va mazmuni</th>
-                  <th className="px-5 py-3.5">Kategoriya</th>
-                  <th className="px-5 py-3.5">Hajmi</th>
-                  <th className="px-5 py-3.5">Mas'ul</th>
-                  <th className="px-5 py-3.5 text-right">Amallar</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredDocuments.map(doc => {
-                  const cat = getCategoryInfo(doc.Category);
-                  const CatIcon = cat.icon;
-                  return (
-                    <tr
-                      key={doc.Id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-                    >
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        {doc.DocumentNumber && doc.DocumentNumber.trim() ? (
-                          <div className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
-                            {doc.DocumentNumber}
-                          </div>
-                        ) : (
-                          <div className="text-xs text-slate-400 font-medium">
-                            Raqamsiz
-                          </div>
-                        )}
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          {formatDate(doc.DocumentDate)}
-                        </div>
+        ) : (
+          <>
+            <div className="thub-table-wrap reestr-table-wrap hidden md:block">
+              <table className="thub-table reestr-table ndocs-table w-full">
+                <colgroup>
+                  <col style={{ width: '4%' }} />
+                  <col style={{ width: '38%' }} />
+                  <col style={{ width: '17%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '7%' }} />
+                  <col style={{ width: '9%' }} />
+                  <col style={{ width: '4%' }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="text-center">№</th>
+                    <th>Hujjat nomi</th>
+                    <th>Turi</th>
+                    <th className="text-center">Hujjat raqami</th>
+                    <th className="text-center">Sanasi</th>
+                    <th className="text-center">Hajmi</th>
+                    <th>Yukladi</th>
+                    <th aria-label="Amallar" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageDocuments.map((doc, idx) => (
+                    <tr key={doc.Id}>
+                      <td className="text-center tabular-nums text-slate-500">{(currentPage - 1) * pageSize + idx + 1}</td>
+                      <td>
+                        <button type="button" className="ndocs-title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
+                          <span className="ndocs-title__icon"><FileText className="w-4 h-4" /></span>
+                          <span className="min-w-0">
+                            <strong>{doc.Title}</strong>
+                            {doc.Description ? <small>{doc.Description}</small> : null}
+                          </span>
+                        </button>
                       </td>
-
-                      <td className="px-5 py-4 max-w-md">
-                        <div
-                          onClick={() => handleOpenPreview(doc)}
-                          className="font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer line-clamp-1"
-                        >
-                          {doc.Title}
-                        </div>
-                        {doc.Description && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
-                            {doc.Description}
-                          </div>
-                        )}
+                      <td>{renderCategoryChip(doc)}</td>
+                      <td className="text-center">
+                        {doc.DocumentNumber?.trim()
+                          ? <span className="ndocs-number">{doc.DocumentNumber}</span>
+                          : <span className="text-slate-400">—</span>}
                       </td>
-
-                      <td className="px-5 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${cat.badgeClass}`}
-                        >
-                          <CatIcon className="w-3.5 h-3.5" />
-                          <span>{cat.label}</span>
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-600 dark:text-slate-300">
-                        {formatBytes(doc.FileSize)}
-                      </td>
-
-                      <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
-                        {doc.UploadedBy || 'Admin'}
-                      </td>
-
-                      <td className="px-5 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPreview(doc)}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 transition-colors"
-                            title="Ko‘rish"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDownload(doc)}
-                            className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 transition-colors"
-                            title="Yuklab olish"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDocToDelete(doc)}
-                            className="p-2 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 transition-colors"
-                            title="O‘chirish"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <td className="text-center tabular-nums">{formatDate(doc.DocumentDate)}</td>
+                      <td className="text-center tabular-nums text-slate-500">{formatBytes(doc.FileSize)}</td>
+                      <td className="truncate text-slate-500" title={doc.UploadedBy || 'Admin'}>{doc.UploadedBy || 'Admin'}</td>
+                      <td className="text-center">
+                        <OrderSheetMenu items={docMenuItems(doc)} compact />
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="ndocs-mobile-list md:hidden" role="list">
+              {pageDocuments.map(doc => (
+                <div key={doc.Id} className="ndocs-mobile-card" role="listitem">
+                  <div className="ndocs-mobile-card__head">
+                    {renderCategoryChip(doc)}
+                    <OrderSheetMenu items={docMenuItems(doc)} compact />
+                  </div>
+                  <button type="button" className="ndocs-title" onClick={() => { void handleOpenPreview(doc); }}>
+                    <span className="min-w-0">
+                      <strong>{doc.Title}</strong>
+                      {doc.Description ? <small>{doc.Description}</small> : null}
+                    </span>
+                  </button>
+                  <div className="ndocs-mobile-card__meta">
+                    <span>{doc.DocumentNumber?.trim() ? `№ ${doc.DocumentNumber}` : 'Raqamsiz'}</span>
+                    <span>{formatDate(doc.DocumentDate)}</span>
+                    <span>{formatBytes(doc.FileSize)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <TablePagination
+              total={filteredDocuments.length}
+              page={currentPage}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              unitLabel="hujjat"
+            />
+          </>
+        )}
+      </div>
 
       {/* ======================================================== */}
       {/* PREVIEW MODAL (Brauzerda to'liq ko'rish) */}
@@ -1017,53 +798,17 @@ export default function NormativeDocsPage() {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* DELETE CONFIRMATION MODAL */}
-      {/* ======================================================== */}
-      {docToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Hujjatni o‘chirmoqchimisiz?
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-              «<b className="text-slate-800 dark:text-slate-200">{docToDelete.Title}</b>» hujjati butunlay o‘chiriladi.
-            </p>
-
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setDocToDelete(null)}
-                disabled={deleting}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                Bekor qilish
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                disabled={deleting}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-md shadow-rose-500/25 transition-colors disabled:opacity-50"
-              >
-                {deleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>O‘chirilmoqda...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    <span>Ha, o‘chirilsin</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={docToDelete !== null}
+        title="Hujjatni o‘chirish"
+        message={docToDelete ? <>«<strong>{docToDelete.Title}</strong>» hujjati butunlay o‘chiriladi. Bu amalni qaytarib bo‘lmaydi.</> : ''}
+        confirmLabel="Ha, o‘chirish"
+        cancelLabel="Bekor qilish"
+        variant="danger"
+        loading={deleting}
+        onConfirm={() => { void confirmDelete(); }}
+        onCancel={() => { if (!deleting) setDocToDelete(null); }}
+      />
     </div>
   );
 }
