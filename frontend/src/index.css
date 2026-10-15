@@ -19960,3 +19960,36 @@ html.dark .order-progress-track,
 .pdf-sheet { max-width: 100%; height: auto !important; background: #fff; box-shadow: 0 10px 30px rgb(15 23 42 / 0.25); }
 .pdf-sheets__loading { margin: 40px auto; border-radius: 12px; background: #fff; padding: 14px 22px; color: #334155; font-size: 14px; }
 .ndocs-preview-scroll { align-items: flex-start; }
+
+/* Normativ hujjatlar jadvali: KPI foydalanuvchilar jadvali uslubidagi belgilar (yumaloq emas, burchaklari biroz yoysimon) */
+.ndocs-table .ndocs-meta__cat,
+.ndocs-table .ndocs-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--nd-border, #cbd5e1);
+  border-radius: 6px;
+  background: var(--nd-bg, #f8fafc);
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.ndocs-table .ndocs-meta__cat { color: var(--nd-tone); }
+.ndocs-table .ndocs-number {
+  --nd-border: #cbd5e1;
+  --nd-bg: #f1f5f9;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+.ndocs-table .ndocs-title__icon { border-radius: 8px; }
+.ndocs-table .order-sheet-annex-chip__trigger { border-radius: 6px; }
+
+.dark .ndocs-table .ndocs-meta__cat { background: transparent; }
+.dark .ndocs-table .ndocs-number { --nd-border: #475569; background: transparent; color: #cbd5e1; }
+.dark .ndocs-table .ndocs-tone--law       { --nd-border: rgb(96 165 250 / 0.55); }
+.dark .ndocs-table .ndocs-tone--railway   { --nd-border: rgb(251 191 36 / 0.55); }
+.dark .ndocs-table .ndocs-tone--internal  { --nd-border: rgb(74 222 128 / 0.55); }
+.dark .ndocs-table .ndocs-tone--technical { --nd-border: rgb(167 139 250 / 0.55); }
