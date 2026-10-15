@@ -11,6 +11,25 @@ export interface OrderSheetMenuItem {
   title?: string;
   variant?: 'default' | 'danger';
   hidden?: boolean;
+  /** Ikonka rangi; berilmasa nomidan aniqlanadi */
+  tone?: OrderSheetMenuTone;
+}
+
+export type OrderSheetMenuTone = 'blue' | 'green' | 'violet' | 'emerald' | 'amber' | 'sky' | 'red' | 'slate';
+
+/** Amal nomiga qarab rang: tahrirlash — ko‘k, yakunlash — yashil, PDF — binafsha, Excel — zumrad, o‘chirish — qizil */
+function resolveTone(item: OrderSheetMenuItem): OrderSheetMenuTone {
+  if (item.tone) return item.tone;
+  if (item.variant === 'danger') return 'red';
+  const text = `${item.key} ${item.label}`.toLowerCase();
+  if (/o['‘’`]?chir|delete|bekor/.test(text)) return 'red';
+  if (/tahrir|edit/.test(text)) return 'blue';
+  if (/yakun|tasdiq|qabul|complete|approve/.test(text)) return 'green';
+  if (/pdf|chop|print/.test(text)) return 'violet';
+  if (/excel|export|xlsx/.test(text)) return 'emerald';
+  if (/eslatma|ogoh/.test(text)) return 'amber';
+  if (/ko['‘’`]?r|view|ochish|vagon|konteyner|hudud/.test(text)) return 'sky';
+  return 'slate';
 }
 
 interface OrderSheetMenuProps {
@@ -101,7 +120,7 @@ export function OrderSheetMenu({ items, compact = false, matchPill = false, trig
                 role="menuitem"
                 disabled={item.disabled}
                 title={item.title}
-                className={`order-sheet-menu__item${
+                className={`order-sheet-menu__item order-sheet-menu__item--${resolveTone(item)}${
                   item.variant === 'danger' ? ' order-sheet-menu__item--danger' : ''
                 }`}
                 onClick={() => {
@@ -110,8 +129,10 @@ export function OrderSheetMenu({ items, compact = false, matchPill = false, trig
                   item.onClick();
                 }}
               >
-                <Icon className="w-4 h-4" strokeWidth={1.75} />
-                <span>{item.label}</span>
+                <span className="order-sheet-menu__icon" aria-hidden>
+                  <Icon className="w-4 h-4" strokeWidth={2} />
+                </span>
+                <span className="order-sheet-menu__label">{item.label}</span>
               </button>
             );
           })}

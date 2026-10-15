@@ -19461,3 +19461,60 @@ html.dark .order-progress-track,
 
 .order-complete-dialog { display: grid; gap: 12px; text-align: left; }
 .order-complete-dialog label { display: grid; gap: 6px; font-weight: 600; }
+
+/* ⋮ amallar menyusi: har bir amal o‘z rangli ikonkasi bilan */
+.order-sheet-menu__panel {
+  min-width: min(248px, calc(100vw - 2rem));
+  border-color: #e2e8f0;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.14), 0 2px 6px rgb(15 23 42 / 0.06);
+}
+.order-sheet-menu__item {
+  --menu-tone: #475569;
+  --menu-tone-bg: #f1f5f9;
+  --menu-tone-hover: #f8fafc;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 6px 10px 6px 6px;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.order-sheet-menu__item + .order-sheet-menu__item { margin-top: 2px; }
+.order-sheet-menu__icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--menu-tone-bg);
+  color: var(--menu-tone);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.order-sheet-menu__label { min-width: 0; }
+.order-sheet-menu__item:hover:not(:disabled) { background: var(--menu-tone-hover); color: var(--menu-tone); }
+.order-sheet-menu__item:hover:not(:disabled) .order-sheet-menu__icon { background: var(--menu-tone); color: #fff; }
+
+.order-sheet-menu__item--blue    { --menu-tone: #2563eb; --menu-tone-bg: #dbeafe; --menu-tone-hover: #eff6ff; }
+.order-sheet-menu__item--green   { --menu-tone: #16a34a; --menu-tone-bg: #dcfce7; --menu-tone-hover: #f0fdf4; }
+.order-sheet-menu__item--violet  { --menu-tone: #7c3aed; --menu-tone-bg: #ede9fe; --menu-tone-hover: #f5f3ff; }
+.order-sheet-menu__item--emerald { --menu-tone: #059669; --menu-tone-bg: #d1fae5; --menu-tone-hover: #ecfdf5; }
+.order-sheet-menu__item--amber   { --menu-tone: #d97706; --menu-tone-bg: #fef3c7; --menu-tone-hover: #fffbeb; }
+.order-sheet-menu__item--sky     { --menu-tone: #0284c7; --menu-tone-bg: #e0f2fe; --menu-tone-hover: #f0f9ff; }
+.order-sheet-menu__item--red     { --menu-tone: #dc2626; --menu-tone-bg: #fee2e2; --menu-tone-hover: #fef2f2; color: #b91c1c; }
+.order-sheet-menu__item--slate   { --menu-tone: #475569; --menu-tone-bg: #f1f5f9; --menu-tone-hover: #f8fafc; }
+
+.dark .order-sheet-menu__panel { border-color: #334155; background: #0f172a; box-shadow: 0 18px 40px rgb(0 0 0 / 0.5); }
+.dark .order-sheet-menu__item { color: #e2e8f0; }
+.dark .order-sheet-menu__item--blue    { --menu-tone: #60a5fa; --menu-tone-bg: rgb(59 130 246 / 0.16); --menu-tone-hover: rgb(59 130 246 / 0.1); }
+.dark .order-sheet-menu__item--green   { --menu-tone: #4ade80; --menu-tone-bg: rgb(34 197 94 / 0.16); --menu-tone-hover: rgb(34 197 94 / 0.1); }
+.dark .order-sheet-menu__item--violet  { --menu-tone: #a78bfa; --menu-tone-bg: rgb(139 92 246 / 0.18); --menu-tone-hover: rgb(139 92 246 / 0.1); }
+.dark .order-sheet-menu__item--emerald { --menu-tone: #34d399; --menu-tone-bg: rgb(16 185 129 / 0.16); --menu-tone-hover: rgb(16 185 129 / 0.1); }
+.dark .order-sheet-menu__item--amber   { --menu-tone: #fbbf24; --menu-tone-bg: rgb(245 158 11 / 0.16); --menu-tone-hover: rgb(245 158 11 / 0.1); }
+.dark .order-sheet-menu__item--sky     { --menu-tone: #38bdf8; --menu-tone-bg: rgb(14 165 233 / 0.16); --menu-tone-hover: rgb(14 165 233 / 0.1); }
+.dark .order-sheet-menu__item--red     { --menu-tone: #f87171; --menu-tone-bg: rgb(239 68 68 / 0.16); --menu-tone-hover: rgb(239 68 68 / 0.1); color: #fca5a5; }
+.dark .order-sheet-menu__item--slate   { --menu-tone: #cbd5e1; --menu-tone-bg: #1e293b; --menu-tone-hover: rgb(148 163 184 / 0.08); }
+.dark .order-sheet-menu__item:hover:not(:disabled) .order-sheet-menu__icon { color: #0f172a; }
