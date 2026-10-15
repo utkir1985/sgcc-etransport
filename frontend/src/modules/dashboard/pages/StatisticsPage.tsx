@@ -73,14 +73,17 @@ const SECTIONS: { id: Tab; label: string; icon: typeof Target }[] = [
   { id: 'staff', label: 'Xodimlar va xizmatlar', icon: Users },
 ];
 
-type Group = 'overview' | 'orders' | 'flow' | 'quality-group' | 'resources';
-/** 5 ta asosiy bo‘lim — har biri bir nechta qismni birlashtiradi */
+type Group = 'overview' | 'orders' | 'intake' | 'loading' | 'idle' | 'quality-group' | 'fleet' | 'staff';
+/** 8 ta asosiy bo‘lim — bog‘liq qismlar bitta bo‘limda */
 const TABS: { id: Group; label: string; icon: typeof Target; parts: Tab[] }[] = [
   { id: 'overview', label: 'Umumiy', icon: LayoutDashboard, parts: ['overview'] },
   { id: 'orders', label: 'Buyurtmalar', icon: Target, parts: ['plan', 'deadlines'] },
-  { id: 'flow', label: 'Vagon oqimi', icon: Activity, parts: ['intake', 'loading', 'idle'] },
-  { id: 'quality-group', label: 'Sifat', icon: Scale, parts: ['quality', 'returned', 'defects'] },
-  { id: 'resources', label: 'Park va xodimlar', icon: TrainFront, parts: ['fleet', 'staff'] },
+  { id: 'intake', label: 'Kiritish', icon: LogIn, parts: ['intake'] },
+  { id: 'loading', label: 'Yuklash va jo‘natish', icon: Activity, parts: ['loading'] },
+  { id: 'idle', label: 'Bekor turish', icon: Clock3, parts: ['idle'] },
+  { id: 'quality-group', label: 'Sifat va nosozliklar', icon: Scale, parts: ['quality', 'returned', 'defects'] },
+  { id: 'fleet', label: 'Vagon parki', icon: TrainFront, parts: ['fleet'] },
+  { id: 'staff', label: 'Xodimlar', icon: Users, parts: ['staff'] },
 ];
 
 const STAGES = [
