@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+// Vite ishchini .js fayl sifatida yig‘adi — server .mjs uchun noto‘g‘ri MIME qaytaradi
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
 
-GlobalWorkerOptions.workerSrc = workerUrl;
+let workerReady = false;
+function ensureWorker() {
+  if (workerReady) return;
+  GlobalWorkerOptions.workerPort = new PdfWorker();
+  workerReady = true;
+}
 
 /** Sahifa kengligi (CSS px) — yuk xati varag‘i bilan bir xil o‘lchamda */
 const PAGE_WIDTH = 1100;
@@ -24,6 +30,7 @@ export function PdfPagesViewer({ url, onError }: { url: string; onError?: (messa
     host.innerHTML = '';
     setLoading(true);
 
+    ensureWorker();
     const task = getDocument(url);
     task.promise
       .then(async pdf => {
