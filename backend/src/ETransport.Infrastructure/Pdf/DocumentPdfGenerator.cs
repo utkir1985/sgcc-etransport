@@ -195,8 +195,9 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
         var shiftLeaderName = !string.IsNullOrWhiteSpace(model.ShiftLeaderName) ? model.ShiftLeaderName : (model.InspectorName ?? "Xayitov Anvarjon Karimovich");
         if (shiftLeaderName == "—") shiftLeaderName = "Xayitov Anvarjon Karimovich";
         var shiftApproved = model.ShiftLeaderAt != null || !string.IsNullOrWhiteSpace(model.InspectorName) || model.PermitOk;
-        var dirQrPayload = $"Holat: Tasdiqlandi\nLavozim: Bosh direktor\nF.I.Sh.: Sh. Aslanov\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {FormatUzt(model.ShiftLeaderAt ?? model.PreparedAt)}\nHavola: {mainQrTarget}";
-        var shiftQrBytes = GenerateQrPngBytes(dirQrPayload);
+        // Tepa o'ng QR: Bosh direktor nomidan ishonchnoma asosida tasdiqlagan ICHDX smena boshlig'i (havolasiz)
+        var shiftQrPayload = $"Holat: {(shiftApproved ? "Tasdiqlandi" : "Kutilmoqda")}\nBo'lim/sex: ICHDX smena boshlig'i\nF.I.Sh.: {shiftLeaderName}\nIshonchnoma raqami: 01-5/25-33 12.08.2026\nSana/vaqt: {FormatUzt(model.ShiftLeaderAt ?? model.PreparedAt)}";
+        var shiftQrBytes = GenerateQrPngBytes(shiftQrPayload);
 
         decimal NormalizeKg(decimal w) => (w > 0 && w < 1000) ? Math.Round(w * 1000m, 0) : w;
 
@@ -331,10 +332,6 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
             {
                 var cleanDept = s.Department.Replace('‘', '\'').Replace('’', '\'').Replace('`', '\'');
                 var sQrPayload = $"Hujjat: Yuk xati № {model.RegistryNumber}\nBo'lim/sex: {cleanDept}\nHolat: {statusText}\nF.I.Sh.: {sName}\nSana/vaqt: {timeText}";
-                if (!string.IsNullOrWhiteSpace(mainQrTarget))
-                {
-                    sQrPayload += $"\nHavola: {mainQrTarget}";
-                }
                 sQrBytes = GenerateQrPngBytes(sQrPayload);
             }
 

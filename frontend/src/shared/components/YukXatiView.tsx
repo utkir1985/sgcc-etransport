@@ -60,9 +60,6 @@ function signerQrValue(model: YukXatiModel, signer: Signer) {
     `F.I.Sh.: ${cleanName}`,
     `Sana/vaqt: ${formatYukXatiDateTime(signer.at) || 'Tasdiqlanmagan'}`,
   ];
-  if (model.qrVerificationUrl) {
-    lines.push(`Havola: ${model.qrVerificationUrl}`);
-  }
   return lines.join('\n');
 }
 
@@ -208,7 +205,11 @@ export function YukXatiView({ model }: YukXatiViewProps) {
   const exitDisplay = model.exitToKengsoyDate && model.exitToKengsoyDate !== '—'
     ? `${model.exitToKengsoyDate} ${model.exitToKengsoyTime || ''}`.trim()
     : '—';
-  const shiftApproved = Boolean(model.railwayRepAt);
+  // Shtamp smena boshlig‘i tasdiqlagandan keyingina (eski hujjatlar — to‘liq kelishilganda)
+  const shiftApproved = Boolean(model.shiftSupervisorAt) || model.permitOk;
+  const shiftLeaderName = (model.shiftSupervisorName && personDisplayName(model.shiftSupervisorName) !== '—')
+    ? personDisplayName(model.shiftSupervisorName)
+    : 'Xayitov Anvarjon Karimovich';
 
   /* 6 ta imzo: Sex, Tarozi, Iqtisodchi, PDS smena boshlig'i, Ruxsatnoma, Qo'riqlash */
   const signers: Signer[] = [
@@ -310,12 +311,12 @@ export function YukXatiView({ model }: YukXatiViewProps) {
                 {shiftApproved ? (
                   <ApprovalQrCode
                     value={[
+                      // Bosh direktor nomidan ishonchnoma asosida — ICHDX smena boshlig‘i (havolasiz)
                       'Holat: Tasdiqlandi',
-                      'Lavozim: Bosh direktor',
-                      'F.I.Sh.: Sh. Aslanov',
+                      'Bo\'lim/sex: ICHDX smena boshlig\'i',
+                      `F.I.Sh.: ${shiftLeaderName}`,
                       'Ishonchnoma raqami: 01-5/25-33 12.08.2026',
                       `Sana/vaqt: ${formatYukXatiDateTime(model.shiftSupervisorAt || model.railwayRepAt || model.formedAt) || 'Tasdiqlanmagan'}`,
-                      ...(model.qrVerificationUrl ? [`Havola: ${model.qrVerificationUrl}`] : []),
                     ].join('\n')}
                     size={HEADER_QR_SIZE}
                     level="M"
