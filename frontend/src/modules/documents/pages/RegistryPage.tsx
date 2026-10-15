@@ -691,7 +691,9 @@ export default function RegistryPage() {
   const canDelete = can('documents.registry.delete') || isAdmin;
   const canApprovePermit = isPermitUser || isIchdxUser;
   const canApproveSecurity = isSecurityUser;
-  const canApproveShift = isIchdxUser;
+  // Yuk xatini faqat ICHDX smena boshlig‘i (dispetcher) tasdiqlaydi — uni tuzgan iqtisodchi emas
+  const isEconomistRole = /econom|iqtisod/i.test(role);
+  const canApproveShift = isAdmin || (!isEconomistRole && (role === 'DispatchSupervisor' || role === 'Dispatching' || can('documents.registry.approve-shift')));
   const canSendExternal = can('documents.registry.send-external') || isIchdxUser || isAdmin;
   const canHandover = can('documents.registry.handover') || isAdmin;
   const hub = useDocsHubQuery();

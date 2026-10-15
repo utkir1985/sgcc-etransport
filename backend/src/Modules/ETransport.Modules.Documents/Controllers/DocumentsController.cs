@@ -960,6 +960,10 @@ public class DocumentsController(
         if (IsWorkflowLocked(registry))
             return Conflict(new ApiResponse<LoadingRegistryDto>(false, null,
                 "Vagonlar chiqarilgan yoki ro‘yxatdan o‘tgan yuk xatini o‘zgartirib bo‘lmaydi."));
+        // Ketma-ketlik: ICHDX iqtisodchisi shakllantiradi → ICHDX smena boshlig‘i tasdiqlaydi → Ruxsatnoma byurosi
+        if (User.IsInRole(UserRoles.Economist) && !User.IsInRole(UserRoles.Admin))
+            return BadRequest(new ApiResponse<LoadingRegistryDto>(false, null,
+                "Yuk xatini ICHDX smena boshlig‘i tasdiqlaydi. Iqtisodchi o‘zi shakllantirgan yuk xatini tasdiqlay olmaydi."));
         var now = DateTime.UtcNow;
         var userName = CurrentUserName();
         registry.IsApprovedByShiftSupervisor = true;

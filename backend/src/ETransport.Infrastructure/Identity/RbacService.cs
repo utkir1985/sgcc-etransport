@@ -64,7 +64,7 @@ public class RbacService(AppDbContext db) : IRbacService
         ["documents.registry.create"] = [UserRoles.Admin, UserRoles.Economist],
         ["documents.registry.update"] = [UserRoles.Admin, UserRoles.Economist],
         ["documents.registry.delete"] = [UserRoles.Admin, UserRoles.Economist],
-        ["documents.registry.approve-shift"] = [UserRoles.Admin, UserRoles.Dispatching, UserRoles.DispatchSupervisor, UserRoles.Economist],
+        ["documents.registry.approve-shift"] = [UserRoles.Admin, UserRoles.Dispatching, UserRoles.DispatchSupervisor],
         ["documents.registry.approve-permit"] = [UserRoles.Admin, UserRoles.Permit, UserRoles.Economist, UserRoles.Dispatching],
         ["documents.registry.approve-security"] = [UserRoles.Admin, UserRoles.Security, UserRoles.Economist, UserRoles.Dispatching],
         ["documents.registry.approve-economist"] = [UserRoles.Admin, UserRoles.Economist],
