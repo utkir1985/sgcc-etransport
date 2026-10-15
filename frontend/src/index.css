@@ -20477,3 +20477,5 @@ html.dark .order-progress-track,
   .stats-period__presets { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid #eef2f7; }
   .stats-period__months { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+.stats-period__range span:first-child { width: 100%; margin-right: 0; }
+.stats-period__range input { flex: 1 1 0; min-width: 0; }

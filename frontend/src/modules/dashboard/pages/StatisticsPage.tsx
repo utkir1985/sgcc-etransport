@@ -280,7 +280,6 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(true);
   const [drill, setDrill] = useState<DrillState | null>(null);
   const [printAll, setPrintAll] = useState(false);
-  const [gran, setGran] = useState<'day' | 'week' | 'month'>('day');
   const [dailyMetric, setDailyMetric] = useState<'vagon' | 'tonna'>('vagon');
   const [stationMetric, setStationMetric] = useState<'tonna' | 'vagon'>('tonna');
 
@@ -338,15 +337,6 @@ export default function StatisticsPage() {
     for (const o of orders) for (const l of o.lines ?? []) if (l.contractor?.trim()) s.add(l.contractor.trim());
     return Array.from(s).map(v => ({ value: v, label: shortContractor(v) })).sort((a, b) => a.label.localeCompare(b.label));
   }, [orders]);
-  const stationOptions = useMemo<StatsOption[]>(() => {
-    const s = new Set<string>();
-    for (const o of orders) for (const l of o.lines ?? []) {
-      if (l.destinationStation?.trim()) s.add(l.destinationStation.trim());
-      for (const sh of l.stationShipments ?? []) if (sh.station?.trim()) s.add(sh.station.trim());
-    }
-    for (const r of registries) for (const w of r.wagonRoutes ?? []) if (w.destinationStation?.trim()) s.add(w.destinationStation.trim());
-    return Array.from(s).sort((a, b) => a.localeCompare(b)).map(v => ({ value: v, label: v }));
-  }, [orders, registries]);
 
   const now = new Date();
   const cy = now.getFullYear();
@@ -462,12 +452,19 @@ export default function StatisticsPage() {
     return Array.from(m.values()).map(r => ({ ...r, tonna: r1(r.tonna) })).sort((a, b) => (stationMetric === 'tonna' ? b.tonna - a.tonna : b.vagon - a.vagon)).slice(0, 12);
   }, [cur, stationMetric]);
 
+  // Grafik oralig‘i Davr filtridan olinadi: tanlanmagan bo‘lsa — oxirgi 12 oy
+  const chartEnd = range.to && range.to < todayIso() ? range.to : todayIso();
+  const chartStart = (() => {
+    const start = range.from || shiftDays(chartEnd, -364);
+    return daysBetween(start, chartEnd) > 1100 ? shiftDays(chartEnd, -1099) : start;
+  })();
+  const spanDays = daysBetween(chartStart, chartEnd);
+  // Bo‘lak avtomatik: 45 kungacha — kun, 200 kungacha — hafta, undan ko‘p — oy
+  const gran: 'day' | 'week' | 'month' = spanDays <= 45 ? 'day' : spanDays <= 200 ? 'week' : 'month';
+
   const daily = useMemo(() => {
-    const end = range.to && range.to < todayIso() ? range.to : todayIso();
-    let start = range.from || shiftDays(end, -29);
-    if (daysBetween(start, end) > 120) start = shiftDays(end, -119);
     const rows = new Map<string, { day: string; label: string; kirdi: number; yuklandi: number; chiqdi: number; chiqdiT: number; oldin?: number }>();
-    for (let d = start; d <= end; d = shiftDays(d, 1)) rows.set(d, { day: d, label: `${d.slice(8, 10)}.${d.slice(5, 7)}`, kirdi: 0, yuklandi: 0, chiqdi: 0, chiqdiT: 0 });
+    for (let d = chartStart; d <= chartEnd; d = shiftDays(d, 1)) rows.set(d, { day: d, label: `${d.slice(8, 10)}.${d.slice(5, 7)}`, kirdi: 0, yuklandi: 0, chiqdi: 0, chiqdiT: 0 });
     cur.entries.forEach(e => { const r = rows.get(e.day); if (r) r.kirdi += e.n; });
     cur.loads.forEach(e => { const r = rows.get(e.day); if (r) r.yuklandi += e.n; });
     cur.exits.forEach(e => { const r = rows.get(e.day); if (r) { r.chiqdi += 1; r.chiqdiT += e.tons; } });
@@ -482,7 +479,7 @@ export default function StatisticsPage() {
       });
     }
     return out;
-  }, [cur, prev, cmpRange?.from, range.from, range.to, compare, dailyMetric]);
+  }, [cur, prev, cmpRange?.from, range.from, chartStart, chartEnd, compare, dailyMetric]);
 
   // Kun → hafta / oy bo‘yicha guruhlash
   const series = useMemo(() => {
@@ -943,11 +940,6 @@ export default function StatisticsPage() {
       hint={`Kirdi: ${dailyTotals.k} · Yuklandi: ${dailyTotals.y} · Chiqdi: ${dailyTotals.c} vagon (${formatTons(r1(dailyTotals.t))} t) · ${daily.length} kun · nuqta bosilsa — chiqqan vagonlar${filters.contractors.length || filters.stations.length ? ' · kontragent/stansiya filtri faqat chiqishga qo‘llanadi' : ''}`}
     >
       <div className="stat-toggles">
-        <div className="stat-seg" role="group" aria-label="Davr bo‘lagi">
-          {([['day', 'Kun'], ['week', 'Hafta'], ['month', 'Oy']] as const).map(([id, l]) => (
-            <button key={id} type="button" className={gran === id ? 'is-active' : ''} onClick={() => setGran(id)}>{l}</button>
-          ))}
-        </div>
         <div className="stat-seg" role="group" aria-label="O‘lchov">
           {([['vagon', 'Vagon'], ['tonna', 'Tonna']] as const).map(([id, l]) => (
             <button key={id} type="button" className={dailyMetric === id ? 'is-active' : ''} onClick={() => setDailyMetric(id)}>{l}</button>
@@ -969,15 +961,11 @@ export default function StatisticsPage() {
           <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={dailyMetric === 'tonna'} width={44} tickFormatter={shortNum} />
           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => (dailyMetric === 'tonna' ? tons(v) : `${v} vagon`)} />
           <Legend wrapperStyle={{ fontSize: 13 }} />
-          {dailyMetric === 'vagon' ? (
-            <>
-              <Line type="monotone" dataKey="kirdi" name="Kirdi" stroke="#f59e0b" strokeWidth={2.2} dot={false} />
-              <Line type="monotone" dataKey="yuklandi" name="Yuklandi" stroke="#3b82f6" strokeWidth={2.2} dot={false} />
-              <Line type="monotone" dataKey="chiqdi" name="Chiqdi" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} />
-            </>
-          ) : (
-            <Line type="monotone" dataKey="chiqdiT" name="Jo‘natildi (t)" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} />
-          )}
+          {/* Recharts Fragment ichidagi chiziqlarni ko‘rmaydi — har biri alohida shart bilan */}
+          {dailyMetric === 'vagon' ? <Line type="monotone" dataKey="kirdi" name="Kirdi" stroke="#f59e0b" strokeWidth={2.2} dot={false} /> : null}
+          {dailyMetric === 'vagon' ? <Line type="monotone" dataKey="yuklandi" name="Yuklandi" stroke="#3b82f6" strokeWidth={2.2} dot={false} /> : null}
+          {dailyMetric === 'vagon' ? <Line type="monotone" dataKey="chiqdi" name="Chiqdi" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} /> : null}
+          {dailyMetric === 'tonna' ? <Line type="monotone" dataKey="chiqdiT" name="Jo‘natildi (t)" stroke="#10b981" strokeWidth={2.4} dot={gran !== 'day'} /> : null}
           {prev ? <Line type="monotone" dataKey="oldin" name="Solishtirma davr" stroke="#10b981" strokeOpacity={0.45} strokeDasharray="5 4" strokeWidth={2} dot={false} /> : null}
         </LineChart>
       </ResponsiveContainer>
@@ -1110,7 +1098,6 @@ export default function StatisticsPage() {
             />
             <StatsMultiSelect label="Mahsulot" options={productOptions} value={filters.products} onChange={v => setParam({ p: v })} />
             <StatsMultiSelect label="Kontragent" options={contractorOptions} value={filters.contractors} onChange={v => setParam({ c: v })} />
-            <StatsMultiSelect label="Stansiya" options={stationOptions} value={filters.stations} onChange={v => setParam({ s: v })} />
             <StatsMultiSelect
               label="Transport"
               single
