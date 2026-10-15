@@ -21,6 +21,8 @@ import { OrderSheetMenu, type OrderSheetMenuItem } from '../../../shared/compone
 import { TablePagination } from '../../../shared/components/TablePagination';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { DocumentChipButton } from '../../../shared/components/DocumentPackChip';
+import { DocumentPrintButton } from '../../../shared/components/DocumentPrintButton';
+import { PdfPagesViewer, printPdfUrl } from '../../../shared/components/PdfPagesViewer';
 import type { NormativeDocument, CreateNormativeDocPayload } from '../../../shared/types';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import {
@@ -83,6 +85,10 @@ function getCategoryInfo(catKey?: string) {
     color: 'slate',
     badgeClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700',
   };
+}
+
+function isPdfPreview(p: { mime: string; doc: NormativeDocument }) {
+  return p.mime.includes('pdf') || /\.pdf$/i.test(p.doc.FileName || '');
 }
 
 const MISSING_FILE = 'Hujjat fayli tizimda topilmadi. Faylni qayta yuklang.';
@@ -813,7 +819,9 @@ export default function NormativeDocsPage() {
               ) : null}
             </div>
             <div className="yx-preview-bar__actions">
-              {preview ? (
+              {preview && isPdfPreview(preview) ? (
+                <DocumentPrintButton ready onPrint={() => printPdfUrl(preview.url)} />
+              ) : preview ? (
                 <button
                   type="button"
                   className="btn-primary !px-3 !py-1.5 !text-xs inline-flex items-center gap-1.5"
@@ -843,8 +851,8 @@ export default function NormativeDocsPage() {
               <div className="ndocs-preview-msg ndocs-preview-msg--error">{previewError}</div>
             ) : preview && preview.mime.startsWith('image/') ? (
               <img src={preview.url} alt={preview.doc.Title} className="ndocs-preview-image" />
-            ) : preview && (preview.mime.includes('pdf') || /\.pdf$/i.test(preview.doc.FileName || '')) ? (
-              <iframe src={preview.url} title={preview.doc.Title} className="ndocs-preview-frame" />
+            ) : preview && isPdfPreview(preview) ? (
+              <PdfPagesViewer url={preview.url} onError={setPreviewError} />
             ) : preview ? (
               <div className="ndocs-preview-msg">
                 Bu turdagi faylni ({preview.doc.FileName}) brauzer ichida ko‘rsatib bo‘lmaydi.

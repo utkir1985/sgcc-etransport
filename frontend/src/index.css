@@ -19953,3 +19953,10 @@ html.dark .order-progress-track,
 }
 .ndocs-preview-msg--error { color: #b91c1c; }
 .dark .ndocs-preview-msg { background: #0f172a; color: #e2e8f0; }
+
+/* PDF sahifalari — yuk xati varag‘i kabi oq A4 sahifalar */
+.pdf-sheets { display: flex; width: 100%; flex-direction: column; align-items: center; }
+.pdf-sheets__pages { display: flex; width: min(1100px, 100%); flex-direction: column; align-items: center; gap: 24px; }
+.pdf-sheet { max-width: 100%; height: auto !important; background: #fff; box-shadow: 0 10px 30px rgb(15 23 42 / 0.25); }
+.pdf-sheets__loading { margin: 40px auto; border-radius: 12px; background: #fff; padding: 14px 22px; color: #334155; font-size: 14px; }
+.ndocs-preview-scroll { align-items: flex-start; }
