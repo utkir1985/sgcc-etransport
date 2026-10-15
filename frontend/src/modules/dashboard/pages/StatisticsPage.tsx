@@ -1545,6 +1545,44 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
+            {show('intake') ? (
+              <>
+                {sectionTitle('intake')}
+                <p className="stat-note">
+                  {intake.parties} ta partiya · {intake.wagons} vagon · kelishdan tara tortishgacha odatiy vaqt (mediana): <b>{intake.median} soat</b>
+                </p>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Kiritish bosqichlari vaqti" hint="Mediana, soat · har bir bosqich oldingisidan keyin">
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={intake.steps} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid stroke={grid} vertical={false} />
+                        <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
+                        <YAxis label={yUnit('soat')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { soni?: number } }) => [`${v} soat (${it?.payload?.soni ?? 0} partiya)`, 'Mediana']} />
+                        <Bar dataKey="soat" name="Mediana" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={56} cursor="pointer"
+                          onClick={() => openIntakeDrill()} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                  <ChartCard title="Kunlar bo‘yicha kirgan vagonlar" hint="Majmua va tashqi (O‘TY) vagonlari">
+                    {intake.daily.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={intake.daily} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid stroke={grid} vertical={false} />
+                          <XAxis dataKey="label" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={14} />
+                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Legend wrapperStyle={{ fontSize: 13 }} />
+                          <Bar dataKey="majmua" name="Majmua" stackId="i" fill="#3b82f6" />
+                          <Bar dataKey="tashqi" name="Tashqi (O‘TY)" stackId="i" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+              </>
+            ) : null}
+
             {show('loading') ? (
               <>
                 {sectionTitle('loading')}
@@ -1706,6 +1744,59 @@ export default function StatisticsPage() {
               </>
             ) : null}
 
+            {show('returned') ? (
+              <>
+                {sectionTitle('returned')}
+                <p className="stat-note">
+                  Qaytarilgan: <b>{returned.items.length}</b> vagon · kirgan vagonlarning <b>{returned.pct}%</b> · bo‘lak yoki ustun bosilsa — vagonlar ro‘yxati
+                </p>
+                <div className="stat-grid stat-grid--3">
+                  <ChartCard title="Qaytarish sababi">
+                    {returned.byReason.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <PieChart>
+                          <Pie data={returned.byReason} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer"
+                            onClick={d => { const n = payloadOf(d).name; openReturnedDrill(`${n} — qaytarilgan vagonlar`, x => x.reason === n); }}>
+                            {returned.byReason.map((_, i) => <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'][i % 4]} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Mahsulot bo‘yicha">
+                    {returned.byProduct.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={returned.byProduct} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={150} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Bar dataKey="soni" name="Vagon" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={22} cursor="pointer"
+                            onClick={d => { const n = payloadOf(d).name; openReturnedDrill(`${n} — qaytarilgan vagonlar`, x => prodLabel(x.a.productType) === n); }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Oylar bo‘yicha">
+                    {returned.byMonth.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={returned.byMonth} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid stroke={grid} vertical={false} />
+                          <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Bar dataKey="soni" name="Vagon" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); openReturnedDrill(`${r.label} — qaytarilgan vagonlar`, x => x.day.slice(0, 7) === r.k); }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+              </>
+            ) : null}
+
             {show('defects') ? (
               <>
                 {sectionTitle('defects')}
@@ -1812,97 +1903,6 @@ export default function StatisticsPage() {
                     </ResponsiveContainer>
                   )}
                 </ChartCard>
-              </>
-            ) : null}
-
-            {show('intake') ? (
-              <>
-                {sectionTitle('intake')}
-                <p className="stat-note">
-                  {intake.parties} ta partiya · {intake.wagons} vagon · kelishdan tara tortishgacha odatiy vaqt (mediana): <b>{intake.median} soat</b>
-                </p>
-                <div className="stat-grid stat-grid--1-1">
-                  <ChartCard title="Kiritish bosqichlari vaqti" hint="Mediana, soat · har bir bosqich oldingisidan keyin">
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={intake.steps} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid stroke={grid} vertical={false} />
-                        <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
-                        <YAxis label={yUnit('soat')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
-                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { soni?: number } }) => [`${v} soat (${it?.payload?.soni ?? 0} partiya)`, 'Mediana']} />
-                        <Bar dataKey="soat" name="Mediana" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={56} cursor="pointer"
-                          onClick={() => openIntakeDrill()} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartCard>
-                  <ChartCard title="Kunlar bo‘yicha kirgan vagonlar" hint="Majmua va tashqi (O‘TY) vagonlari">
-                    {intake.daily.length === 0 ? empty() : (
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={intake.daily} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
-                          <CartesianGrid stroke={grid} vertical={false} />
-                          <XAxis dataKey="label" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={14} />
-                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
-                          <Legend wrapperStyle={{ fontSize: 13 }} />
-                          <Bar dataKey="majmua" name="Majmua" stackId="i" fill="#3b82f6" />
-                          <Bar dataKey="tashqi" name="Tashqi (O‘TY)" stackId="i" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                </div>
-              </>
-            ) : null}
-
-            {show('returned') ? (
-              <>
-                {sectionTitle('returned')}
-                <p className="stat-note">
-                  Qaytarilgan: <b>{returned.items.length}</b> vagon · kirgan vagonlarning <b>{returned.pct}%</b> · bo‘lak yoki ustun bosilsa — vagonlar ro‘yxati
-                </p>
-                <div className="stat-grid stat-grid--3">
-                  <ChartCard title="Qaytarish sababi">
-                    {returned.byReason.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
-                      <ResponsiveContainer width="100%" height={260}>
-                        <PieChart>
-                          <Pie data={returned.byReason} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer"
-                            onClick={d => { const n = payloadOf(d).name; openReturnedDrill(`${n} — qaytarilgan vagonlar`, x => x.reason === n); }}>
-                            {returned.byReason.map((_, i) => <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'][i % 4]} />)}
-                          </Pie>
-                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
-                          <Legend wrapperStyle={{ fontSize: 12 }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                  <ChartCard title="Mahsulot bo‘yicha">
-                    {returned.byProduct.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
-                      <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={returned.byProduct} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
-                          <CartesianGrid stroke={grid} horizontal={false} />
-                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={150} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
-                          <Bar dataKey="soni" name="Vagon" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={22} cursor="pointer"
-                            onClick={d => { const n = payloadOf(d).name; openReturnedDrill(`${n} — qaytarilgan vagonlar`, x => prodLabel(x.a.productType) === n); }} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                  <ChartCard title="Oylar bo‘yicha">
-                    {returned.byMonth.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
-                      <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={returned.byMonth} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
-                          <CartesianGrid stroke={grid} vertical={false} />
-                          <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
-                          <Bar dataKey="soni" name="Vagon" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer"
-                            onClick={d => { const r = payloadOf(d); openReturnedDrill(`${r.label} — qaytarilgan vagonlar`, x => x.day.slice(0, 7) === r.k); }} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                </div>
               </>
             ) : null}
 
