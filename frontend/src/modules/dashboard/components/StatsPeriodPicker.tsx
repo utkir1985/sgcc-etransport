@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { MONTH_NAMES_UZ } from '../../../shared/utils/dates';
+import { DatePicker } from '../../../shared/components/DatePicker';
 
 export interface PeriodPreset {
   id: string;
@@ -60,6 +61,8 @@ export function StatsPeriodPicker({ from, to, presets, years, currentYear, curre
     const onDown = (e: MouseEvent) => {
       const t = e.target as Node;
       if (triggerRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      // Ichki kalendar (DatePicker) menyusi alohida portalda — uni bosish oynani yopmasin
+      if ((t as HTMLElement).closest?.('.date-picker-menu')) return;
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
@@ -155,9 +158,13 @@ export function StatsPeriodPicker({ from, to, presets, years, currentYear, curre
             </p>
             <div className="stats-period__range">
               <span>Boshqa oraliq</span>
-              <input type="date" value={from} max={to || undefined} onChange={e => onChange(e.target.value, to)} aria-label="Boshlanish" />
+              <div className="stats-period__date">
+                <DatePicker value={from} onChange={v => onChange(v, to && v && v > to ? v : to)} placeholder="Boshlanish" />
+              </div>
               <span className="stats-period__dash">—</span>
-              <input type="date" value={to} min={from || undefined} onChange={e => onChange(from, e.target.value)} aria-label="Tugash" />
+              <div className="stats-period__date">
+                <DatePicker value={to} onChange={v => onChange(from && v && v < from ? v : from, v)} placeholder="Tugash" />
+              </div>
             </div>
             <div className="stats-period__foot">
               <button type="button" onClick={() => { onChange('', ''); setOpen(false); }}>Tozalash</button>
