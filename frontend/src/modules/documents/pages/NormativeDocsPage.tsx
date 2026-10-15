@@ -10,7 +10,11 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  RefreshCw,
+  LayoutGrid,
+  List,
+  Hash,
+  CalendarDays,
+  UserRound,
     FileCheck,
   Building2,
   TrainFront,
@@ -115,6 +119,13 @@ export default function NormativeDocsPage() {
   // Filters
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
+    try { return localStorage.getItem('ndocs-view') === 'grid' ? 'grid' : 'list'; } catch { return 'list'; }
+  });
+  const changeViewMode = (mode: 'list' | 'grid') => {
+    setViewMode(mode);
+    try { localStorage.setItem('ndocs-view', mode); } catch { /* ixtiyoriy */ }
+  };
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -403,14 +414,15 @@ export default function NormativeDocsPage() {
     { key: 'delete', label: 'O‘chirish', icon: Trash2, variant: 'danger', onClick: () => setDocToDelete(doc) },
   ];
 
-  const renderCategoryChip = (doc: NormativeDocument) => {
-    const cat = getCategoryInfo(doc.Category);
-    const CatIcon = cat.icon;
+  const renderDocMeta = (doc: NormativeDocument) => {
+    const num = doc.DocumentNumber?.trim().replace(/^№\s*/, '');
     return (
-      <span className={`ndocs-chip ndocs-chip--${cat.key}`}>
-        <CatIcon className="ndocs-chip__icon" />
-        {cat.label}
-      </span>
+      <>
+        <span className="ndocs-meta__item"><Hash className="w-3.5 h-3.5" />{num && num.toLowerCase() !== 'raqamsiz' ? num : 'Raqamsiz'}</span>
+        <span className="ndocs-meta__item"><CalendarDays className="w-3.5 h-3.5" />{formatDate(doc.DocumentDate)}</span>
+        <span className="ndocs-meta__item"><FileText className="w-3.5 h-3.5" />{formatBytes(doc.FileSize)}</span>
+        <span className="ndocs-meta__item ndocs-meta__item--user"><UserRound className="w-3.5 h-3.5" />{doc.UploadedBy || 'Admin'}</span>
+      </>
     );
   };
 
@@ -451,16 +463,30 @@ export default function NormativeDocsPage() {
           </div>
           <div className="marketing-orders-toolbar__right">
             <div className="flex flex-nowrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => fetchDocs()}
-                disabled={loading}
-                className="btn-secondary ndocs-icon-btn"
-                title="Yangilash"
-                aria-label="Yangilash"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="order-kind-toggle ndocs-view-toggle" role="radiogroup" aria-label="Ko‘rinish">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={viewMode === 'list'}
+                  className={`order-kind-toggle__btn${viewMode === 'list' ? ' is-active' : ''}`}
+                  onClick={() => changeViewMode('list')}
+                  title="Ro‘yxat"
+                >
+                  <List className="order-kind-toggle__icon" aria-hidden />
+                  <span className="ndocs-view-toggle__label">Ro‘yxat</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={viewMode === 'grid'}
+                  className={`order-kind-toggle__btn${viewMode === 'grid' ? ' is-active' : ''}`}
+                  onClick={() => changeViewMode('grid')}
+                  title="Kartochka"
+                >
+                  <LayoutGrid className="order-kind-toggle__icon" aria-hidden />
+                  <span className="ndocs-view-toggle__label">Kartochka</span>
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(true)}
@@ -496,82 +522,61 @@ export default function NormativeDocsPage() {
           </div>
         ) : (
           <>
-            <div className="thub-table-wrap reestr-table-wrap hidden md:block">
-              <table className="thub-table reestr-table ndocs-table w-full">
-                <colgroup>
-                  <col style={{ width: '4%' }} />
-                  <col style={{ width: '38%' }} />
-                  <col style={{ width: '17%' }} />
-                  <col style={{ width: '11%' }} />
-                  <col style={{ width: '10%' }} />
-                  <col style={{ width: '7%' }} />
-                  <col style={{ width: '9%' }} />
-                  <col style={{ width: '4%' }} />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th className="text-center">№</th>
-                    <th>Hujjat nomi</th>
-                    <th>Turi</th>
-                    <th className="text-center">Hujjat raqami</th>
-                    <th className="text-center">Sanasi</th>
-                    <th className="text-center">Hajmi</th>
-                    <th>Yukladi</th>
-                    <th aria-label="Amallar" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageDocuments.map((doc, idx) => (
-                    <tr key={doc.Id}>
-                      <td className="text-center tabular-nums text-slate-500">{(currentPage - 1) * pageSize + idx + 1}</td>
-                      <td>
-                        <button type="button" className="ndocs-title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
-                          <span className="ndocs-title__icon"><FileText className="w-4 h-4" /></span>
-                          <span className="min-w-0">
-                            <strong>{doc.Title}</strong>
-                            {doc.Description ? <small>{doc.Description}</small> : null}
-                          </span>
+            {viewMode === 'list' ? (
+              <div className="ndocs-list" role="list">
+                {pageDocuments.map(doc => {
+                  const cat = getCategoryInfo(doc.Category);
+                  const CatIcon = cat.icon;
+                  return (
+                    <article key={doc.Id} className={`ndocs-row ndocs-tone--${cat.key}`} role="listitem">
+                      <span className="ndocs-row__icon"><CatIcon className="w-5 h-5" /></span>
+                      <div className="ndocs-row__body">
+                        <button type="button" className="ndocs-row__title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
+                          {doc.Title}
                         </button>
-                      </td>
-                      <td>{renderCategoryChip(doc)}</td>
-                      <td className="text-center">
-                        {doc.DocumentNumber?.trim()
-                          ? <span className="ndocs-number">{doc.DocumentNumber}</span>
-                          : <span className="text-slate-400">—</span>}
-                      </td>
-                      <td className="text-center tabular-nums">{formatDate(doc.DocumentDate)}</td>
-                      <td className="text-center tabular-nums text-slate-500">{formatBytes(doc.FileSize)}</td>
-                      <td className="truncate text-slate-500" title={doc.UploadedBy || 'Admin'}>{doc.UploadedBy || 'Admin'}</td>
-                      <td className="text-center">
+                        {doc.Description ? <p className="ndocs-row__desc">{doc.Description}</p> : null}
+                        <div className="ndocs-meta">
+                          <span className="ndocs-meta__cat">{cat.label}</span>
+                          {renderDocMeta(doc)}
+                        </div>
+                      </div>
+                      <div className="ndocs-row__actions">
+                        <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
+                          <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
+                        </button>
                         <OrderSheetMenu items={docMenuItems(doc)} compact />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="ndocs-mobile-list md:hidden" role="list">
-              {pageDocuments.map(doc => (
-                <div key={doc.Id} className="ndocs-mobile-card" role="listitem">
-                  <div className="ndocs-mobile-card__head">
-                    {renderCategoryChip(doc)}
-                    <OrderSheetMenu items={docMenuItems(doc)} compact />
-                  </div>
-                  <button type="button" className="ndocs-title" onClick={() => { void handleOpenPreview(doc); }}>
-                    <span className="min-w-0">
-                      <strong>{doc.Title}</strong>
-                      {doc.Description ? <small>{doc.Description}</small> : null}
-                    </span>
-                  </button>
-                  <div className="ndocs-mobile-card__meta">
-                    <span>{doc.DocumentNumber?.trim() ? `№ ${doc.DocumentNumber.trim().replace(/^№\s*/, '')}` : 'Raqamsiz'}</span>
-                    <span>{formatDate(doc.DocumentDate)}</span>
-                    <span>{formatBytes(doc.FileSize)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="ndocs-grid" role="list">
+                {pageDocuments.map(doc => {
+                  const cat = getCategoryInfo(doc.Category);
+                  const CatIcon = cat.icon;
+                  return (
+                    <article key={doc.Id} className={`ndocs-card ndocs-tone--${cat.key}`} role="listitem">
+                      <div className="ndocs-card__head">
+                        <span className="ndocs-row__icon"><CatIcon className="w-5 h-5" /></span>
+                        <span className="ndocs-meta__cat">{cat.label}</span>
+                        <OrderSheetMenu items={docMenuItems(doc)} compact />
+                      </div>
+                      <button type="button" className="ndocs-card__title" onClick={() => { void handleOpenPreview(doc); }} title={doc.Title}>
+                        {doc.Title}
+                      </button>
+                      {doc.Description ? <p className="ndocs-card__desc">{doc.Description}</p> : <p className="ndocs-card__desc" />}
+                      <div className="ndocs-card__foot">
+                        <div className="ndocs-meta">{renderDocMeta(doc)}</div>
+                        <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
+                          <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
 
             <TablePagination
               total={filteredDocuments.length}
