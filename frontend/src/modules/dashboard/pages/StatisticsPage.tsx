@@ -114,6 +114,25 @@ const hoursBetween = (a?: string | null, b?: string | null) => {
   return Number.isFinite(h) && h >= 0 ? h : null;
 };
 
+type FleetHealth = 'yaroqsiz' | 'overdue' | 'soon' | 'ok' | 'nodate';
+/** Texnik holat va depo ta’miri — bitta ko‘rsatkich: yaroqsiz → ta’mir muddati o‘tgan → 30 kun ichida → yaroqli */
+function fleetHealth(w: CatalogFleetWagon): FleetHealth {
+  const k = (w.serviceability || '').trim().toLowerCase();
+  const d = w.daysUntilNextDepotRepair;
+  if (k === 'yaroqsiz') return 'yaroqsiz';
+  if (typeof d === 'number' && d < 0) return 'overdue';
+  if ((typeof d === 'number' && d <= 30) || k === 'eslatma') return 'soon';
+  if (typeof d !== 'number') return 'nodate';
+  return 'ok';
+}
+const FLEET_HEALTH: { id: FleetHealth; name: string; color: string }[] = [
+  { id: 'ok', name: 'Yaroqli', color: '#10b981' },
+  { id: 'soon', name: 'Ta’mir 30 kun ichida', color: '#f59e0b' },
+  { id: 'overdue', name: 'Ta’mir muddati o‘tgan', color: '#ef4444' },
+  { id: 'yaroqsiz', name: 'Yaroqsiz', color: '#7f1d1d' },
+  { id: 'nodate', name: 'Ta’mir sanasi kiritilmagan', color: '#cbd5e1' },
+];
+
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const s = [...values].sort((a, b) => a - b);
@@ -1074,7 +1093,9 @@ export default function StatisticsPage() {
     const defectsTop = Array.from(visits, ([name, v]) => ({ name, soni: v.filter(x => x.defect && inDay(localDateKey(x.at), range)).length }))
       .filter(x => x.soni > 0).sort((a, b) => b.soni - a.soni).slice(0, 12);
 
+    const health = FLEET_HEALTH.map(h => ({ ...h, soni: fleetCatalog.filter(w => fleetHealth(w) === h.id).length })).filter(h => h.soni > 0);
     return {
+      health,
       catalogCount: fleetCatalog.length,
       cond: [
         { id: 'yaroqli', name: 'Yaroqli', soni: condCount.yaroqli, color: '#10b981' },
@@ -2058,34 +2079,18 @@ export default function StatisticsPage() {
                 {fleet2.catalogCount === 0 ? (
                   <p className="stat-note">Vagonlar ma’lumotnomasi bo‘sh yoki ochib bo‘lmadi — texnik holat va ta’mir ko‘rsatkichlari ma’lumotnoma to‘ldirilgach chiqadi.</p>
                 ) : null}
-                <div className="stat-grid stat-grid--3">
-                  <ChartCard title="Texnik holati" hint={`Ma’lumotnomada ${fleet2.catalogCount} ta majmua vagoni · bo‘lak bosilsa — ro‘yxat`}>
-                    {fleet2.cond.length === 0 ? empty('Ma’lumotnoma bo‘sh') : (
-                      <ResponsiveContainer width="100%" height={250}>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Texnik holat va ta’mir" hint={`Ma’lumotnomada ${fleet2.catalogCount} ta majmua vagoni · depo ta’mirigacha qolgan kun hisobga olingan · bo‘lak bosilsa — ro‘yxat`}>
+                    {fleet2.health.length === 0 ? empty('Ma’lumotnoma bo‘sh') : (
+                      <ResponsiveContainer width="100%" height={260}>
                         <PieChart>
-                          <Pie data={fleet2.cond} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer"
-                            onClick={d => { const r = payloadOf(d); openFleetCatalogDrill(`${r.name} vagonlar`, w => { const k = (w.serviceability || '').toLowerCase(); const dd = w.daysUntilNextDepotRepair; const c = k === 'yaroqli' || k === 'eslatma' || k === 'yaroqsiz' ? k : typeof dd === 'number' && dd < 0 ? 'yaroqsiz' : typeof dd === 'number' && dd <= 30 ? 'eslatma' : 'yaroqli'; return c === r.id; }); }}>
-                            {fleet2.cond.map(c => <Cell key={c.id} fill={c.color} />)}
+                          <Pie data={fleet2.health} dataKey="soni" nameKey="name" innerRadius={56} outerRadius={92} paddingAngle={2} stroke="none" cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); openFleetCatalogDrill(`${r.name} — vagonlar`, w => fleetHealth(w) === r.id); }}>
+                            {fleet2.health.map(h => <Cell key={h.id} fill={h.color} />)}
                           </Pie>
                           <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                         </PieChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartCard>
-                  <ChartCard title="Depo ta’miri muddati" hint={`Keyingi ta’mirgacha qolgan kun${fleet2.repairUnknown ? ` · ${fleet2.repairUnknown} ta vagonda sana kiritilmagan` : ''}`}>
-                    {fleet2.repair.every(r => r.soni === 0) ? empty('Ta’mir sanalari kiritilmagan') : (
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={fleet2.repair} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
-                          <CartesianGrid stroke={grid} vertical={false} />
-                          <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
-                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
-                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
-                          <Bar dataKey="soni" name="Vagon" radius={[6, 6, 0, 0]} maxBarSize={48} cursor="pointer"
-                            onClick={d => { const r = payloadOf(d); const test: Record<string, (x: number) => boolean> = { over: x => x < 0, d30: x => x >= 0 && x <= 30, d60: x => x > 30 && x <= 60, ok: x => x > 60 }; openFleetCatalogDrill(`Depo ta’miri: ${r.name}`, w => typeof w.daysUntilNextDepotRepair === 'number' && test[r.id](w.daysUntilNextDepotRepair)); }}>
-                            {fleet2.repair.map(r => <Cell key={r.id} fill={r.color} />)}
-                          </Bar>
-                        </BarChart>
                       </ResponsiveContainer>
                     )}
                   </ChartCard>
