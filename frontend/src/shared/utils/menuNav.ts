@@ -147,7 +147,23 @@ function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
 
 /** Sfera Balance — alohida tizim, E-Transport ichida faqat panel sifatida ochiladi. */
 function buildSferaItem(): MenuItem {
-  return item('sfera', 'Sfera Balance', '/sfera', 'Gauge');
+  // path '' bo‘lgan bola — guruh sarlavhasi (havola emas)
+  return {
+    ...item('sfera', 'Sfera Balance', '/sfera?p=lpg', 'Gauge'),
+    children: [
+      item('sfera-cap-lpg', 'Suyultirilgan gaz', '', 'Flame'),
+      item('sfera-lpg', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=lpg', 'Activity'),
+      item('sfera-lpg-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=lpg-daily', 'CalendarRange'),
+      item('sfera-lpg-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=lpg-monthly', 'CalendarRange'),
+      item('sfera-lpg-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=lpg-yearly', 'CalendarDays'),
+      item('sfera-cap-cond', 'Gaz kondensati', '', 'Droplets'),
+      item('sfera-cond', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=cond', 'Activity'),
+      item('sfera-cond-hourly', 'Soatlik ko‘rsatkichlar', '/sfera?p=cond-hourly', 'Clock'),
+      item('sfera-cond-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=cond-daily', 'CalendarRange'),
+      item('sfera-cond-monthly', 'Oylik ko‘rsatkichlar', '/sfera?p=cond-monthly', 'CalendarRange'),
+      item('sfera-cond-yearly', 'Yillik ko‘rsatkichlar', '/sfera?p=cond-yearly', 'CalendarDays'),
+    ],
+  };
 }
 
 function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
@@ -334,7 +350,15 @@ export function menuHasKey(items: MenuItem[], key: string): boolean {
 }
 
 export function menuItemMatches(entry: MenuItem, pathname: string, search = ''): boolean {
+  if (!entry.path) return false; // guruh sarlavhasi
   const [path, query] = entry.path.split('?');
+  // Sfera: p bo‘lmasa — suyultirilgan gaz real vaqt sahifasi
+  if (path === '/sfera') {
+    if (pathname !== '/sfera') return false;
+    const want = new URLSearchParams(query ?? '').get('p') ?? 'lpg';
+    const have = new URLSearchParams(search.startsWith('?') ? search : `?${search}`).get('p') || 'lpg';
+    return entry.key === 'sfera' || want === have;
+  }
 
   // Umumiy band barcha ichki bo‘limlarda, jumladan filtrlangan tarixda ham faol qoladi.
   if (entry.key === 'history' && path === '/history' && !query) {

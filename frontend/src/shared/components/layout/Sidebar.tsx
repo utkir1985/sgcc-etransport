@@ -6,7 +6,7 @@ import {
   TrainFront, Truck, X, ChevronDown, UserPlus, Menu, Layers, KeyRound,
   Building2, Database, Flame, ScrollText, LogIn, History, Factory, Clock,
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
-  Weight, Play, BadgeCheck, Target, Gauge,
+  Weight, Play, BadgeCheck, Target, Gauge, Droplets, CalendarRange, CalendarDays,
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,7 +29,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string; strokeWidt
   Lock, FileCheck, Shield, ShieldCheck, FileSearch, Plug, TrendingUp, Activity, Truck,
   TrainFront, UserPlus, Menu, Layers, KeyRound, Building2, Database, Flame, ScrollText, LogIn, History, Factory, Clock,
   ArrowDownToLine, ArrowUpFromLine, PackageCheck, AlertTriangle, Trash2,
-  Weight, Play, BadgeCheck, Target, Gauge,
+  Weight, Play, BadgeCheck, Target, Gauge, Droplets, CalendarRange, CalendarDays,
 };
 
 
@@ -234,6 +234,9 @@ function SidebarMenuItem({
             <div className="sidebar-nav-flyout__items">
               {item.children!.map(child => {
                 const ChildIcon = ICONS[child.icon] || Train;
+                if (!child.path) {
+                  return <p key={child.key} className="sidebar-nav-caption"><ChildIcon className="w-3.5 h-3.5" />{child.label}</p>;
+                }
                 const childActive = menuItemMatches(child, location.pathname, location.search);
                 const childColor = getMenuItemColor(child);
                 return (
@@ -288,6 +291,9 @@ function SidebarMenuItem({
         <div className="sidebar-nav-sub mt-0.5 space-y-0.5">
           {item.children!.map(child => {
             const ChildIcon = ICONS[child.icon] || Train;
+            if (!child.path) {
+              return <p key={child.key} className="sidebar-nav-caption"><ChildIcon className="w-3.5 h-3.5" />{child.label}</p>;
+            }
             const childActive = menuItemMatches(child, location.pathname, location.search);
             const childColor = getMenuItemColor(child);
             return (

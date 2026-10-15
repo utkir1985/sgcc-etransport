@@ -20512,30 +20512,38 @@ html.dark .order-progress-track,
 .dark .order-status-card--red-soft .order-status-card__count { background: rgb(239 68 68 / 0.18); color: #fca5a5; }
 
 /* ===== Sfera Balance paneli (tashqi tizim, iframe) ===== */
-.sfera-page { display: flex; flex-direction: column; gap: 12px; height: calc(100dvh - 120px); min-height: 560px; }
-.sfera-page__bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-radius: 14px; background: #fff; border: 1px solid #e2e8f0; }
-.sfera-page__bar h2 { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-.sfera-page__bar p { font-size: 12px; color: #64748b; }
-.sfera-page__icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #fff7ed; color: #ea580c; flex-shrink: 0; }
-.sfera-page__status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; background: #f1f5f9; color: #475569; }
+.sfera-page { display: flex; flex-direction: column; gap: 10px; height: calc(100dvh - 112px); min-height: 560px; }
+.sfera-page__bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.sfera-page__crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; color: #64748b; }
+.sfera-page__crumbs i { font-style: normal; color: #cbd5e1; }
+.sfera-page__crumbs b { color: #0f172a; font-weight: 600; white-space: nowrap; }
+.sfera-page__crumbs span { white-space: nowrap; }
+.sfera-page__status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 8px; font-size: 11.5px; font-weight: 600; background: #f1f5f9; color: #475569; }
 .sfera-page__status i { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; }
 .sfera-page__status.is-online { background: #ecfdf5; color: #047857; }
 .sfera-page__status.is-online i { background: #10b981; }
 .sfera-page__status.is-offline { background: #fef2f2; color: #b91c1c; }
 .sfera-page__status.is-offline i { background: #ef4444; }
-.sfera-page__actions { margin-left: auto; display: flex; gap: 8px; }
-.sfera-page__actions .btn-secondary { flex: 0 0 auto; white-space: nowrap; }
+.sfera-page__actions { margin-left: auto; display: flex; gap: 6px; }
+.sfera-page__btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: background .15s, color .15s; }
+.sfera-page__btn:hover { background: #f1f5f9; color: #0f172a; }
 .sfera-page__frame { flex: 1; width: 100%; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; }
 .sfera-page__offline { flex: 1; display: flex; align-items: center; justify-content: center; }
-.dark .sfera-page__bar, .dark .sfera-page__frame { background: #111827; border-color: #1f2937; }
-.dark .sfera-page__bar h2 { color: #e2e8f0; }
-.dark .sfera-page__bar p { color: #94a3b8; }
-.dark .sfera-page__icon { background: rgba(249, 115, 22, .14); color: #fb923c; }
+.dark .sfera-page__crumbs { color: #94a3b8; }
+.dark .sfera-page__crumbs i { color: #475569; }
+.dark .sfera-page__crumbs b { color: #e2e8f0; }
+.dark .sfera-page__frame { background: #10151e; border-color: #1f2937; }
+.dark .sfera-page__btn { background: #111827; border-color: #1f2937; color: #cbd5e1; }
+.dark .sfera-page__btn:hover { background: #1f2937; color: #fff; }
 .dark .sfera-page__status { background: #1f2937; color: #cbd5e1; }
 .dark .sfera-page__status.is-online { background: rgba(16, 185, 129, .14); color: #6ee7b7; }
 .dark .sfera-page__status.is-offline { background: rgba(239, 68, 68, .14); color: #fca5a5; }
 @media (max-width: 640px) {
   .sfera-page { height: calc(100dvh - 96px); }
-  .sfera-page__label { display: none; }
-  .sfera-page__actions { margin-left: 0; }
+  .sfera-page__crumbs span, .sfera-page__crumbs i { display: none; }
 }
+
+/* Sidebar ichki guruh sarlavhasi (masalan, Sfera: Suyultirilgan gaz / Gaz kondensati) */
+.sidebar-nav-caption { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; padding: 0 12px 0 36px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(148, 163, 184, .8); }
+.sidebar-nav-caption:first-child { margin-top: 4px; }
+.sidebar-nav-flyout .sidebar-nav-caption { padding-left: 10px; }

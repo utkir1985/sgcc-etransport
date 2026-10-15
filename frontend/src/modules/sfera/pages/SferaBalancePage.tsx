@@ -1,21 +1,44 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ExternalLink, Gauge, Lock, RefreshCw, WifiOff } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ExternalLink, Lock, RefreshCw, WifiOff } from 'lucide-react';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
+import { useTheme } from '../../../shared/contexts/ThemeContext';
 
 /**
  * Sfera Balance — alohida tizim (o‘z serveri, bazasi va kodi bilan).
- * E-Transport uni faqat ichki oynada ko‘rsatadi; hech qanday ma'lumot almashilmaydi.
- * Manzil: VITE_SFERA_URL yoki joriy host'ning 8010-porti.
+ * E-Transport uni faqat ichki oynada embed rejimida (?embed=1) ko‘rsatadi:
+ * Sfera o‘z menyusini yashiradi, navigatsiya E-Transport menyusidan boshqariladi.
+ * Hech qanday ma'lumot almashilmaydi. Manzil: VITE_SFERA_URL yoki joriy host'ning 8010-porti.
  */
 const SFERA_URL = (import.meta.env.VITE_SFERA_URL as string | undefined)
   || `${window.location.protocol}//${window.location.hostname}:8010/`;
+const SFERA_ORIGIN = new URL(SFERA_URL).origin;
+
+const PAGES: Record<string, { group: string; title: string; route: string }> = {
+  lpg: { group: 'Suyultirilgan gaz', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/' },
+  'lpg-daily': { group: 'Suyultirilgan gaz', title: 'Sutkalik ko‘rsatkichlar', route: '/balance/daily' },
+  'lpg-monthly': { group: 'Suyultirilgan gaz', title: 'Oylik ko‘rsatkichlar', route: '/balance/monthly' },
+  'lpg-yearly': { group: 'Suyultirilgan gaz', title: 'Yillik ko‘rsatkichlar', route: '/balance/yearly' },
+  cond: { group: 'Gaz kondensati', title: 'Real vaqtdagi ko‘rsatkichlar', route: '/condensate/monitoring' },
+  'cond-hourly': { group: 'Gaz kondensati', title: 'Soatlik ko‘rsatkichlar', route: '/condensate/hourly' },
+  'cond-daily': { group: 'Gaz kondensati', title: 'Sutkalik ko‘rsatkichlar', route: '/condensate/daily' },
+  'cond-monthly': { group: 'Gaz kondensati', title: 'Oylik ko‘rsatkichlar', route: '/condensate/monthly' },
+  'cond-yearly': { group: 'Gaz kondensati', title: 'Yillik ko‘rsatkichlar', route: '/condensate/yearly' },
+};
 
 type Status = 'checking' | 'online' | 'offline';
 
 export default function SferaBalancePage() {
   const { canSferaView } = useRbacPermission();
+  const { theme } = useTheme();
+  const [params] = useSearchParams();
+  const pageKey = PAGES[params.get('p') ?? ''] ? params.get('p')! : 'lpg';
+  const page = PAGES[pageKey];
   const [status, setStatus] = useState<Status>('checking');
   const [frameKey, setFrameKey] = useState(0);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
 
   const check = useCallback(async () => {
     setStatus('checking');
@@ -30,6 +53,11 @@ export default function SferaBalancePage() {
 
   useEffect(() => { void check(); }, [check]);
 
+  // Tema o‘zgarsa, sahifani qayta yuklamasdan Sferaga xabar beriladi
+  useEffect(() => {
+    frameRef.current?.contentWindow?.postMessage({ type: 'sfera-theme', theme }, SFERA_ORIGIN);
+  }, [theme]);
+
   if (!canSferaView) {
     return (
       <div className="docs-panel">
@@ -42,25 +70,25 @@ export default function SferaBalancePage() {
     );
   }
 
+  // Tema faqat birinchi yuklashda URL orqali, keyin postMessage bilan
+  const src = `${new URL(page.route, SFERA_URL).toString()}?embed=1&theme=${themeRef.current === 'dark' ? 'dark' : 'light'}`;
   const reload = () => { setFrameKey(k => k + 1); void check(); };
 
   return (
     <div className="sfera-page">
       <div className="sfera-page__bar">
-        <span className="sfera-page__icon"><Gauge className="w-4 h-4" /></span>
-        <div className="min-w-0">
-          <h2>Sfera Balance</h2>
-          <p>FB-8104 sfera va kondensat rezervuarlari · alohida tizim</p>
-        </div>
-        <span className={`sfera-page__status is-${status}`}>
+        <nav className="sfera-page__crumbs" aria-label="Sfera bo‘limi">
+          <span>Sfera Balance</span><i>›</i><span>{page.group}</span><i>›</i><b>{page.title}</b>
+        </nav>
+        <span className={`sfera-page__status is-${status}`} title={status === 'online' ? 'Sfera Balance serveri ulangan' : undefined}>
           <i />{status === 'online' ? 'Ulangan' : status === 'offline' ? 'Mavjud emas' : 'Tekshirilmoqda…'}
         </span>
         <div className="sfera-page__actions">
-          <button type="button" className="btn-secondary inline-flex items-center gap-1.5" onClick={reload}>
-            <RefreshCw className="w-4 h-4" /> <span className="sfera-page__label">Yangilash</span>
+          <button type="button" className="sfera-page__btn" onClick={reload} title="Yangilash" aria-label="Yangilash">
+            <RefreshCw className="w-4 h-4" />
           </button>
-          <a className="btn-secondary inline-flex items-center gap-1.5" href={SFERA_URL} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="w-4 h-4" /> <span className="sfera-page__label">Yangi oynada ochish</span>
+          <a className="sfera-page__btn" href={new URL(page.route, SFERA_URL).toString()} target="_blank" rel="noopener noreferrer" title="Yangi oynada ochish (to‘liq tizim, admin bo‘limlari)" aria-label="Yangi oynada ochish">
+            <ExternalLink className="w-4 h-4" />
           </a>
         </div>
       </div>
@@ -73,7 +101,7 @@ export default function SferaBalancePage() {
           </div>
         </div>
       ) : (
-        <iframe key={frameKey} className="sfera-page__frame" src={SFERA_URL} title="Sfera Balance" />
+        <iframe key={`${pageKey}-${frameKey}`} ref={frameRef} className="sfera-page__frame" src={src} title={`Sfera Balance — ${page.title}`} />
       )}
     </div>
   );
