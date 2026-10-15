@@ -20200,3 +20200,5 @@ html.dark .order-progress-track,
 .dark .plan-status--active { border-color: rgb(96 165 250 / 0.35); background: transparent; color: #8fb3e8; }
 .dark .plan-status--done { border-color: rgb(74 222 128 / 0.32); background: transparent; color: #7cc79a; }
 .plan-table .plan-wide { min-width: 18rem; }
+.plan-table th:not(.plan-wide), .plan-table td:not(.plan-wide) { width: 1%; }
+.plan-table .plan-wide { width: auto; }
