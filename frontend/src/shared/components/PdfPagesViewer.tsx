@@ -34,13 +34,15 @@ export function PdfPagesViewer({ url, onError }: { url: string; onError?: (messa
     const task = getDocument(url);
     task.promise
       .then(async pdf => {
-        const width = Math.min(PAGE_WIDTH, host.clientWidth || PAGE_WIDTH);
+        const available = Math.min(PAGE_WIDTH, host.clientWidth || PAGE_WIDTH);
         const ratio = window.devicePixelRatio || 1;
         for (let n = 1; n <= pdf.numPages; n += 1) {
           if (cancelled) return;
           const page = await pdf.getPage(n);
           const base = page.getViewport({ scale: 1 });
-          const viewport = page.getViewport({ scale: (width / base.width) * ratio });
+          // Haqiqiy o‘lcham (100%): 1 pt = 96/72 px — A4 ≈ 794 px; tor ekranda kichrayadi
+          const cssScale = Math.min(96 / 72, available / base.width);
+          const viewport = page.getViewport({ scale: cssScale * ratio });
           const canvas = document.createElement('canvas');
           canvas.className = 'pdf-sheet';
           canvas.width = Math.floor(viewport.width);
