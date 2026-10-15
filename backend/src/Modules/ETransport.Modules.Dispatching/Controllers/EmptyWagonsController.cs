@@ -14,6 +14,7 @@ using ETransport.Infrastructure.Pdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ETransport.Modules.Dispatching.Controllers;
 
@@ -192,6 +193,17 @@ public class EmptyWagonsController(
         // Vagon raqamlari Temir yo'l kiritganidek saqlanadi — ICHDX o'zgartira olmaydi.
         if (request.SourceArrivalId is Guid sourceId && sourceId != Guid.Empty)
         {
+            // Bu — ICHDX smena boshlig‘ining tasdig‘i: xizmat xatini yaratgan Temir yo‘l
+            // (empty-wagons.create) o‘zi tasdiqlab keyingi bosqichga o‘tkaza olmaydi.
+            var approverRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var rbac = HttpContext.RequestServices.GetRequiredService<IRbacService>();
+            var mayApprove = User.IsInRole(UserRoles.Admin)
+                || (!string.Equals(approverRole, UserRoles.Railway, StringComparison.OrdinalIgnoreCase)
+                    && await rbac.HasActionAsync(approverRole, "empty-wagons.dispatch-approve"));
+            if (!mayApprove)
+                return StatusCode(403, new ApiResponse<EmptyWagonArrivalDto>(false, null,
+                    "Xizmat xatini faqat ICHDX smena boshlig‘i tasdiqlab ijroga yo‘naltiradi"));
+
             var source = await db.EmptyWagonArrivals
                 .Include(a => a.CreatedBy)
                 .Include(a => a.Units)

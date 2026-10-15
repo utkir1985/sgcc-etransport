@@ -2121,8 +2121,13 @@ export function EmptyWagonsPage() {
 
 
 
+  // Tasdiqlash — faqat ICHDX smena boshlig‘i (dispatch-approve). Xizmat xatini yaratgan
+  // Temir yo‘l (empty-wagons.create) o‘zi tasdiqlab keyingi bosqichga o‘tkaza olmaydi.
   const canDispatchParty = (item: EmptyWagonArrival) =>
-    (user?.role === 'Dispatching' || user?.role === 'DispatchSupervisor' || user?.role === 'Admin' || can('empty-wagons.dispatch-approve') || can('empty-wagons.create')) && getStage(item) === STAGES.RailwayInspected;
+    (user?.role === 'Admin'
+      || (user?.role !== 'Railway'
+        && (user?.role === 'Dispatching' || user?.role === 'DispatchSupervisor' || can('empty-wagons.dispatch-approve'))))
+    && getStage(item) === STAGES.RailwayInspected;
 
   const dispatchConfirmDialog = (
     <ConfirmDialog
