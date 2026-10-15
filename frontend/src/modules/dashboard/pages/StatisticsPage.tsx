@@ -2067,28 +2067,6 @@ export default function StatisticsPage() {
             {show('fleet') ? (
               <>
                 {sectionTitle('fleet')}
-                <div className="order-status-cards order-status-cards--four plan-kpis">
-                  <div className="order-status-card order-status-card--blue">
-                    <span className="order-status-card__icon"><TrainFront strokeWidth={1.9} aria-hidden /></span>
-                    <span className="order-status-card__text"><strong>Majmua parki</strong><small>davrda harakatda: {fleet.active} vagon · {fleet.tripsTotal} reys</small></span>
-                    <span className="order-status-card__count">{fleet2.catalogCount || fleet.total} vagon</span>
-                  </div>
-                  <div className="order-status-card order-status-card--violet">
-                    <span className="order-status-card__icon"><Activity strokeWidth={1.9} aria-hidden /></span>
-                    <span className="order-status-card__text"><strong>Bir aylanish</strong><small>kelishdan keyingi kelishgacha (mediana)</small></span>
-                    <span className="order-status-card__count">{fleet.cycle} kun</span>
-                  </div>
-                  <div className="order-status-card order-status-card--amber">
-                    <span className="order-status-card__icon"><Truck strokeWidth={1.9} aria-hidden /></span>
-                    <span className="order-status-card__text"><strong>Zavoddan tashqarida</strong><small>chiqib, qaytib kelgunicha (mediana)</small></span>
-                    <span className="order-status-card__count">{fleet.away} kun</span>
-                  </div>
-                  <button type="button" className="order-status-card order-status-card--red-soft" onClick={() => openFleetDrill('15 kundan ortiq kelmagan vagonlar', r => r.idleDays >= 15)}>
-                    <span className="order-status-card__icon"><Hourglass strokeWidth={1.9} aria-hidden /></span>
-                    <span className="order-status-card__text"><strong>15+ kun kelmagan</strong><small>bosilsa — ro‘yxat</small></span>
-                    <span className="order-status-card__count">{fleet.idle.length} vagon</span>
-                  </button>
-                </div>
                 <h3 className="stat-mini-title">Park holati</h3>
                 {fleet2.catalogCount === 0 ? (
                   <p className="stat-note">Vagonlar ma’lumotnomasi bo‘sh yoki ochib bo‘lmadi — texnik holat va ta’mir ko‘rsatkichlari ma’lumotnoma to‘ldirilgach chiqadi.</p>
@@ -2167,19 +2145,6 @@ export default function StatisticsPage() {
                     </ResponsiveContainer>
                   </ChartCard>
                 </div>
-                <ChartCard title="Aylanish dinamikasi" hint="Oylar bo‘yicha bir aylanishning odatiy davomiyligi (mediana, kun) — pasaysa, park tezroq ishlayapti">
-                  {fleet.cycleTrend.length === 0 ? empty() : (
-                    <ResponsiveContainer width="100%" height={260}>
-                      <LineChart data={fleet.cycleTrend} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
-                        <CartesianGrid stroke={grid} vertical={false} />
-                        <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis label={yUnit('kun')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number, _n: string, it: { payload?: { reys?: number } }) => [`${v} kun (${it?.payload?.reys ?? 0} reys)`, 'Aylanish']} />
-                        <Line type="linear" dataKey="kun" name="Aylanish" stroke="#8b5cf6" strokeWidth={2.4} dot={{ r: 4 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </ChartCard>
               </>
             ) : null}
 
