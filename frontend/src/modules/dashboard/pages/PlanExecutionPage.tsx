@@ -354,6 +354,7 @@ export default function PlanExecutionPage() {
               options={productOptions}
               onChange={setProduct}
               allowEmpty
+              fieldLabel=""
               emptyLabel="Barcha mahsulotlar"
             />
             <div className="marketing-orders-toolbar__field marketing-orders-toolbar__field--period">
