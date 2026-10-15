@@ -3,7 +3,6 @@ import {
   BookOpen,
   UploadCloud,
   Search,
-  Eye,
   Download,
   Trash2,
   FileText,
@@ -24,6 +23,7 @@ import { OrderStatusCards, type OrderStatusCard } from '../../../shared/componen
 import { OrderSheetMenu, type OrderSheetMenuItem } from '../../../shared/components/OrderSheetMenu';
 import { TablePagination } from '../../../shared/components/TablePagination';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { DocumentChipButton } from '../../../shared/components/DocumentPackChip';
 import type { NormativeDocument, CreateNormativeDocPayload } from '../../../shared/types';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import {
@@ -407,7 +407,6 @@ export default function NormativeDocsPage() {
   const pageDocuments = filteredDocuments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const docMenuItems = (doc: NormativeDocument): OrderSheetMenuItem[] => [
-    { key: 'view', label: 'Ko‘rish', icon: Eye, tone: 'sky', onClick: () => { void handleOpenPreview(doc); } },
     { key: 'download', label: 'Yuklab olish', icon: Download, tone: 'emerald', onClick: () => { void handleDownload(doc); } },
     { key: 'delete', label: 'O‘chirish', icon: Trash2, variant: 'danger', onClick: () => setDocToDelete(doc) },
   ];
@@ -518,8 +517,7 @@ export default function NormativeDocsPage() {
                       <th className="ndocs-th--left" data-fit="1">Turi</th>
                       <th className="ndocs-th--left" data-fit="1">Raqami</th>
                       <th className="ndocs-th--center" data-fit="1">Sanasi</th>
-                      <th className="ndocs-th--right" data-fit="1">Hajmi</th>
-                      <th className="ndocs-th--right" data-fit="1">Amallar</th>
+                      <th className="ndocs-th--right" data-fit="1">Hujjat</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -546,12 +544,9 @@ export default function NormativeDocsPage() {
                               : <span className="text-slate-400">—</span>}
                           </td>
                           <td className="ndocs-td--center tabular-nums">{formatDate(doc.DocumentDate)}</td>
-                          <td className="ndocs-td--right tabular-nums text-slate-500">{formatBytes(doc.FileSize)}</td>
                           <td className="ndocs-td--right">
                             <div className="ndocs-row__actions">
-                              <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
-                                <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
-                              </button>
+                              <DocumentChipButton onClick={() => { void handleOpenPreview(doc); }} title="Hujjatni ochish" />
                               <OrderSheetMenu items={docMenuItems(doc)} compact />
                             </div>
                           </td>
@@ -584,10 +579,7 @@ export default function NormativeDocsPage() {
                       {doc.Description ? <p className="ndocs-card__desc">{doc.Description}</p> : null}
                       <div className="ndocs-card__foot">
                         <span className="ndocs-meta__item"><CalendarDays className="w-3.5 h-3.5" />{formatDate(doc.DocumentDate)}</span>
-                        <span className="ndocs-meta__item"><FileText className="w-3.5 h-3.5" />{formatBytes(doc.FileSize)}</span>
-                        <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
-                          <Eye className="w-4 h-4" /> <span>Ko‘rish</span>
-                        </button>
+                        <DocumentChipButton onClick={() => { void handleOpenPreview(doc); }} title="Hujjatni ochish" />
                       </div>
                     </article>
                   );

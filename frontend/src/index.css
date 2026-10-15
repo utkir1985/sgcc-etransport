@@ -19925,3 +19925,4 @@ html.dark .order-progress-track,
 .ndocs-table td:not(:nth-child(2)) { width: 1%; white-space: nowrap; }
 .ndocs-table th[data-fit], .ndocs-table td:not(:nth-child(2)) { padding-left: 16px !important; padding-right: 16px !important; }
 .ndocs-table td:nth-child(2) { min-width: 18rem; }
+.ndocs-card__foot .order-sheet-annex-chip__trigger { margin-left: auto; }
