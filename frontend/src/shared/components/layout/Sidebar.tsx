@@ -108,7 +108,11 @@ const ICON_COLORS: Record<string, string> = {
   Target: '#ec4899',
 };
 
-function getMenuItemColor(item: MenuItem): string {
+/** Ikonkalar bir xil rangda (rangli ikonkalar o‘chirilgan) — rang CSS dan olinadi. */
+const COLORED_ICONS = false;
+
+function getMenuItemColor(item: MenuItem): string | undefined {
+  if (!COLORED_ICONS) return undefined; // CSS dagi standart ikonka rangi ishlaydi
   if (MENU_ITEM_COLORS[item.key]) return MENU_ITEM_COLORS[item.key];
   if (ICON_COLORS[item.icon]) return ICON_COLORS[item.icon];
   return '#60a5fa';
