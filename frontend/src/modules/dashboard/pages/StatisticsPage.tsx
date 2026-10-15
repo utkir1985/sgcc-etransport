@@ -18,7 +18,11 @@ import {
 } from 'recharts';
 import {
   Activity,
+  CalendarClock,
   CheckCircle2,
+  LogIn,
+  TrainFront,
+  Undo2,
   FileDown,
   Clock3,
   FileSpreadsheet,
@@ -32,10 +36,11 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../../../shared/services/api';
-import type { EmptyWagonArrival, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
+import type { EmptyWagonArrival, EmptyWagonUnit, LoadingRegistry, MonthlyOrder } from '../../../shared/types';
 import { getProductLabel } from '../../../shared/constants/productTypes';
 import { logisticsFromRoute } from '../../../shared/constants/logisticsTypes';
 import { DEFECT_ACT_TYPE_LABEL } from '../../../shared/constants/defectActTypes';
+import { normalizeWagonOwnership } from '../../../shared/constants/wagonOwnership';
 import { MONTH_NAMES_UZ, todayIso } from '../../../shared/utils/dates';
 import { formatTons } from '../../../shared/utils/orderQuantity';
 import { excludeOneCArrivals } from '../../../shared/utils/oneCSources';
@@ -50,16 +55,20 @@ const PRODUCT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '
 const WEEKDAYS = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
 const NORM_HOURS = 8.9;
 
-type Tab = 'overview' | 'plan' | 'loading' | 'idle' | 'quality' | 'defects' | 'staff';
+type Tab = 'overview' | 'plan' | 'deadlines' | 'intake' | 'loading' | 'idle' | 'quality' | 'returned' | 'defects' | 'fleet' | 'staff';
 type Compare = 'none' | 'prev' | 'yoy';
 
 const TABS: { id: Tab; label: string; icon: typeof Target }[] = [
   { id: 'overview', label: 'Umumiy', icon: LayoutDashboard },
   { id: 'plan', label: 'Reja ijrosi', icon: Target },
+  { id: 'deadlines', label: 'Buyurtma muddatlari', icon: CalendarClock },
+  { id: 'intake', label: 'Vagonlarni kiritish', icon: LogIn },
   { id: 'loading', label: 'Yuklash va jo‘natish', icon: Activity },
   { id: 'idle', label: 'Bekor turish vaqti', icon: Clock3 },
   { id: 'quality', label: 'Yuklash sifati', icon: Scale },
+  { id: 'returned', label: 'Qaytarilgan vagonlar', icon: Undo2 },
   { id: 'defects', label: 'Nosozliklar', icon: Wrench },
+  { id: 'fleet', label: 'Vagon parki', icon: TrainFront },
   { id: 'staff', label: 'Xodimlar va xizmatlar', icon: Users },
 ];
 
@@ -755,6 +764,197 @@ export default function StatisticsPage() {
   }, [orders, arrivals, registries, range.from, range.to, filterKey]);
 
   // ============================================================
+  // Buyurtma muddatlari — qator «Yuklash oxirgi sanasi»ga nisbatan
+  // ============================================================
+  const deadlines = useMemo(() => {
+    const today = todayIso();
+    // Har bir buyurtma qatori bo‘yicha chiqqan vagonlar (sana, tonna) — qachon reja to‘lgani aniqlanadi
+    const byLine = new Map<string, { day: string; tons: number }[]>();
+    for (const r of registries) {
+      if (!r.exitedToKengsoyAt) continue;
+      const day = localDateKey(r.exitedToKengsoyAt);
+      for (const w of r.wagonRoutes ?? []) {
+        if (w.isDefective || !w.monthlyOrderLineId) continue;
+        const arr = byLine.get(w.monthlyOrderLineId) ?? [];
+        arr.push({ day, tons: routeTons(w.netWeight ?? w.NetWeight ?? w.nettoWeight) });
+        byLine.set(w.monthlyOrderLineId, arr);
+      }
+    }
+    type St = 'ontime' | 'late' | 'overdue' | 'open' | 'done' | 'nodeadline';
+    const rows: { order: MonthlyOrder; contractor: string; deadline: string; plan: number; done: number; status: St; doneDay?: string; days: number }[] = [];
+    for (const l of cur.lines) {
+      const line = (l.order.lines ?? []).find(x => (x.contractor || 'Ko‘rsatilmagan').trim() === l.contractor && Number(x.tonCount || 0) === l.plan);
+      const deadline = line?.lastLoadingDate ? localDateKey(line.lastLoadingDate) : '';
+      const finished = l.order.status === 'Completed' || (l.plan > 0 && l.done >= l.plan * 0.999);
+      let doneDay: string | undefined;
+      if (line?.id) {
+        let cum = 0;
+        for (const e of (byLine.get(line.id) ?? []).sort((a, b) => a.day.localeCompare(b.day))) {
+          cum += e.tons;
+          if (cum >= l.plan * 0.999) { doneDay = e.day; break; }
+        }
+      }
+      let status: St;
+      let days = 0;
+      if (!deadline) status = finished ? 'done' : 'nodeadline';
+      else if (finished && doneDay) { status = doneDay <= deadline ? 'ontime' : 'late'; days = Math.max(0, daysBetween(deadline, doneDay) - 1); }
+      else if (finished) status = 'done';
+      else if (deadline < today) { status = 'overdue'; days = daysBetween(deadline, today) - 1; }
+      else { status = 'open'; days = daysBetween(today, deadline) - 1; }
+      rows.push({ order: l.order, contractor: l.contractor, deadline, plan: l.plan, done: l.done, status, doneDay, days });
+    }
+    const label: Record<St, string> = { ontime: 'Muddatida bajarildi', late: 'Kechikib bajarildi', overdue: 'Muddati o‘tgan', open: 'Muddati bor', done: 'Bajarildi (sana noma’lum)', nodeadline: 'Muddat belgilanmagan' };
+    const color: Record<St, string> = { ontime: '#10b981', late: '#f59e0b', overdue: '#ef4444', open: '#3b82f6', done: '#94a3b8', nodeadline: '#cbd5e1' };
+    const counts = (Object.keys(label) as St[]).map(k => ({ id: k, name: label[k], soni: rows.filter(r => r.status === k).length, color: color[k] })).filter(x => x.soni > 0);
+    const judged = rows.filter(r => r.status === 'ontime' || r.status === 'late');
+    const ontimePct = judged.length ? Math.round((rows.filter(r => r.status === 'ontime').length / judged.length) * 100) : 0;
+    const byMonth = new Map<string, { k: string; muddatida: number; kechikib: number; otgan: number }>();
+    for (const r of rows) {
+      if (!r.deadline || !['ontime', 'late', 'overdue'].includes(r.status)) continue;
+      const k = r.deadline.slice(0, 7);
+      const m = byMonth.get(k) ?? { k, muddatida: 0, kechikib: 0, otgan: 0 };
+      if (r.status === 'ontime') m.muddatida += 1; else if (r.status === 'late') m.kechikib += 1; else m.otgan += 1;
+      byMonth.set(k, m);
+    }
+    return {
+      rows, counts, ontimePct, label,
+      byMonth: Array.from(byMonth.values()).sort((a, b) => a.k.localeCompare(b.k)).map(m => ({ ...m, label: monthLabel(m.k) })),
+      overdue: rows.filter(r => r.status === 'overdue').sort((a, b) => b.days - a.days),
+      soon: rows.filter(r => r.status === 'open' && r.days <= 5).sort((a, b) => a.days - b.days),
+    };
+  }, [cur, registries]);
+
+  // ============================================================
+  // Vagonlarni kiritish — kelishdan zavodga kirib tortilgunicha
+  // ============================================================
+  const intake = useMemo(() => {
+    const steps = [
+      { name: 'Kelish → smena tasdig‘i', vals: [] as number[] },
+      { name: 'Smena → ruxsatnoma byurosi', vals: [] as number[] },
+      { name: 'Ruxsatnoma → qo‘riqlash', vals: [] as number[] },
+      { name: 'Qo‘riqlash → tara tortish', vals: [] as number[] },
+    ];
+    const total: number[] = [];
+    const daily = new Map<string, { day: string; majmua: number; tashqi: number }>();
+    const list: { a: EmptyWagonArrival; hours: number | null }[] = [];
+    const productOk = (p?: string) => filters.products.length === 0 || (!!p && filters.products.includes(p));
+    for (const a of excludeOneCArrivals(arrivals)) {
+      const start = a.arrivalDate || a.createdAt;
+      if (!start || !inDay(localDateKey(start), range) || !productOk(a.productType)) continue;
+      const units = a.wagons ?? [];
+      const tare = units.map(u => u.tareWeighedAt).filter((x): x is string => Boolean(x)).sort()[0] ?? null;
+      const push = (i: number, x?: string | null, y?: string | null) => { const h = hoursBetween(x, y); if (h !== null && h < 24 * 20) steps[i].vals.push(h); };
+      push(0, start, a.entryPermitShiftApprovedAt);
+      push(1, a.entryPermitShiftApprovedAt, a.entryPermitPermitApprovedAt);
+      push(2, a.entryPermitPermitApprovedAt, a.entryPermitSecurityApprovedAt);
+      push(3, a.entryPermitSecurityApprovedAt, tare);
+      const all = hoursBetween(start, tare);
+      if (all !== null && all < 24 * 20) total.push(all);
+      list.push({ a, hours: all });
+      const day = localDateKey(start);
+      const row = daily.get(day) ?? { day, majmua: 0, tashqi: 0 };
+      if (units.length) units.forEach(u => { if (normalizeWagonOwnership(u.ownership) === 'majmua') row.majmua += 1; else row.tashqi += 1; });
+      else row.tashqi += a.wagonCount || 0;
+      daily.set(day, row);
+    }
+    return {
+      steps: steps.map(st => ({ name: st.name, soat: r1(median(st.vals)), soni: st.vals.length })),
+      median: r1(median(total)),
+      parties: list.length,
+      wagons: Array.from(daily.values()).reduce((s0, d) => s0 + d.majmua + d.tashqi, 0),
+      daily: Array.from(daily.values()).sort((a, b) => a.day.localeCompare(b.day)).map(d => ({ ...d, label: `${d.day.slice(8, 10)}.${d.day.slice(5, 7)}` })),
+      list: list.sort((x, y) => (y.hours ?? 0) - (x.hours ?? 0)),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrivals, range.from, range.to, filterKey]);
+
+  // ============================================================
+  // Qaytarilgan vagonlar
+  // ============================================================
+  const returned = useMemo(() => {
+    const items: { u: EmptyWagonUnit; a: EmptyWagonArrival; day: string; reason: string; owner: string }[] = [];
+    for (const a of excludeOneCArrivals(arrivals)) {
+      if (filters.products.length && !filters.products.includes(a.productType)) continue;
+      for (const u of a.wagons ?? []) {
+        if (u.status !== 'Returned') continue;
+        const at = u.defectActUploadedAt || a.arrivalDate || a.createdAt;
+        if (!at || !inDay(localDateKey(at), range)) continue;
+        const reason = (DEFECT_ACT_TYPE_LABEL as Record<string, string>)[u.defectActType || ''] || (u.defectActType ? u.defectActType : 'Sababi ko‘rsatilmagan');
+        items.push({ u, a, day: localDateKey(at), reason, owner: normalizeWagonOwnership(u.ownership) === 'majmua' ? 'Majmua' : 'Tashqi (O‘TY)' });
+      }
+    }
+    const group = (key: (x: typeof items[number]) => string) => {
+      const m = new Map<string, number>();
+      items.forEach(x => m.set(key(x), (m.get(key(x)) || 0) + 1));
+      return Array.from(m, ([name, soni]) => ({ name, soni })).sort((a, b) => b.soni - a.soni);
+    };
+    const totalUnits = excludeOneCArrivals(arrivals).reduce((s0, a) => {
+      const st = a.arrivalDate || a.createdAt;
+      return st && inDay(localDateKey(st), range) ? s0 + (a.wagons?.length || a.wagonCount || 0) : s0;
+    }, 0);
+    return {
+      items,
+      byReason: group(x => x.reason),
+      byOwner: group(x => x.owner),
+      byProduct: group(x => prodLabel(x.a.productType)),
+      byMonth: group(x => x.day.slice(0, 7)).map(m => ({ ...m, k: m.name, label: monthLabel(m.name) })).sort((a, b) => a.k.localeCompare(b.k)),
+      pct: totalUnits ? r1((items.length / totalUnits) * 100) : 0,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrivals, range.from, range.to, filterKey, productOptions]);
+
+  // ============================================================
+  // Vagon parki — majmua vagonlarining aylanishi
+  // ============================================================
+  const fleet = useMemo(() => {
+    const visits = new Map<string, { at: string; exit?: string | null; arrivalId: string; arrivalNumber: string }[]>();
+    for (const a of excludeOneCArrivals(arrivals)) {
+      const at = a.arrivalDate || a.createdAt;
+      if (!at) continue;
+      for (const u of a.wagons ?? []) {
+        if (normalizeWagonOwnership(u.ownership) !== 'majmua' || !u.wagonNumber) continue;
+        const arr = visits.get(u.wagonNumber) ?? [];
+        arr.push({ at, exit: u.scaleExitedAt, arrivalId: a.id, arrivalNumber: a.arrivalNumber });
+        visits.set(u.wagonNumber, arr);
+      }
+    }
+    const today = todayIso();
+    const cycles: number[] = [];
+    const away: number[] = [];
+    const rows: { wagon: string; trips: number; last: string; idleDays: number; cycle: number }[] = [];
+    for (const [wagon, vs] of visits) {
+      vs.sort((a, b) => a.at.localeCompare(b.at));
+      const inRange = vs.filter(v => inDay(localDateKey(v.at), range));
+      const wagonCycles: number[] = [];
+      for (let i = 1; i < vs.length; i += 1) {
+        if (!inDay(localDateKey(vs[i].at), range)) continue;
+        const c = (new Date(vs[i].at).getTime() - new Date(vs[i - 1].at).getTime()) / 86400000;
+        if (c > 0 && c < 120) { cycles.push(c); wagonCycles.push(c); }
+        const ex = vs[i - 1].exit;
+        if (ex) { const aw = (new Date(vs[i].at).getTime() - new Date(ex).getTime()) / 86400000; if (aw >= 0 && aw < 120) away.push(aw); }
+      }
+      const last = vs[vs.length - 1];
+      rows.push({ wagon, trips: inRange.length, last: localDateKey(last.at), idleDays: Math.max(0, daysBetween(localDateKey(last.exit || last.at), today) - 1), cycle: r1(median(wagonCycles)) });
+    }
+    const hist = [
+      { name: '≤ 3 kun', min: 0, max: 3 }, { name: '3–5 kun', min: 3, max: 5 }, { name: '5–7 kun', min: 5, max: 7 },
+      { name: '7–10 kun', min: 7, max: 10 }, { name: '10–15 kun', min: 10, max: 15 }, { name: '15+ kun', min: 15, max: 1e9 },
+    ].map(h => ({ name: h.name, soni: cycles.filter(c => c > h.min && c <= h.max).length }));
+    return {
+      total: rows.length,
+      active: rows.filter(r => r.trips > 0).length,
+      tripsTotal: rows.reduce((s0, r) => s0 + r.trips, 0),
+      cycle: r1(median(cycles)),
+      away: r1(median(away)),
+      hist,
+      top: rows.filter(r => r.trips > 0).sort((a, b) => b.trips - a.trips).slice(0, 15).map(r => ({ name: r.wagon, reys: r.trips })),
+      idle: rows.filter(r => r.idleDays >= 15).sort((a, b) => b.idleDays - a.idleDays),
+      rows,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrivals, range.from, range.to]);
+
+  // ============================================================
   // Tafsilot (drill-down) — diagramma bo‘lagi bosilganda
   // ============================================================
 
@@ -877,6 +1077,80 @@ export default function StatisticsPage() {
         { key: 'act', label: 'Dalolatnoma' }, { key: 'wagon', label: 'Vagon' }, { key: 'arrival', label: 'Partiya' }, { key: 'day', label: 'Kelgan sana' },
         { key: 'station', label: 'Stansiya' }, { key: 'type', label: 'Turi' }, { key: 'reason', label: 'Sabab' }, { key: 'returned', label: 'Qaytarilgan', align: 'center' },
       ],
+    });
+  };
+
+  const openDeadlineDrill = (title: string, pred: (r: (typeof deadlines.rows)[number]) => boolean) => {
+    openDrill({
+      title,
+      columns: [
+        { key: 'num', label: 'Hujjat raqami' }, { key: 'contractor', label: 'Kontragent' }, { key: 'product', label: 'Mahsulot' },
+        { key: 'deadline', label: 'Yuklash muddati', align: 'center' }, { key: 'doneDay', label: 'Bajarilgan sana', align: 'center' },
+        { key: 'plan', label: 'Reja (t)', align: 'right' }, { key: 'done', label: 'Bajarildi (t)', align: 'right' },
+        { key: 'status', label: 'Holat', align: 'center' }, { key: 'days', label: 'Kun', align: 'right' },
+      ],
+      rows: deadlines.rows.filter(pred).map((r, i) => ({
+        id: `${r.order.id}-${i}`,
+        href: orderHref(r.order),
+        cells: {
+          num: r.order.orderNumber, contractor: shortContractor(r.contractor), product: prodLabel(r.order.productType),
+          deadline: r.deadline ? r.deadline.split('-').reverse().join('.') : '—', doneDay: r.doneDay ? r.doneDay.split('-').reverse().join('.') : '—',
+          plan: formatTons(r1(r.plan)), done: formatTons(r1(r.done)), status: deadlines.label[r.status],
+          days: r.status === 'overdue' ? `+${r.days}` : r.status === 'late' ? `+${r.days}` : r.status === 'open' ? `${r.days} qoldi` : '—',
+        },
+      })),
+    });
+  };
+
+  const openIntakeDrill = () => {
+    openDrill({
+      title: 'Partiyalar — kelishdan tara tortishgacha',
+      columns: [
+        { key: 'num', label: 'Partiya' }, { key: 'product', label: 'Mahsulot' }, { key: 'arrived', label: 'Kelgan' },
+        { key: 'shift', label: 'Smena tasdig‘i' }, { key: 'permit', label: 'Ruxsatnoma' }, { key: 'security', label: 'Qo‘riqlash' },
+        { key: 'wagons', label: 'Vagon', align: 'right' }, { key: 'hours', label: 'Jami (soat)', align: 'right' },
+      ],
+      rows: intake.list.map(({ a, hours }) => ({
+        id: a.id,
+        href: `/empty-wagons?arrivalId=${a.id}`,
+        cells: {
+          num: a.arrivalNumber, product: prodLabel(a.productType), arrived: fmtDay(a.arrivalDate || a.createdAt),
+          shift: fmtDay(a.entryPermitShiftApprovedAt), permit: fmtDay(a.entryPermitPermitApprovedAt), security: fmtDay(a.entryPermitSecurityApprovedAt),
+          wagons: a.wagons?.length || a.wagonCount || 0, hours: hours === null ? '—' : r1(hours),
+        },
+      })),
+    });
+  };
+
+  const openReturnedDrill = (title: string, pred: (x: (typeof returned.items)[number]) => boolean) => {
+    openDrill({
+      title,
+      columns: [
+        { key: 'wagon', label: 'Vagon' }, { key: 'arrival', label: 'Partiya' }, { key: 'product', label: 'Mahsulot' },
+        { key: 'day', label: 'Sana', align: 'center' }, { key: 'owner', label: 'Egaligi' }, { key: 'reason', label: 'Sabab' }, { key: 'act', label: 'Dalolatnoma' },
+      ],
+      rows: returned.items.filter(pred).map((x, i) => ({
+        id: `${x.u.id}-${i}`,
+        href: `/empty-wagons?arrivalId=${x.a.id}`,
+        cells: {
+          wagon: x.u.wagonNumber, arrival: x.a.arrivalNumber, product: prodLabel(x.a.productType), day: x.day.split('-').reverse().join('.'),
+          owner: x.owner, reason: x.reason, act: x.u.defectActNumber || '—',
+        },
+      })),
+    });
+  };
+
+  const openFleetDrill = (title: string, pred: (r: (typeof fleet.rows)[number]) => boolean) => {
+    openDrill({
+      title,
+      columns: [
+        { key: 'wagon', label: 'Vagon' }, { key: 'trips', label: 'Davrdagi reys', align: 'right' }, { key: 'cycle', label: 'Aylanish (kun)', align: 'right' },
+        { key: 'last', label: 'Oxirgi kelgan', align: 'center' }, { key: 'idle', label: 'Kelmaganiga (kun)', align: 'right' },
+      ],
+      rows: fleet.rows.filter(pred).sort((a, b) => b.idleDays - a.idleDays).map(r => ({
+        id: r.wagon,
+        cells: { wagon: r.wagon, trips: r.trips, cycle: r.cycle || '—', last: r.last.split('-').reverse().join('.'), idle: r.idleDays },
+      })),
     });
   };
 
@@ -1459,6 +1733,196 @@ export default function StatisticsPage() {
                 </div>
               </>
             ) : null}
+            {show('deadlines') ? (
+              <>
+                {sectionTitle('deadlines')}
+                <p className="stat-note">
+                  Muddatida bajarilish: <b>{deadlines.ontimePct}%</b> (bajarilgan qatorlar ichida) · muddati o‘tgan: <b>{deadlines.overdue.length}</b> · 5 kun ichida muddati tugaydigan: <b>{deadlines.soon.length}</b> qator
+                </p>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Buyurtma qatorlari holati" hint="«Yuklash oxirgi sanasi»ga nisbatan · bo‘lak bosilsa — qatorlar">
+                    {deadlines.counts.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={290}>
+                        <PieChart>
+                          <Pie data={deadlines.counts} dataKey="soni" nameKey="name" innerRadius={62} outerRadius={100} paddingAngle={2} stroke="none" cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); openDeadlineDrill(r.name, x => deadlines.label[x.status] === r.name); }}>
+                            {deadlines.counts.map(c => <Cell key={c.id} fill={c.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} qator`} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Oylar bo‘yicha muddatga rioya" hint="Muddati shu oyga to‘g‘ri kelgan qatorlar">
+                    {deadlines.byMonth.length === 0 ? empty('Muddat belgilangan qator yo‘q') : (
+                      <ResponsiveContainer width="100%" height={290}>
+                        <BarChart data={deadlines.byMonth} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid stroke={grid} vertical={false} />
+                          <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis label={yUnit('qator')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} qator`} />
+                          <Legend wrapperStyle={{ fontSize: 13 }} />
+                          <Bar dataKey="muddatida" name="Muddatida" stackId="d" fill="#10b981" maxBarSize={56} />
+                          <Bar dataKey="kechikib" name="Kechikib" stackId="d" fill="#f59e0b" maxBarSize={56} />
+                          <Bar dataKey="otgan" name="Muddati o‘tgan" stackId="d" fill="#ef4444" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+                <ChartCard title="Muddati o‘tgan va yaqinlashgan qatorlar" hint="Qizil — kechikkan kunlar, ko‘k — muddatgacha qolgan kunlar · ustun bosilsa — tafsilot">
+                  {deadlines.overdue.length + deadlines.soon.length === 0 ? empty('Muddati o‘tgan yoki yaqin qator yo‘q') : (
+                    <ResponsiveContainer width="100%" height={Math.max(180, (deadlines.overdue.length + deadlines.soon.length) * 30 + 40)}>
+                      <BarChart
+                        data={[...deadlines.overdue.slice(0, 12).map(r => ({ name: `${r.order.orderNumber} · ${shortContractor(r.contractor)}`, kun: r.days, kind: 'overdue' })), ...deadlines.soon.slice(0, 8).map(r => ({ name: `${r.order.orderNumber} · ${shortContractor(r.contractor)}`, kun: r.days, kind: 'soon' }))]}
+                        layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                      >
+                        <CartesianGrid stroke={grid} horizontal={false} />
+                        <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                        <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={260} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { kind?: string } }) => [`${v} kun`, it?.payload?.kind === 'overdue' ? 'Kechikdi' : 'Qoldi']} />
+                        <Bar dataKey="kun" name="Kun" radius={[0, 6, 6, 0]} maxBarSize={18} cursor="pointer"
+                          onClick={d => { const r = payloadOf(d); openDeadlineDrill(r.kind === 'overdue' ? 'Muddati o‘tgan qatorlar' : 'Muddati yaqinlashgan qatorlar', x => (r.kind === 'overdue' ? x.status === 'overdue' : x.status === 'open' && x.days <= 5)); }}>
+                          {[...deadlines.overdue.slice(0, 12), ...deadlines.soon.slice(0, 8)].map((r, i) => <Cell key={i} fill={r.status === 'overdue' ? '#ef4444' : '#3b82f6'} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+              </>
+            ) : null}
+
+            {show('intake') ? (
+              <>
+                {sectionTitle('intake')}
+                <p className="stat-note">
+                  {intake.parties} ta partiya · {intake.wagons} vagon · kelishdan tara tortishgacha odatiy vaqt (mediana): <b>{intake.median} soat</b>
+                </p>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Kiritish bosqichlari vaqti" hint="Mediana, soat · har bir bosqich oldingisidan keyin">
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={intake.steps} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid stroke={grid} vertical={false} />
+                        <XAxis dataKey="name" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval={0} />
+                        <YAxis label={yUnit('soat')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={60} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number, _n: string, it: { payload?: { soni?: number } }) => [`${v} soat (${it?.payload?.soni ?? 0} partiya)`, 'Mediana']} />
+                        <Bar dataKey="soat" name="Mediana" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={56} cursor="pointer"
+                          onClick={() => openIntakeDrill()} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                  <ChartCard title="Kunlar bo‘yicha kirgan vagonlar" hint="Majmua va tashqi (O‘TY) vagonlari">
+                    {intake.daily.length === 0 ? empty() : (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={intake.daily} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid stroke={grid} vertical={false} />
+                          <XAxis dataKey="label" stroke={axis} fontSize={11.5} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={14} />
+                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Legend wrapperStyle={{ fontSize: 13 }} />
+                          <Bar dataKey="majmua" name="Majmua" stackId="i" fill="#3b82f6" />
+                          <Bar dataKey="tashqi" name="Tashqi (O‘TY)" stackId="i" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+              </>
+            ) : null}
+
+            {show('returned') ? (
+              <>
+                {sectionTitle('returned')}
+                <p className="stat-note">
+                  Qaytarilgan: <b>{returned.items.length}</b> vagon · kirgan vagonlarning <b>{returned.pct}%</b> · bo‘lak yoki ustun bosilsa — vagonlar ro‘yxati
+                </p>
+                <div className="stat-grid stat-grid--3">
+                  <ChartCard title="Qaytarish sababi">
+                    {returned.byReason.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <PieChart>
+                          <Pie data={returned.byReason} dataKey="soni" nameKey="name" innerRadius={50} outerRadius={84} paddingAngle={2} stroke="none" cursor="pointer"
+                            onClick={d => { const n = payloadOf(d).name; openReturnedDrill(`${n} — qaytarilgan vagonlar`, x => x.reason === n); }}>
+                            {returned.byReason.map((_, i) => <Cell key={i} fill={['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4'][i % 4]} />)}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v} vagon`} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Mahsulot bo‘yicha">
+                    {returned.byProduct.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={returned.byProduct} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={150} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Bar dataKey="soni" name="Vagon" fill="#ef4444" radius={[0, 6, 6, 0]} maxBarSize={22} cursor="pointer"
+                            onClick={d => { const n = payloadOf(d).name; openReturnedDrill(`${n} — qaytarilgan vagonlar`, x => prodLabel(x.a.productType) === n); }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                  <ChartCard title="Oylar bo‘yicha">
+                    {returned.byMonth.length === 0 ? empty('Qaytarilgan vagon yo‘q') : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={returned.byMonth} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                          <CartesianGrid stroke={grid} vertical={false} />
+                          <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis label={yUnit('vagon')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} vagon`} />
+                          <Bar dataKey="soni" name="Vagon" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer"
+                            onClick={d => { const r = payloadOf(d); openReturnedDrill(`${r.label} — qaytarilgan vagonlar`, x => x.day.slice(0, 7) === r.k); }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+              </>
+            ) : null}
+
+            {show('fleet') ? (
+              <>
+                {sectionTitle('fleet')}
+                <p className="stat-note">
+                  Majmua vagonlari: <b>{fleet.total}</b> · davrda ishlagan: <b>{fleet.active}</b> ({fleet.tripsTotal} reys) · bir aylanish (mediana): <b>{fleet.cycle} kun</b> · zavoddan tashqarida: <b>{fleet.away} kun</b> · 15+ kun kelmagan: <b>{fleet.idle.length}</b>
+                </p>
+                <div className="stat-grid stat-grid--1-1">
+                  <ChartCard title="Aylanish vaqti taqsimoti" hint="Bir kelishdan keyingi kelishgacha o‘tgan kunlar (reyslar soni)">
+                    <ResponsiveContainer width="100%" height={270}>
+                      <BarChart data={fleet.hist} margin={{ top: 22, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid stroke={grid} vertical={false} />
+                        <XAxis dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis label={yUnit('reys')} stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} width={60} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} reys`} />
+                        <Bar dataKey="soni" name="Reys" fill="#06b6d4" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                  <ChartCard title="Eng ko‘p reys qilgan vagonlar" hint="Davrda zavodga kelishlar soni (top 15)">
+                    {fleet.top.length === 0 ? empty('Majmua vagonlari bo‘yicha ma’lumot yo‘q') : (
+                      <ResponsiveContainer width="100%" height={Math.max(200, fleet.top.length * 26 + 30)}>
+                        <BarChart data={fleet.top} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
+                          <CartesianGrid stroke={grid} horizontal={false} />
+                          <XAxis type="number" stroke={axis} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" stroke={axis} fontSize={12} tickLine={false} axisLine={false} width={90} />
+                          <Tooltip contentStyle={tooltipStyle} cursor={cursor} formatter={(v: number) => `${v} reys`} />
+                          <Bar dataKey="reys" name="Reys" fill="#3b82f6" radius={[0, 6, 6, 0]} maxBarSize={18} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </ChartCard>
+                </div>
+                <div className="stat-actions-row">
+                  <button type="button" className="btn-secondary" onClick={() => openFleetDrill('Majmua vagonlari — to‘liq ro‘yxat', () => true)}>Barcha majmua vagonlari</button>
+                  <button type="button" className="btn-secondary" onClick={() => openFleetDrill('15 kundan ortiq kelmagan vagonlar', r => r.idleDays >= 15)} disabled={fleet.idle.length === 0}>15+ kun kelmagan ({fleet.idle.length})</button>
+                </div>
+              </>
+            ) : null}
+
             {show('staff') ? (
               <>
                 {sectionTitle('staff')}

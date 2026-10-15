@@ -20488,3 +20488,4 @@ html.dark .order-progress-track,
 .stats-period__date .date-picker-trigger { min-height: 36px; height: 36px; border-radius: 8px; font-size: 13px; }
 /* Davr oynasi ichidagi kalendar oyna ustida chiqsin */
 .date-picker-menu--fixed { z-index: 1100; }
+.stat-actions-row { display: flex; flex-wrap: wrap; gap: 8px; }
