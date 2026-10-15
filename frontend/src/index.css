@@ -19899,3 +19899,5 @@ html.dark .order-progress-track,
 .dark .ndocs-card__icon { box-shadow: none; color: #0f172a; }
 .dark .ndocs-card__num,
 .dark .ndocs-card__foot { color: #94a3b8; }
+.ndocs-table { min-width: 52rem !important; }
+.ndocs-table .ndocs-open-btn { padding: 5px 9px; }

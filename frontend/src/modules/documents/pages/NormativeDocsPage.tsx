@@ -515,12 +515,11 @@ export default function NormativeDocsPage() {
                     <tr>
                       <th className="ndocs-th--center" style={{ width: '3rem' }}>№</th>
                       <th className="ndocs-th--left ndocs-th--title">Hujjat nomi</th>
-                      <th className="ndocs-th--left" style={{ width: '12rem' }}>Turi</th>
-                      <th className="ndocs-th--left" style={{ width: '8.5rem' }}>Raqami</th>
-                      <th className="ndocs-th--center" style={{ width: '7rem' }}>Sanasi</th>
-                      <th className="ndocs-th--right" style={{ width: '5.5rem' }}>Hajmi</th>
-                      <th className="ndocs-th--left" style={{ width: '9.5rem' }}>Yukladi</th>
-                      <th className="ndocs-th--right" style={{ width: '10rem' }}>Amallar</th>
+                      <th className="ndocs-th--left" style={{ width: '10.5rem' }}>Turi</th>
+                      <th className="ndocs-th--left" style={{ width: '7.5rem' }}>Raqami</th>
+                      <th className="ndocs-th--center" style={{ width: '6.5rem' }}>Sanasi</th>
+                      <th className="ndocs-th--right" style={{ width: '5rem' }}>Hajmi</th>
+                      <th className="ndocs-th--right" style={{ width: '8.5rem' }}>Amallar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -548,7 +547,6 @@ export default function NormativeDocsPage() {
                           </td>
                           <td className="ndocs-td--center tabular-nums">{formatDate(doc.DocumentDate)}</td>
                           <td className="ndocs-td--right tabular-nums text-slate-500">{formatBytes(doc.FileSize)}</td>
-                          <td className="truncate text-slate-500" title={doc.UploadedBy || 'Admin'}>{doc.UploadedBy || 'Admin'}</td>
                           <td className="ndocs-td--right">
                             <div className="ndocs-row__actions">
                               <button type="button" className="ndocs-open-btn" onClick={() => { void handleOpenPreview(doc); }}>
