@@ -19918,3 +19918,10 @@ html.dark .order-progress-track,
   white-space: normal !important;
   margin-top: 2px;
 }
+
+/* Jadval: kichik ustunlar mazmuni kengligida, qolgan butun joy — hujjat nomiga */
+.ndocs-table { table-layout: auto !important; }
+.ndocs-table th[data-fit] { width: 1%; white-space: nowrap; }
+.ndocs-table td:not(:nth-child(2)) { width: 1%; white-space: nowrap; }
+.ndocs-table th[data-fit], .ndocs-table td:not(:nth-child(2)) { padding-left: 16px !important; padding-right: 16px !important; }
+.ndocs-table td:nth-child(2) { min-width: 18rem; }

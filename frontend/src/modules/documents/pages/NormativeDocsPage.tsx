@@ -513,13 +513,13 @@ export default function NormativeDocsPage() {
                 <table className="thub-table reestr-table ndocs-table w-full">
                   <thead>
                     <tr>
-                      <th className="ndocs-th--center" style={{ width: '3rem' }}>№</th>
+                      <th className="ndocs-th--center" data-fit="1">№</th>
                       <th className="ndocs-th--left ndocs-th--title">Hujjat nomi</th>
-                      <th className="ndocs-th--left" style={{ width: '10.5rem' }}>Turi</th>
-                      <th className="ndocs-th--left" style={{ width: '7.5rem' }}>Raqami</th>
-                      <th className="ndocs-th--center" style={{ width: '6.5rem' }}>Sanasi</th>
-                      <th className="ndocs-th--right" style={{ width: '5rem' }}>Hajmi</th>
-                      <th className="ndocs-th--right" style={{ width: '8.5rem' }}>Amallar</th>
+                      <th className="ndocs-th--left" data-fit="1">Turi</th>
+                      <th className="ndocs-th--left" data-fit="1">Raqami</th>
+                      <th className="ndocs-th--center" data-fit="1">Sanasi</th>
+                      <th className="ndocs-th--right" data-fit="1">Hajmi</th>
+                      <th className="ndocs-th--right" data-fit="1">Amallar</th>
                     </tr>
                   </thead>
                   <tbody>
