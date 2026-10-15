@@ -25,7 +25,7 @@ import { logisticsFromRoute } from '../../../shared/constants/logisticsTypes';
 import { matchesPeriodRange, MONTH_NAMES_UZ, todayIso } from '../../../shared/utils/dates';
 import { formatTons } from '../../../shared/utils/orderQuantity';
 import { excludeOneCArrivals } from '../../../shared/utils/oneCSources';
-import { localDateKey, registryWagonCountOf, wagonCountOf } from '../utils/sharedPanels';
+import { loadedWagonCountOf, localDateKey, registryWagonCountOf, wagonCountOf } from '../utils/sharedPanels';
 
 const PRODUCT_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'];
 
@@ -187,10 +187,16 @@ export default function StatisticsPage() {
         const row = rows.get(localDateKey(stamp));
         if (row) row.kirdi += wagonCountOf(a);
       }
-      for (const w of a.wagons ?? []) {
-        if (!w.loadingCompletedAt) continue;
-        const row = rows.get(localDateKey(w.loadingCompletedAt));
-        if (row) row.yuklandi += 1;
+      // Vagon bo‘yicha yuklash vaqti bo‘lsa — o‘sha kun; bo‘lmasa partiya yakunlangan kun (Boshqaruv paneli bilan bir xil)
+      const perWagon = (a.wagons ?? []).filter(w => w.loadingCompletedAt);
+      if (perWagon.length > 0) {
+        for (const w of perWagon) {
+          const row = rows.get(localDateKey(w.loadingCompletedAt!));
+          if (row) row.yuklandi += 1;
+        }
+      } else if (a.loadingCompletedAt) {
+        const row = rows.get(localDateKey(a.loadingCompletedAt));
+        if (row) row.yuklandi += loadedWagonCountOf(a);
       }
     }
     for (const r of registries) {
@@ -252,14 +258,14 @@ export default function StatisticsPage() {
               <ChartCard title="Oylar bo‘yicha reja va bajarilish" hint="Tasdiqlangan buyurtmalar, tonna">
                 {monthly.length === 0 ? empty('Tanlangan davrda buyurtma yo‘q') : (
                   <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={4}>
+                    <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={6} barCategoryGap="28%">
                       <CartesianGrid stroke={grid} vertical={false} />
                       <XAxis dataKey="label" stroke={axis} fontSize={12} tickLine={false} axisLine={false} />
                       <YAxis stroke={axis} fontSize={12} tickLine={false} axisLine={false} tickFormatter={shortTons} width={44} />
                       <Tooltip contentStyle={tooltipStyle} cursor={{ fill: dark ? 'rgb(148 163 184 / 0.08)' : 'rgb(148 163 184 / 0.12)' }} formatter={(v: number) => `${formatTons(v)} t`} />
                       <Legend wrapperStyle={{ fontSize: 13 }} />
-                      <Bar dataKey="reja" name="Reja" fill={dark ? '#334155' : '#cbd5e1'} radius={[6, 6, 0, 0]} maxBarSize={36} />
-                      <Bar dataKey="bajarildi" name="Bajarildi" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                      <Bar dataKey="reja" name="Reja" fill={dark ? '#334155' : '#cbd5e1'} radius={[6, 6, 0, 0]} maxBarSize={56} />
+                      <Bar dataKey="bajarildi" name="Bajarildi" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={56} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
