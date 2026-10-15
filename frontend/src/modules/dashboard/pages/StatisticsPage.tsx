@@ -50,6 +50,13 @@ function shiftIsoDays(iso: string, days: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 const shortTons = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `${Math.round(v)}`);
 
 function ChartCard({ title, hint, children, className = '' }: { title: string; hint?: string; children: React.ReactNode; className?: string }) {
@@ -239,18 +246,17 @@ export default function StatisticsPage() {
     const items = (demurrage?.items ?? []).filter(i => i.isExited && inPeriod(i.exitedAt));
     return STAGES.map(st => {
       const vals = items.map(i => i.stepHours[st.key]).filter(v => v > 0);
-      const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-      return { label: st.label, haqiqiy: Math.round(avg * 10) / 10, meyor: Math.round((st.norm / 60) * 10) / 10 };
+      return { label: st.label, haqiqiy: Math.round(median(vals) * 10) / 10, meyor: Math.round((st.norm / 60) * 10) / 10 };
     });
   }, [demurrage, periodFrom, periodTo]);
 
   const stayTrend = useMemo(() => {
-    const map = new Map<string, { sum: number; n: number; over: number }>();
+    const map = new Map<string, { vals: number[]; n: number; over: number }>();
     for (const i of demurrage?.items ?? []) {
       if (!i.isExited || !i.exitedAt || !inPeriod(i.exitedAt)) continue;
       const day = localDateKey(i.exitedAt);
-      const row = map.get(day) ?? { sum: 0, n: 0, over: 0 };
-      row.sum += i.hoursInPlant;
+      const row = map.get(day) ?? { vals: [], n: 0, over: 0 };
+      row.vals.push(i.hoursInPlant);
       row.n += 1;
       if (i.hoursInPlant > 8.9) row.over += 1;
       map.set(day, row);
@@ -258,7 +264,7 @@ export default function StatisticsPage() {
     return Array.from(map, ([day, r]) => ({
       day,
       label: `${day.slice(8, 10)}.${day.slice(5, 7)}`,
-      soat: Math.round((r.sum / r.n) * 10) / 10,
+      soat: Math.round(median(r.vals) * 10) / 10,
       oshgan: r.over,
       jami: r.n,
     })).sort((a, b) => a.day.localeCompare(b.day)).slice(-45);
@@ -267,8 +273,8 @@ export default function StatisticsPage() {
   const stayTotals = useMemo(() => {
     const exited = stayTrend.reduce((s, r) => s + r.jami, 0);
     const over = stayTrend.reduce((s, r) => s + r.oshgan, 0);
-    const avg = exited ? stayTrend.reduce((s, r) => s + r.soat * r.jami, 0) / exited : 0;
-    return { exited, over, avg: Math.round(avg * 10) / 10, inPlant: demurrage?.summary.totalActive ?? 0, red: demurrage?.summary.redCount ?? 0 };
+    const all = (demurrage?.items ?? []).filter(i => i.isExited && i.exitedAt && inPeriod(i.exitedAt)).map(i => i.hoursInPlant);
+    return { exited, over, avg: Math.round(median(all) * 10) / 10, inPlant: demurrage?.summary.totalActive ?? 0, red: demurrage?.summary.redCount ?? 0 };
   }, [stayTrend, demurrage]);
 
   // ---- Yuklash sifati (og‘irlik) ----
@@ -425,7 +431,7 @@ export default function StatisticsPage() {
             <div className="stat-grid stat-grid--1-1">
               <ChartCard
                 title="Bosqichlar bo‘yicha o‘rtacha vaqt"
-                hint="Chiqib ketgan vagonlar, soat · kulrang — reglament me’yori (jami 533 daqiqa)"
+                hint="Chiqib ketgan vagonlar, soat (mediana — vagonlarning yarmi shundan tez) · kulrang — reglament me’yori, jami 533 daqiqa"
               >
                 {stayTotals.exited === 0 ? empty('Tanlangan davrda chiqib ketgan vagon yo‘q') : (
                   <ResponsiveContainer width="100%" height={280}>
@@ -436,7 +442,7 @@ export default function StatisticsPage() {
                       <Tooltip contentStyle={tooltipStyle} cursor={{ fill: dark ? 'rgb(148 163 184 / 0.08)' : 'rgb(148 163 184 / 0.12)' }} formatter={(v: number) => `${v} soat`} />
                       <Legend wrapperStyle={{ fontSize: 13 }} />
                       <Bar dataKey="meyor" name="Me’yor" fill={dark ? '#334155' : '#cbd5e1'} radius={[6, 6, 0, 0]} maxBarSize={40} />
-                      <Bar dataKey="haqiqiy" name="Haqiqiy (o‘rtacha)" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                      <Bar dataKey="haqiqiy" name="Haqiqiy" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40}>
                         {stageChart.map((r, i) => <Cell key={i} fill={r.haqiqiy > r.meyor ? '#ef4444' : '#10b981'} />)}
                       </Bar>
                     </BarChart>
@@ -444,8 +450,8 @@ export default function StatisticsPage() {
                 )}
               </ChartCard>
               <ChartCard
-                title="Vagonning zavodda turgan o‘rtacha vaqti"
-                hint={`O‘rtacha ${stayTotals.avg} soat · me’yordan oshgan: ${stayTotals.over} / ${stayTotals.exited} vagon · hozir hududda: ${stayTotals.inPlant} (me’yordan oshgani: ${stayTotals.red})`}
+                title="Vagonning zavodda turgan vaqti (kunlar bo‘yicha)"
+                hint={`Odatiy (mediana) ${stayTotals.avg} soat · me’yordan oshgan: ${stayTotals.over} / ${stayTotals.exited} vagon · hozir hududda: ${stayTotals.inPlant} (me’yordan oshgani: ${stayTotals.red})`}
               >
                 {stayTrend.length === 0 ? empty('Ma’lumot yo‘q') : (
                   <ResponsiveContainer width="100%" height={280}>
