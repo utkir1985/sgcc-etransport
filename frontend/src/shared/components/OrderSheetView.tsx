@@ -135,6 +135,7 @@ export function OrderSheetView({
     const totals = summarizeOrderQuantities(lines);
 
     return (
+      <>
       <div className="order-sheet-table-box">
         <div className="order-sheet-scroll">
           <table className="order-sheet-table">
@@ -297,10 +298,12 @@ export function OrderSheetView({
             </tbody>
           </table>
         </div>
-        {showFooter && signatureFooterActions ? (
-          <OrderSheetTableFooter>{signatureFooterActions}</OrderSheetTableFooter>
-        ) : null}
       </div>
+      {/* Amallar jadval ramkasidan tashqarida — jadval pastki chizig'i yopiq turadi */}
+      {showFooter && signatureFooterActions ? (
+        <OrderSheetTableFooter>{signatureFooterActions}</OrderSheetTableFooter>
+      ) : null}
+      </>
     );
   };
 
@@ -314,6 +317,7 @@ export function OrderSheetView({
     const totals = summarizeOrderQuantities(lines);
 
     return (
+      <>
       <div className={`order-sheet-table-box mb-4 overflow-hidden rounded-2xl border ${
         badgeVariant === 'approved'
           ? 'border-emerald-200 dark:border-emerald-800/60 shadow-sm'
@@ -502,10 +506,11 @@ export function OrderSheetView({
             </tbody>
           </table>
         </div>
-        {showFooterAction && signatureFooterActions && (
-          <OrderSheetTableFooter>{signatureFooterActions}</OrderSheetTableFooter>
-        )}
       </div>
+      {showFooterAction && signatureFooterActions && (
+        <OrderSheetTableFooter>{signatureFooterActions}</OrderSheetTableFooter>
+      )}
+      </>
     );
   };
 

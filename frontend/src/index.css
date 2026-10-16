@@ -9049,7 +9049,7 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 }
 
 .order-status-badge {
-  @apply inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold whitespace-nowrap;
+  @apply inline-flex items-center rounded-md px-3 py-1 text-sm font-semibold whitespace-nowrap;
 }
 
 /* Holat bo‘yicha aniq ranglar */
@@ -20632,3 +20632,19 @@ html.dark .order-progress-track,
 .station-multi-box.is-on { background: #2563eb; border-color: #2563eb; }
 .dark .station-multi-box { border-color: #475569; background: transparent; }
 .dark .station-multi-box.is-on { background: #3b82f6; border-color: #3b82f6; }
+
+/* "Xodimga qaytarish" — oq fondan ajralib turadigan (sariq) ikkinchi darajali tugma */
+.order-sheet-return-btn {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors;
+  @apply border border-amber-300 bg-amber-50 text-amber-800;
+  @apply dark:border-amber-700/70 dark:bg-amber-950/40 dark:text-amber-200;
+}
+.order-sheet-return-btn:hover:not(:disabled) {
+  @apply bg-amber-100 border-amber-400 dark:bg-amber-900/50;
+}
+.order-sheet-return-btn:disabled {
+  @apply cursor-not-allowed opacity-50;
+}
+.order-sheet-footer-actions .order-sheet-return-btn {
+  @apply w-full sm:w-auto justify-center;
+}

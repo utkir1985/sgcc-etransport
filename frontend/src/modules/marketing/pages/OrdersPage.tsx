@@ -1066,7 +1066,7 @@ function MarketingOrdersPanel({
             type="button"
             onClick={() => { setHeadReturnTarget(order); setHeadReturnComment(''); setHeadReturnError(''); }}
             disabled={submitting || headBusy}
-            className="btn-secondary order-sheet-submit-btn"
+            className="order-sheet-return-btn"
           >
             <RotateCcw className="w-4 h-4" />
             Xodimga qaytarish
