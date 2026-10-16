@@ -728,10 +728,32 @@ function orderTiles(role: string, orders: MonthlyOrder[], orderId?: string | nul
     }&open=${focus.id}`
     : null;
 
+  // MS va MX xodimi yaratgan buyurtma: 1-bosqich ikkiga bo'linadi — xodim yaratadi → bo'lim boshlig'i tasdiqlaydi.
+  // Bo'lim boshlig'i o'zi yaratganda — avvalgi bitta bosqich. Qolgan bosqichlar o'zgarmaydi.
+  const staffCreated = Boolean(focus?.headReviewStatus);
+  const firstSteps: StepTile[] = staffCreated
+    ? [
+      makeTile(role, 'o0', 'Buyurtma yaratish', 'MS va MX xodimi',
+        'Buyurtmani tayyorlab bo‘lim boshlig‘iga yuboradi',
+        focusLink ?? '/orders', ClipboardPen,
+        scoped.filter(o => o.status === 'Draft' && o.headReviewStatus !== 'Pending').length,
+        ['MarketingStaff'],
+        maxIso(...scoped.filter(o => o.headReviewStatus === 'Pending' || o.headReviewStatus === 'Approved').map(o => o.headSubmittedAt))),
+      makeTile(role, 'o1', 'Buyurtmani tasdiqlash', 'MS va MX bo‘lim boshlig‘i',
+        'Xodim tayyorlagan buyurtmani tasdiqlab kelishuvga yuboradi',
+        focusLink ?? '/orders', ClipboardCheck,
+        scoped.filter(o => (o.status === 'Draft' && o.headReviewStatus === 'Pending') || o.status === 'ReturnedToMarketing').length,
+        ['Marketing', 'Management'],
+        maxIso(...pastSubmit.map(o => o.headApprovedAt ?? o.submittedAt))),
+    ]
+    : [
+      makeTile(role, 'o1', 'Buyurtma yaratish', 'Mahsulotlarni sotish va marketing xizmati',
+        'Oylik buyurtmani yaratadi',
+        focusLink ?? '/orders', ClipboardPen, drafts.length, ['Marketing', 'Management'], o1At),
+    ];
+
   return [
-    makeTile(role, 'o1', 'Buyurtma yaratish', 'Mahsulotlarni sotish va marketing xizmati',
-      'Oylik buyurtmani yaratadi',
-      focusLink ?? '/orders', ClipboardPen, drafts.length, ['Marketing', 'Management'], o1At),
+    ...firstSteps,
     makeTile(role, 'o2', 'Buyurtmani kelishish', 'Buxgalteriya',
       'Buyurtmani kelishadi',
       focusLink ?? '/orders/railway?view=tasdiq', Handshake, accounting.length, ['Accounting'], o2At),

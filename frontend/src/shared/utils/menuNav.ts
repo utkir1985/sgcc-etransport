@@ -62,7 +62,7 @@ function ordersRoad(): MenuItem {
 function buildOrdersItem(byKey: Map<string, MenuItem>, role?: string): MenuItem {
   const base = fromMap(byKey, 'orders', item('orders', 'Buyurtmalar', '/orders/railway', 'FileText'));
 
-  if (role === 'Marketing' || role === 'Admin') {
+  if (role === 'Marketing' || role === 'MarketingStaff' || role === 'Admin') {
     return { ...base, path: '/orders/railway', children: [ordersRailway(), ordersRoad()] };
   }
 
