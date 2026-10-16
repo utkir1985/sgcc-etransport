@@ -225,6 +225,7 @@ const EMPTY_FORM = {
 const ROLE_DEPARTMENT: Record<string, string> = {
   Admin: 'Axborot texnologiyalari bo‘limi',
   Marketing: 'Mahsulotlarni sotish va marketing xizmati',
+  MarketingStaff: 'Mahsulotlarni sotish va marketing xizmati',
   Dispatching: 'Ishlab chiqarish dispetcherlik xizmati',
   DispatchSupervisor: 'Ishlab chiqarish dispetcherlik xizmati',
   Accounting: 'Buxgalteriya bo‘limi',
@@ -312,6 +313,7 @@ const AVATAR_TONES = ['emerald', 'violet', 'sky', 'amber', 'rose', 'indigo', 'cy
 const ROLE_META: Record<string, { tone: typeof AVATAR_TONES[number]; icon: LucideIcon }> = {
   Admin: { tone: 'blue', icon: Crown },
   Marketing: { tone: 'sky', icon: Megaphone },
+  MarketingStaff: { tone: 'sky', icon: Megaphone },
   Dispatching: { tone: 'indigo', icon: Truck },
   DispatchSupervisor: { tone: 'indigo', icon: Crown },
   Accounting: { tone: 'violet', icon: Calculator },

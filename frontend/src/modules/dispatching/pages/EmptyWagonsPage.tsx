@@ -193,6 +193,7 @@ const DEPT_NAMES = NOTIFY_DEPARTMENTS.map(d => d.name);
 
 const ROLE_DEPARTMENT: Record<string, string> = {
   Marketing: 'MS va MX xizmati',
+  MarketingStaff: 'MS va MX xizmati',
   Management: 'MS va MX xizmati',
   Railway: "Temir yo'l sexi",
   Warehouse: 'TM va XA smena muxandisi',
