@@ -1135,8 +1135,8 @@ function MarketingOrdersPanel({
               className="marketing-order-product-picker"
             />
             {singleOrderNumber && (
-              <label className="marketing-order-number-field">
-                <span>
+              <label className="marketing-orders-toolbar__field marketing-order-number-field">
+                <span className="marketing-orders-toolbar__label">
                   Buyurtma №{!/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
                 </span>
                 <input

@@ -20612,7 +20612,5 @@ html.dark .order-progress-track,
 .rbac-crud-wrap { max-height: none !important; overflow-y: visible !important; }
 
 /* Yangi buyurtma: "Buyurtma №" — mahsulot turi yonida bitta maydon */
-.marketing-order-number-field { display: flex; flex-direction: column; gap: 6px; width: 15rem; max-width: 100%; }
-.marketing-order-number-field > span { font-size: 13px; font-weight: 500; color: #64748b; }
-.dark .marketing-order-number-field > span { color: #94a3b8; }
-.marketing-order-number-field .order-sheet-input { height: 44px; border-radius: 12px; font-size: 14px; padding: 0 12px; }
+.marketing-order-number-field { width: 15rem; max-width: 100%; }
+.marketing-order-number-field .order-sheet-input { height: 40px; border-radius: 12px; font-size: 14px; padding: 0 12px; }
