@@ -189,6 +189,27 @@ public partial class OneCEmptyWagonSyncService(
         // Bitta tortish bitta tashrifga: moslashtirish oldindan, global tarzda hisoblanadi.
         var matchedItems = MatchWeighingsToVisits(units, oneCByWagon);
 
+        // Yopilgan (chiqib ketgan) tashriflar og'irliklari qayta yozilmaydi, lekin tarozichi ismi
+        // yo'q yoki o'rinbosar bo'lsa — tortish vaqti aniq mos kelgan 1C yozuvidan faqat ism olinadi.
+        var weigherBackfilled = 0;
+        foreach (var unit in units)
+        {
+            if (matchedItems.ContainsKey(unit.Id) || unit.GrossWeighedAt is null) continue;
+            if (!IsPlaceholderScaleName(unit.SealConfirmedByScaleName)) continue;
+            if (!oneCByWagon.TryGetValue(PrimaryWagonKey(unit.WagonNumber), out var cands)) continue;
+            var exact = cands.FirstOrDefault(c =>
+            {
+                var dt = ParseLocalDateTime(c.DatetimeOut);
+                return dt is not null && !string.IsNullOrWhiteSpace(c.WeigherName)
+                    && Math.Abs((ToUtc(dt.Value) - unit.GrossWeighedAt.Value).TotalMinutes) <= 2;
+            });
+            if (exact is null) continue;
+            unit.SealConfirmedByScaleName = exact.WeigherName.Trim();
+            weigherBackfilled++;
+        }
+        if (weigherBackfilled > 0)
+            logger.LogInformation("1C tarozichi ismi yopilgan tashriflarga yozildi: {Count}", weigherBackfilled);
+
         foreach (var unit in units)
         {
             if (unit.Arrival is null) continue;
@@ -265,8 +286,7 @@ public partial class OneCEmptyWagonSyncService(
             // Tarozi imzosi: 1C'dagi tortgan tarozichi (weigherName). Faqat ism yoziladi —
             // tarozi tasdig'i vaqti (SealConfirmedByScaleAt) jarayon bosqichi bo'lgani uchun tegilmaydi.
             var weigher = (item.WeigherName ?? "").Trim();
-            if (!string.IsNullOrWhiteSpace(weigher)
-                && (string.IsNullOrWhiteSpace(unit.SealConfirmedByScaleName) || unit.SealConfirmedByScaleName == "1C"))
+            if (!string.IsNullOrWhiteSpace(weigher) && IsPlaceholderScaleName(unit.SealConfirmedByScaleName))
             {
                 unit.SealConfirmedByScaleName = weigher;
                 changed = true;
@@ -390,7 +410,7 @@ public partial class OneCEmptyWagonSyncService(
             EmptyWagonUnitSync.DerivePartyStage(arrival);
         }
 
-        if (applied.Count > 0 || touchedArrivals.Count > 0)
+        if (applied.Count > 0 || touchedArrivals.Count > 0 || weigherBackfilled > 0)
             await db.SaveChangesAsync(cancellationToken);
 
         return new OneCEmptyWagonSyncResult(
@@ -560,6 +580,17 @@ public partial class OneCEmptyWagonSyncService(
     /// bir yozuv ikkala tashrifga tushib, eski hujjatning plombasi va og‘irligini
     /// o‘zgartirib yubormasligi uchun eng yaqin juftlikdan boshlab taqsimlanadi.
     /// </summary>
+    /// <summary>Tarozi imzosida haqiqiy ism emas — bo'sh, manba belgisi yoki avval qo'yilgan o'rinbosar.</summary>
+    private static bool IsPlaceholderScaleName(string? name)
+    {
+        var n = (name ?? "").Trim();
+        return n.Length == 0
+            || n == "1C"
+            || n == "Tarozi operatori"
+            || n.StartsWith("Foydalanuvchi topshirig", StringComparison.OrdinalIgnoreCase)
+            || n == "Kamolov Xikmat Abdurazzoq og'li"; // avvalgi qattiq yozilgan zaxira ism
+    }
+
     private static Dictionary<Guid, OneCWeighingRaw> MatchWeighingsToVisits(
         IReadOnlyList<EmptyWagonUnit> units,
         IReadOnlyDictionary<string, List<OneCWeighingRaw>> oneCByWagon)
