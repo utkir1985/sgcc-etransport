@@ -53,6 +53,7 @@ import {
   getRegistryPendingActionInfo,
 } from '../../../shared/utils/registryWorkflow';
 import { LOGISTICS_TYPES } from '../../../shared/constants/logisticsTypes';
+import { singleStation, splitStations } from '../../../shared/utils/stations';
 import { StationSelect } from '../../../shared/components/StationSelect';
 import { excludeOneCOrders } from '../../../shared/utils/oneCSources';
 import { defectActDisplayName, hasDefectAct, resolveDefectActType, type DefectActType } from '../../../shared/constants/defectActTypes';
@@ -468,9 +469,8 @@ type OrderLineLike = MonthlyOrder['lines'][number];
 /** Buyurtma qatori nomi: stansiya bo‘lmasa — u yuk xatida tanlanadi. */
 function orderLineLabel(line: OrderLineLike): string {
   const station = line.destinationStation?.trim();
-  return station
-    ? `${station} — ${line.contractor || 'Kontragent'}`
-    : `${line.contractor || 'Kontragent'} — stansiya yuk xatida tanlanadi`;
+  if (!station) return `${line.contractor || 'Kontragent'} — stansiya yuk xatida tanlanadi`;
+  return `${station} — ${line.contractor || 'Kontragent'}`;
 }
 
 /** Tanlov ro‘yxati uchun: qator nomi + tonna bo‘yicha qoldiq (eski qatorlarda vagon). */
@@ -546,16 +546,19 @@ export default function RegistryPage() {
   /** Qatorda stansiya bor bo‘lsa — o‘sha, aks holda yuk xatida tanlangani. */
   const chosenRouteStation = (formKey: string): string | undefined => {
     const line = routeLineFor(formKey);
-    if (line?.destinationStation?.trim()) return undefined;
+    // Qatorda bitta stansiya — o'sha (backend o'zi qo'yadi); bir nechta yoki yo'q — yuk xatida tanlanadi
+    if (singleStation(line?.destinationStation)) return undefined;
     return wagonRouteStations[formKey]?.trim() || undefined;
   };
 
   const renderRouteStationPicker = (formKey: string) => {
     const line = routeLineFor(formKey);
-    if (!line || line.destinationStation?.trim()) return null;
+    if (!line || singleStation(line.destinationStation)) return null;
+    const lineOptions = splitStations(line.destinationStation);
     return (
       <div className="registry-route-station-picker">
         <StationSelect
+          options={lineOptions.length > 1 ? lineOptions : undefined}
           value={wagonRouteStations[formKey] || ''}
           onChange={station => setWagonRouteStations(prev => ({ ...prev, [formKey]: station }))}
           contractorName={line.contractor}
@@ -1849,7 +1852,7 @@ export default function RegistryPage() {
       const missingStation = healthyRows.find(r => {
         const k = pooledWagonKey(r);
         const line = routeLineFor(k);
-        return line && !line.destinationStation?.trim() && !wagonRouteStations[k]?.trim();
+        return line && !singleStation(line.destinationStation) && !wagonRouteStations[k]?.trim();
       });
       if (missingStation) {
         setDraftActionError(`${missingStation.wagonNumber} vagoni uchun jo‘natish stansiyasini tanlang`);
@@ -3681,10 +3684,12 @@ export default function RegistryPage() {
                     </select>
                     {(() => {
                       const batchLine = orders.find(o => o.id === batchAssignOrderId)?.lines.find(l => l.id === batchAssignLineId);
-                      if (!batchLine || batchLine.destinationStation?.trim()) return null;
+                      if (!batchLine || singleStation(batchLine.destinationStation)) return null;
+                      const batchOptions = splitStations(batchLine.destinationStation);
                       return (
                         <div className="registry-route-station-picker">
                           <StationSelect
+                            options={batchOptions.length > 1 ? batchOptions : undefined}
                             value={batchAssignStation}
                             onChange={setBatchAssignStation}
                             contractorName={batchLine.contractor}

@@ -1405,6 +1405,7 @@ function MarketingOrdersPanel({
                         onChange={destinationStation => updateLine(idx, { destinationStation })}
                         contractorName={line.contractor}
                         logisticsType={logisticsType}
+                        multiple
                       />
                     ) : (
                       line.destinationStation || '—'

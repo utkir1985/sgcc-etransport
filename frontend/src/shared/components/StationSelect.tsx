@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import {
   buildDefaultDestinations,
   getDefaultStationsForContractor,
 } from '../constants/railwayContractors';
 import { api } from '../services/api';
 import type { ContractorDestination } from '../types';
+import { joinStations, splitStations } from '../utils/stations';
 
 const ADD_OPTION = '__add_station__';
 const MENU_MAX_HEIGHT = 240;
@@ -41,6 +42,10 @@ interface StationSelectProps {
   contractorName: string;
   logisticsType: string;
   required?: boolean;
+  /** Bir nechta stansiya tanlash (qiymat vergul bilan: "Oqjar, Xayrabod") */
+  multiple?: boolean;
+  /** Faqat shu stansiyalar orasidan tanlash (masalan, buyurtma qatoridagilar); qo'shish/o'chirish yo'q */
+  options?: string[];
 }
 
 export function StationSelect({
@@ -49,7 +54,10 @@ export function StationSelect({
   contractorName,
   logisticsType,
   required,
+  multiple = false,
+  options,
 }: StationSelectProps) {
+  const selected = multiple ? splitStations(value) : [];
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,9 +69,13 @@ export function StationSelect({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const disabled = !contractorName.trim();
+  const disabled = !options && !contractorName.trim();
 
   const loadDestinations = () => {
+    if (options) {
+      setDestinations(options.map(name => ({ id: `opt-${name}`, stationName: name, isSystem: true } as ContractorDestination)));
+      return;
+    }
     if (!contractorName.trim()) {
       setDestinations([]);
       return;
@@ -88,7 +100,7 @@ export function StationSelect({
     setOpen(false);
     setAddMode(false);
     setError('');
-  }, [contractorName, logisticsType]);
+  }, [contractorName, logisticsType, options?.join('|')]);
 
   const updateMenuLayout = () => {
     if (!triggerRef.current) return;
@@ -130,7 +142,7 @@ export function StationSelect({
 
   const displayLabel = disabled
     ? 'Avval korxonani tanlang'
-    : (value || 'Stansiyani tanlang');
+    : (value || (multiple ? 'Stansiyalarni tanlang' : 'Stansiyani tanlang'));
 
   const handleSelect = (stationName: string) => {
     if (stationName === ADD_OPTION) {
@@ -138,6 +150,14 @@ export function StationSelect({
       setNewName('');
       setError('');
       setOpen(false);
+      return;
+    }
+    if (multiple) {
+      // Bir nechta tanlov: menyu ochiq qoladi, tanlanganlar ketma-ket bitta qatorda
+      const next = selected.includes(stationName)
+        ? selected.filter(s => s !== stationName)
+        : [...selected, stationName];
+      onChange(joinStations(next));
       return;
     }
     onChange(stationName);
@@ -158,7 +178,7 @@ export function StationSelect({
       const res = await api.createContractorDestination(contractorName, logisticsType, trimmed);
       if (res.data) {
         loadDestinations();
-        onChange(res.data.stationName);
+        onChange(multiple ? joinStations([...selected, res.data.stationName]) : res.data.stationName);
         setAddMode(false);
         setNewName('');
       }
@@ -176,7 +196,9 @@ export function StationSelect({
     try {
       await api.deleteContractorDestination(destination.id);
       loadDestinations();
-      if (value === destination.stationName) onChange('');
+      if (multiple) {
+        if (selected.includes(destination.stationName)) onChange(joinStations(selected.filter(s => s !== destination.stationName)));
+      } else if (value === destination.stationName) onChange('');
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'O\'chirib bo\'lmadi');
     }
@@ -194,18 +216,23 @@ export function StationSelect({
       }}
       role="listbox"
     >
-      {destinations.map(destination => (
+      {destinations.map(destination => {
+        const isOn = multiple ? selected.includes(destination.stationName) : value === destination.stationName;
+        return (
         <div key={destination.id} className="contractor-select-row">
           <button
             type="button"
             role="option"
-            aria-selected={value === destination.stationName}
+            aria-selected={isOn}
             onClick={() => handleSelect(destination.stationName)}
-            className={`contractor-select-item${value === destination.stationName ? ' contractor-select-item--active' : ''}`}
+            className={`contractor-select-item${isOn ? ' contractor-select-item--active' : ''}${multiple ? ' contractor-select-item--multi' : ''}`}
           >
+            {multiple ? (
+              <span className={`station-multi-box${isOn ? ' is-on' : ''}`} aria-hidden="true">{isOn ? <Check className="w-3 h-3" strokeWidth={3} /> : null}</span>
+            ) : null}
             {destination.stationName}
           </button>
-          {!destination.isSystem && !destination.id.startsWith('default-') && (
+          {!options && !destination.isSystem && !destination.id.startsWith('default-') && (
             <button
               type="button"
               className="contractor-select-delete"
@@ -216,16 +243,19 @@ export function StationSelect({
             </button>
           )}
         </div>
-      ))}
+        );
+      })}
 
-      <button
-        type="button"
-        onClick={() => handleSelect(ADD_OPTION)}
-        className="contractor-select-add-option"
-      >
-        <Plus className="w-3.5 h-3.5" />
-        Boshqa stansiya qo&apos;shish
-      </button>
+      {!options && (
+        <button
+          type="button"
+          onClick={() => handleSelect(ADD_OPTION)}
+          className="contractor-select-add-option"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Boshqa stansiya qo&apos;shish
+        </button>
+      )}
     </div>
   ) : null;
 

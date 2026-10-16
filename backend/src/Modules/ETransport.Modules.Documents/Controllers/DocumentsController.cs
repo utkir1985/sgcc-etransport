@@ -2276,10 +2276,21 @@ public class DocumentsController(
         return !string.IsNullOrEmpty(left) && left == right;
     }
 
-    private static string ResolveRouteStation(MonthlyOrderLine line, string? requestedStation) =>
-        !string.IsNullOrWhiteSpace(line.DestinationStation)
-            ? line.DestinationStation.Trim()
-            : requestedStation?.Trim() ?? "";
+    /// <summary>
+    /// Vagon stansiyasi: qatorda bitta stansiya — o'sha; bir nechta ("Oqjar, Xayrabod") — yuk xatida tanlangani
+    /// (faqat shu ro'yxatdan); qatorda yo'q — yuk xatida tanlangani. Bo'sh qaytsa — stansiya tanlanmagan.
+    /// </summary>
+    private static string ResolveRouteStation(MonthlyOrderLine line, string? requestedStation)
+    {
+        var stations = (line.DestinationStation ?? "")
+            .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var requested = requestedStation?.Trim() ?? "";
+        if (stations.Count == 1) return stations[0];
+        if (stations.Count == 0) return requested;
+        return stations.FirstOrDefault(s => string.Equals(s, requested, StringComparison.OrdinalIgnoreCase)) ?? "";
+    }
 
     /// <summary>Yuk xatidagi vagonlar biriktirilgan qatorlar shartnomalari (qatorda bo‘lmasa — buyurtmaniki).</summary>
     private static string ResolveRegistryContract(
