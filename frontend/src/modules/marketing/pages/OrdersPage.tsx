@@ -128,7 +128,7 @@ function validateOrderDraft(
       return `${rowNumber}-qator: shartnoma raqamini kiriting`;
     }
     if (!isBlankOrder && !header.contractNumber.trim() && !line.customerOrderNumber?.trim()) {
-      return `${rowNumber}-qator: hujjatdagi buyurtma raqamini kiriting`;
+      return 'Buyurtma № ni kiriting (hujjatdagi buyurtma raqami)';
     }
 
     // Marka, stansiya va yuklash muddati — ixtiyoriy.
@@ -636,6 +636,11 @@ function MarketingOrdersPanel({
   }, [viewOrderId, editHistory.length]);
 
   const isReturnedEdit = !isNew && editingOrder?.status === 'ReturnedToMarketing';
+  // Hujjatdagi buyurtma raqami — formada bitta maydon (mahsulot turi yonida), barcha qatorlarga yoziladi.
+  // Eski buyurtmada qatorlar turli raqamli bo'lsa yoki qaytarilgan qatorlar tahrirlansa — avvalgidek qatorda.
+  const lineOrderNumbers = Array.from(new Set(lines.map(l => (l.customerOrderNumber ?? '').trim()).filter(Boolean)));
+  const singleOrderNumber = !isReturnedEdit && lineOrderNumbers.length <= 1;
+  const sharedOrderNumber = lineOrderNumbers[0] ?? '';
   const isBlankOrder = /^ZAXIRA-/i.test(header.contractNumber);
 
   const isLineEditableInForm = (line: MonthlyOrderLineInput) => {
@@ -1067,7 +1072,7 @@ function MarketingOrdersPanel({
     </>
   );
 
-  const addLine = () => setLines(prev => reindexLines([...prev, EMPTY_LINE()]));
+  const addLine = () => setLines(prev => reindexLines([...prev, { ...EMPTY_LINE(), customerOrderNumber: singleOrderNumber ? sharedOrderNumber : '' }]));
   const removeLine = (index: number) => setLines(prev => reindexLines(prev.filter((_, i) => i !== index)));
   const updateLine = (index: number, patch: Partial<MonthlyOrderLineInput>) => {
     setLines(prev => reindexLines(prev.map((l, i) => {
@@ -1129,6 +1134,25 @@ function MarketingOrdersPanel({
               widthLabel={RAILWAY_PRODUCT_TYPE_WIDTH_LABEL}
               className="marketing-order-product-picker"
             />
+            {singleOrderNumber && (
+              <label className="marketing-order-number-field">
+                <span>
+                  Buyurtma №{!/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
+                </span>
+                <input
+                  value={sharedOrderNumber}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setLines(prev => prev.map(l => ({ ...l, customerOrderNumber: v })));
+                  }}
+                  className="order-sheet-input"
+                  placeholder="Hujjatdagi buyurtma raqami"
+                  maxLength={100}
+                  aria-label="Hujjatdagi buyurtma raqami"
+                  autoComplete="off"
+                />
+              </label>
+            )}
 
           </div>
           <div className="marketing-order-edit-aside">
@@ -1196,7 +1220,7 @@ function MarketingOrdersPanel({
           <table className="order-sheet-table order-sheet-table--edit">
             <thead>
               <tr>
-                {tableHeaders.map(h => (
+                {tableHeaders.filter(h => !(singleOrderNumber && h === 'Buyurtma №')).map(h => (
                   <th key={h} className={getOrderSheetHeaderClass(h)}>
                     {h}
                     {(h === 'Shartnoma raqami' || h === 'Buyurtma №') && !/zaxira/i.test(header.contractNumber) && <span className="text-rose-500"> *</span>}
@@ -1255,6 +1279,7 @@ function MarketingOrdersPanel({
                       lineTonCount(line)
                     )}
                   </td>
+                  {!singleOrderNumber && (
                   <td className="order-sheet-contract order-sheet-center">
                     {editable ? (
                       <input
@@ -1271,6 +1296,7 @@ function MarketingOrdersPanel({
                       line.customerOrderNumber || '—'
                     )}
                   </td>
+                  )}
                   <td className="order-sheet-contract order-sheet-center">
                     {editable ? (
                       <input
@@ -1347,7 +1373,7 @@ function MarketingOrdersPanel({
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total" />
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
-                <td colSpan={lines.length > 1 ? 5 : 4} />
+                <td colSpan={(lines.length > 1 ? 5 : 4) - (singleOrderNumber ? 1 : 0)} />
               </tr>
             </tbody>
           </table>
