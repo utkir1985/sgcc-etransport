@@ -52,7 +52,12 @@ public static class CatalogParkLocationSync
             }
             else
             {
-                existing.Ownership = ownership;
+                // Agar vagon Majmua parki reestrida allaqachon Majmuaga tegishli bo‘lsa,
+                // operatsion qabul jarayonidagi qiymat sabab uni 'tashqi'ga aylantirmaslik kerak.
+                if (!string.Equals(existing.Ownership, WagonOwnership.Majmua, StringComparison.OrdinalIgnoreCase))
+                {
+                    existing.Ownership = ownership;
+                }
                 existing.WagonKind = kind;
                 existing.DestinationStation = OnSiteStation;
                 existing.DaysInTransit = 0;

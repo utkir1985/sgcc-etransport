@@ -397,7 +397,7 @@ public class EmptyWagonsController(
             EmptyWagonUnitSync.ApplyIntakeLoadStates(openInspected, existingLoadStates);
             EmptyWagonUnitSync.SyncMirrors(openInspected);
             await CatalogParkLocationSync.UpsertContainersOnSiteAsync(db, FlattenCisternCodes(intakeCisterns));
-            await CatalogParkLocationSync.UpsertWagonsOnSiteAsync(db, intakeNumbers, existingOwnerships, existingTypes);
+            await CatalogParkLocationSync.UpsertWagonsOnSiteAsync(db, intakeNumbers, intakeOwnerships, intakeTypes);
             await db.SaveChangesAsync();
 
             await auditService.LogAsync(

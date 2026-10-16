@@ -673,20 +673,28 @@ export function EditPartyWagonsDialog({
             ] as const).map(opt => {
               const selected = active.ownership === opt.key;
               return (
-                <span
+                <button
+                  type="button"
                   key={opt.key}
+                  disabled={submitting || !canEditStage}
+                  onClick={() => {
+                    patchActive({
+                      ownership: opt.key,
+                      ownershipSource: 'manual',
+                    });
+                  }}
                   aria-current={selected ? 'true' : undefined}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-sm font-semibold ${
+                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-sm font-semibold transition-all cursor-pointer ${
                     selected
                       ? opt.key === WAGON_OWNERSHIP.Majmua
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-200'
-                        : 'border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-400 dark:bg-slate-800 dark:text-slate-100'
-                      : 'border-slate-200/80 bg-slate-50 text-slate-400 opacity-50 dark:border-slate-800 dark:bg-slate-900/30'
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-200 shadow-2xs'
+                        : 'border-slate-500 bg-slate-100 text-slate-800 dark:border-slate-400 dark:bg-slate-800 dark:text-slate-100 shadow-2xs'
+                      : 'border-slate-200/80 bg-slate-50 text-slate-400 hover:border-slate-300 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/30 dark:hover:border-slate-700'
                   }`}
                 >
                   {selected ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : null}
                   {opt.title}
-                </span>
+                </button>
               );
             })}
             <span className="text-xs text-slate-500 dark:text-slate-400 ml-auto">{ownershipHint}</span>

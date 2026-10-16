@@ -757,15 +757,22 @@ function IntakeFormBody({
                   Zavod hududida mavjud vagon
                 </span>
               ) : ownership ? (
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${
+                <button
+                  type="button"
+                  title="Tegishlilikni o‘zgartirish uchun bosing"
+                  onClick={() => {
+                    setOwnership(prev => (prev === WAGON_OWNERSHIP.Majmua ? WAGON_OWNERSHIP.Tashqi : WAGON_OWNERSHIP.Majmua));
+                    setOwnershipSource('manual');
+                  }}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-2xs ${
                     ownership === WAGON_OWNERSHIP.Majmua
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                      : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
+                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:hover:bg-emerald-900'
+                      : 'bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
                   }`}
                 >
                   {wagonOwnershipLabel(ownership)}
-                </span>
+                  <span className="opacity-60 text-[9px] lowercase font-normal">(o‘zgartirish)</span>
+                </button>
               ) : (
                 <span className="text-slate-400">Inventar raqami (8 xonali)</span>
               )}
