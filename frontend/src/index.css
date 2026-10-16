@@ -20595,7 +20595,7 @@ html.dark .order-progress-track,
 
 /* Rollar va Huquqlar — CRUD jadvali (tizimdagi boshqa jadvallar uslubida) */
 .rbac-crud-table { min-width: 64rem !important; }
-.rbac-crud-table th:nth-child(2), .rbac-crud-table td:nth-child(2) { width: auto !important; min-width: 240px !important; }
+.rbac-crud-table th:nth-child(2), .rbac-crud-table td:nth-child(2) { width: 30% !important; min-width: 320px !important; }
 .rbac-crud-table td { vertical-align: middle; }
 .rbac-crud-table tr.rbac-crud-detail > td { background: #f8fafc; }
 .dark .rbac-crud-table tr.rbac-crud-detail > td { background: rgba(15, 23, 42, .6); }
