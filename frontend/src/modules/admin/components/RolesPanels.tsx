@@ -1374,7 +1374,7 @@ export function RolesCrudPanel() {
                       </td>
                       <td className="py-2 px-3">
                         {/* Uzun izoh ustunni kengaytirib, jadvalni yon tomonga surmasin */}
-                        <div className="flex items-center gap-2.5 max-w-[420px]">
+                        <div className="flex items-center gap-2.5">
                           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-2xs ${iconStyle}`}>
                             <Icon className="w-4 h-4" strokeWidth={2} />
                           </span>

@@ -20605,11 +20605,6 @@ html.dark .order-progress-track,
 .rbac-crud-table th { font-size: 13px !important; }
 .rbac-crud-table .rbac-desc {
   white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
   overflow-wrap: anywhere;
 }
 .rbac-crud-table td:nth-child(2) .truncate { white-space: normal; }
