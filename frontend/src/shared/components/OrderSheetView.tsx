@@ -1,4 +1,5 @@
 import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
+import { splitStations } from '../utils/stations';
 import { isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import type { MonthlyOrder } from '../types';
 import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
@@ -49,11 +50,24 @@ function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][nu
       </span>
     );
   }
-  // Qatorda stansiya belgilangan bo‘lsa — barcha vagonlar o‘sha stansiyaga (qator yig‘indisi, 0 ta bo‘lsa ham);
-  // aks holda yuk xatlarida tanlangan stansiyalar kesimi (serverda hisoblanadi).
-  const shipments = fixedStation
-    ? [{ station: fixedStation, wagons: line.fulfilledWagonCount ?? 0, netTons: Number(line.fulfilledNetWeight ?? 0) }]
-    : (line.stationShipments ?? []);
+  // Qatorda bitta stansiya — barcha vagonlar o‘sha stansiyaga (qator yig‘indisi, 0 ta bo‘lsa ham).
+  // Bir nechta stansiya ("Oqjar, Xayrabod") — har biri alohida: yuk xatlarida tanlangani bo‘yicha
+  // vagon va tonna (serverda hisoblanadi), hali jo‘natilmagan stansiya — 0 ta.
+  // Qatorda stansiya yo‘q — yuk xatlarida tanlangan stansiyalar kesimi.
+  const listed = splitStations(fixedStation);
+  const fromRegistries = line.stationShipments ?? [];
+  const shipments = listed.length === 1
+    ? [{ station: listed[0], wagons: line.fulfilledWagonCount ?? 0, netTons: Number(line.fulfilledNetWeight ?? 0) }]
+    : listed.length > 1
+      ? [
+        ...listed.map(name => {
+          const hit = fromRegistries.find(x => (x.station || '').trim().toLowerCase() === name.toLowerCase());
+          return { station: name, wagons: hit?.wagons ?? 0, netTons: Number(hit?.netTons ?? 0) };
+        }),
+        // Eski yuk xatlarida ro‘yxatdan tashqari stansiya bo‘lsa — u ham ko‘rinsin
+        ...fromRegistries.filter(x => !listed.some(n => n.toLowerCase() === (x.station || '').trim().toLowerCase())),
+      ]
+      : fromRegistries;
   if (shipments.length === 0) {
     return <span className="text-slate-400 dark:text-slate-500 italic">Yuk xatida tanlanadi</span>;
   }
