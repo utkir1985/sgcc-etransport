@@ -20599,3 +20599,4 @@ html.dark .order-progress-track,
 .rbac-crud-table td { vertical-align: middle; }
 .rbac-crud-table tr.rbac-crud-detail > td { background: #f8fafc; }
 .dark .rbac-crud-table tr.rbac-crud-detail > td { background: rgba(15, 23, 42, .6); }
+.rbac-crud-table th:nth-child(2), .rbac-crud-table th:nth-child(3) { text-align: left !important; }
