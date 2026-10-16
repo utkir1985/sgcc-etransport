@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ExternalLink, Lock, RefreshCw, WifiOff } from 'lucide-react';
+import { Lock, RefreshCw, WifiOff } from 'lucide-react';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
 import { api } from '../../../shared/services/api';
 import { useTheme } from '../../../shared/contexts/ThemeContext';
@@ -111,9 +111,6 @@ export default function SferaBalancePage() {
           <button type="button" className="sfera-page__btn" onClick={reload} title="Yangilash" aria-label="Yangilash">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <a className="sfera-page__btn" href={sferaHref(page.route).toString()} target="_blank" rel="noopener noreferrer" title="Yangi oynada ochish (to‘liq tizim, admin bo‘limlari)" aria-label="Yangi oynada ochish">
-            <ExternalLink className="w-4 h-4" />
-          </a>
         </div>
       </div>
       {status === 'checking' && frameKey === 0 ? null : status === 'offline' ? (
