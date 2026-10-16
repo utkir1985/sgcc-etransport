@@ -22,6 +22,7 @@ import { ProductDetailBackButton } from '../../../shared/components/ProductDetai
 import { toLatinProductName } from '../../../shared/utils/cyrillicToLatin';
 import { notifyOrdersChanged, subscribeOrdersChanged } from '../../../shared/utils/realtimeSync';
 import { isWagonKind, WAGON_KIND_LABEL } from '../../../shared/utils/wagonKinds';
+import { splitSealNumbers } from '../../../shared/utils/seals';
 
 interface WagonRow {
   arrival: EmptyWagonArrival;
@@ -76,12 +77,7 @@ function displayNetto(unit: EmptyWagonUnit): string {
 }
 
 function parseSealNumbers(raw?: string | null): string[] {
-  if (!raw) return [];
-  return raw
-    .replace(/[№#]/g, '')
-    .split(/[/,;|\s]+/)
-    .map(s => s.trim())
-    .filter(s => Boolean(s) && /[0-9A-Za-z]/.test(s));
+  return splitSealNumbers(raw);
 }
 
 function renderSealBadges(unit: EmptyWagonUnit): React.ReactNode {

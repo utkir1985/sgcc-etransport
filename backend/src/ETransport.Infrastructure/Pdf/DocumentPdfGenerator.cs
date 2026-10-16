@@ -7,6 +7,29 @@ namespace ETransport.Infrastructure.Pdf;
 
 public class DocumentPdfGenerator : IDocumentPdfGenerator
 {
+    /// <summary>Plombalar ", " bilan; 1C'dagi "4947 942-25" kabi bo'linib kelgan raqam bitta plomba ("4947942-25") bo'ladi.</summary>
+    private static string FormatSealNumbers(string raw)
+    {
+        var result = new List<string>();
+        foreach (var segment in raw.Replace("№", "").Replace("#", "").Split(['/', ',', ';', '|'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var tokens = segment.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < tokens.Length; i++)
+            {
+                var next = i + 1 < tokens.Length ? tokens[i + 1] : null;
+                if (System.Text.RegularExpressions.Regex.IsMatch(tokens[i], @"^\d{1,4}$") && next is not null
+                    && System.Text.RegularExpressions.Regex.IsMatch(next, @"^\d+-\d+$"))
+                {
+                    result.Add(tokens[i] + next);
+                    i++;
+                }
+                else result.Add(tokens[i]);
+            }
+        }
+        var distinct = result.Distinct().ToList();
+        return distinct.Count > 0 ? string.Join(", ", distinct) : raw.Trim();
+    }
+
     /// <summary>Vagon qatorida shartnoma bo‘lmasa — yuk xatining yagona shartnomasi ("Bir nechta shartnoma" bo‘lsa — chiziqcha).</summary>
     private static string RowContractFallback(string? registryContract) =>
         string.IsNullOrWhiteSpace(registryContract) || registryContract.Contains("Bir nechta", StringComparison.OrdinalIgnoreCase)
@@ -323,7 +346,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                     TD(!isDefective && wTare > 0 ? wTare.ToString("N0") : "—");
                     TD(!isDefective && wBrutto > 0 ? wBrutto.ToString("N0") : "—");
                     TD(!isDefective && wNetto > 0 ? wNetto.ToString("N0") : "—", bold: !isDefective && wNetto > 0);
-                    TD(!isDefective && !string.IsNullOrWhiteSpace(w.SealNumbers) ? w.SealNumbers : "—");
+                    TD(!isDefective && !string.IsNullOrWhiteSpace(w.SealNumbers) ? FormatSealNumbers(w.SealNumbers) : "—");
                     TD(wType);
                     TD(w.ProductType ?? model.ProductType ?? "Suyultirilgan gaz");
                     TD(isDefective ? "—" : (w.ContractNumber ?? RowContractFallback(model.ContractNo)));

@@ -73,6 +73,7 @@ import {
   docsMatchesSearch,
   paginateItems,
 } from '../../../shared/utils/docsHubFilter';
+import { splitSealNumbers } from '../../../shared/utils/seals';
 
 type ModalMode =
   | 'create'
@@ -182,11 +183,7 @@ function parseCsvList(value?: string | null): string[] {
 }
 
 function parseSealNumbers(raw?: string | null): string[] {
-  if (!raw) return [];
-  return raw
-    .split(/[/,;|\s]+/)
-    .map(s => s.trim())
-    .filter(s => Boolean(s) && /[0-9A-Za-z]/.test(s));
+  return splitSealNumbers(raw);
 }
 
 function parseWeightMap(raw?: string | null): Map<string, string> {

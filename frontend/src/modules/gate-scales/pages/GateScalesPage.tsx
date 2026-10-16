@@ -33,6 +33,7 @@ import { wagonOwnershipLabel } from '../../../shared/constants/wagonOwnership';
 import { intakeLoadStateLabel } from '../../../shared/constants/wagonIntakeLoadState';
 import { isWagonKind, WAGON_KIND_LABEL } from '../../../shared/utils/wagonKinds';
 import { flowPartyNumber } from '../../../shared/utils/partyFlowNumbers';
+import { splitSealNumbers } from '../../../shared/utils/seals';
 
 interface ScaleQueueData {
   emptyWagonsQueue: EmptyWagonArrival[];
@@ -122,12 +123,7 @@ function displayNetto(unit: EmptyWagonUnit): string {
 }
 
 function parseSealNumbers(raw?: string | null): string[] {
-  if (!raw) return [];
-  return raw
-    .replace(/[№#]/g, '')
-    .split(/[/,;|\s]+/)
-    .map(s => s.trim())
-    .filter(s => Boolean(s) && /[0-9A-Za-z]/.test(s));
+  return splitSealNumbers(raw);
 }
 
 function renderSealBadges(unit: EmptyWagonUnit): React.ReactNode {

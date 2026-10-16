@@ -3,6 +3,7 @@ import { wagonOwnershipLabel } from '../constants/wagonOwnership';
 import { isWagonKind, WAGON_KIND_LABEL, type WagonKind } from './wagonKinds';
 import { numberToUzWords } from './uzNumberWords';
 import { toLatinProductName } from './cyrillicToLatin';
+import { splitSealNumbers } from './seals';
 
 export interface YukXatiWagonRow {
   index: number;
@@ -169,11 +170,7 @@ function kindOf(unit: EmptyWagonUnit): WagonKind {
 
 function cleanSealNumbers(raw?: string | number | null): string {
   if (raw == null) return '';
-  return String(raw)
-    .split(/[/,;|\s]+/)
-    .map(s => safeTrim(s))
-    .filter(s => Boolean(s) && /[0-9A-Za-z]/.test(s))
-    .join(', ');
+  return splitSealNumbers(raw).join(', ');
 }
 
 function fmtDateTime(iso?: string | null): string {
