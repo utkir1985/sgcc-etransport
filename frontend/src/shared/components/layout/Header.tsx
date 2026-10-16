@@ -193,7 +193,7 @@ export default function Header({
     }
     if (!silent) setNotifLoading(true);
 
-    const wantsOrders = ['Accounting', 'Dispatching', 'DispatchSupervisor', 'Admin', 'Marketing', 'Management'].includes(role);
+    const wantsOrders = ['Accounting', 'Dispatching', 'DispatchSupervisor', 'Admin', 'Marketing', 'MarketingStaff', 'Management'].includes(role);
     const wantsPlans = ['Dispatching', 'Admin'].includes(role);
 
     Promise.all([

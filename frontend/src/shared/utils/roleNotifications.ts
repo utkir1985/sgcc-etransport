@@ -32,6 +32,7 @@ const WAGON_STAGE_LABELS: Record<string, string> = {
 
 const DEPT_BY_ROLE: Record<string, string> = {
   Marketing: 'MS va MX xizmati',
+  MarketingStaff: 'MS va MX xizmati',
   Management: 'MS va MX xizmati',
   Railway: "Temir yo'l sexi",
   Warehouse: 'TM va XA smena muxandisi',
@@ -241,6 +242,29 @@ function orderNotifications(role: string, orders: MonthlyOrder[]): RoleNotificat
   const items: RoleNotification[] = [];
   for (const o of orders) {
     const num = o.orderNumber || o.productType;
+    // MS va MX: xodim yuborgan buyurtma bo'lim boshlig'ida; qaytarilgani xodimga
+    if (o.status === 'Draft' && o.headReviewStatus === 'Pending' && (role === 'Marketing' || role === 'Admin') && canOpenPath(role, '/orders/railway')) {
+      items.push({
+        id: `order-head-${o.id}`,
+        title: `Ko‘rib chiqish: ${num}`,
+        subtitle: o.headSubmittedByName ? `Xodim yubordi: ${o.headSubmittedByName}` : 'MS va MX xodimi yubordi',
+        to: `/orders/${o.logisticsType === 'Road' ? 'road' : 'railway'}?view=tasdiq&open=${o.id}`,
+        badge: `${o.totalWagons || 0} ta`,
+        createdAt: o.headSubmittedAt || o.createdAt || '',
+        priority: 1,
+      });
+    }
+    if (o.status === 'Draft' && o.headReviewStatus === 'Returned' && role === 'MarketingStaff' && canOpenPath(role, '/orders/railway')) {
+      items.push({
+        id: `order-head-ret-${o.id}`,
+        title: `Qaytarildi: ${num}`,
+        subtitle: o.headReturnComment ? `Bo‘lim boshlig‘i: ${o.headReturnComment}` : 'Bo‘lim boshlig‘i tuzatish uchun qaytardi',
+        to: `/orders/${o.logisticsType === 'Road' ? 'road' : 'railway'}?view=tasdiq&open=${o.id}`,
+        badge: `${o.totalWagons || 0} ta`,
+        createdAt: o.createdAt || '',
+        priority: 1,
+      });
+    }
     if (o.status === 'PendingAccounting' && (role === 'Accounting' || role === 'Admin') && canOpenPath(role, '/orders/railway')) {
       items.push({
         id: `order-${o.id}`,

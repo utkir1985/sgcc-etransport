@@ -23,6 +23,8 @@ export function useRbacPermission() {
     canUpdateOrder: can('orders.update'),
     canDeleteOrder: can('orders.delete'),
     canSubmitApproval: can('orders.submit-approval'),
+    canSubmitHead: can('orders.submit-head'),
+    canApproveHead: can('orders.approve-head'),
     canResubmitRejected: can('orders.resubmit'),
     canAccountingSave: can('orders.accounting-save'),
     canAccountingFinalize: can('orders.accounting-finalize'),

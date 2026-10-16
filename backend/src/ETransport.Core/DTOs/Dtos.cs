@@ -45,9 +45,16 @@ public record MonthlyOrderDto(
     bool ManuallyCompleted = false,
     DateTime? ManuallyCompletedAt = null,
     string ManuallyCompletedByName = "",
-    string ManualCompletionReason = "");
+    string ManualCompletionReason = "",
+    string HeadReviewStatus = "",
+    DateTime? HeadSubmittedAt = null,
+    string HeadSubmittedByName = "",
+    DateTime? HeadApprovedAt = null,
+    string HeadApprovedByName = "",
+    string HeadReturnComment = "");
 
 public record CompleteOrderRequest(string Reason);
+public record ReturnToStaffRequest(string Comment);
 
 public record OrderAttachmentDto(
     Guid Id, string FileName, string ContentType, long SizeBytes, DateTime UploadedAt, string UploadedBy);

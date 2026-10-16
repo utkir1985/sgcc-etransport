@@ -1432,6 +1432,52 @@ public static class DbSeeder
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManuallyCompletedAt" timestamp with time zone NULL;
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManuallyCompletedByName" text NOT NULL DEFAULT '';
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "ManualCompletionReason" text NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadReviewStatus" text NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadSubmittedAt" timestamp with time zone NULL;
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadSubmittedByName" text NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadApprovedAt" timestamp with time zone NULL;
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadApprovedByName" text NOT NULL DEFAULT '';
+            ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadReturnComment" text NOT NULL DEFAULT '';
+
+            -- Bir martalik: saqlangan RBAC sozlamasiga "MS va MX xodimi" roli; mavjud rol "MS va MX bo'lim boshlig'i" deb ataladi.
+            -- Xodim MS va MX'ning barcha o'qish/ko'rish huquqlarini va buyurtma yaratish/tahrirlashni oladi (kelishuvga yuborish, o'chirish yo'q).
+            DO $$
+            DECLARE cfg jsonb;
+            BEGIN
+              IF EXISTS (SELECT 1 FROM "SystemSettings" WHERE "Key" = 'migr_marketing_staff_v1') THEN RETURN; END IF;
+              SELECT "Value"::jsonb INTO cfg FROM "SystemSettings" WHERE "Key" = 'rbac.config';
+              IF cfg IS NOT NULL AND jsonb_typeof(cfg->'roles') = 'array' THEN
+                cfg := jsonb_set(cfg, ARRAY['roles'], (SELECT jsonb_agg(CASE WHEN r->>'key' = 'Marketing'
+                    THEN r || jsonb_build_object('label', 'MS va MX bo''lim boshlig''i')
+                    ELSE r END) FROM jsonb_array_elements(cfg->'roles') r));
+                IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(cfg->'roles') r WHERE r->>'key' = 'MarketingStaff') THEN
+                  cfg := jsonb_set(cfg, ARRAY['roles'], (cfg->'roles') || jsonb_build_array(jsonb_build_object(
+                    'key', 'MarketingStaff', 'label', 'MS va MX xodimi', 'department', 'MS va MX',
+                    'description', 'Buyurtma tayyorlaydi va bo''lim boshlig''iga yuboradi; barcha buyurtmalarni ko''radi.',
+                    'tone', 'sky', 'seedUser', 'ms_xodim', 'isSystem', true, 'iconName', 'megaphone')));
+                END IF;
+              END IF;
+              IF cfg IS NOT NULL AND jsonb_typeof(cfg->'actions') = 'array' THEN
+                cfg := jsonb_set(cfg, ARRAY['actions'], (SELECT jsonb_agg(CASE
+                    WHEN (a->'roles') ? 'Marketing' AND NOT ((a->'roles') ? 'MarketingStaff')
+                      AND ((a->>'key') LIKE '%.read' OR (a->>'key') LIKE '%.view' OR (a->>'key') LIKE '%.export'
+                           OR (a->>'key') IN ('orders.create', 'orders.update', 'reports.filter'))
+                    THEN jsonb_set(a, ARRAY['roles'], (a->'roles') || '["MarketingStaff"]'::jsonb)
+                    WHEN (a->>'key') = 'orders.read' AND NOT ((a->'roles') ? 'MarketingStaff')
+                    THEN jsonb_set(a, ARRAY['roles'], (a->'roles') || '["MarketingStaff"]'::jsonb)
+                    ELSE a END) FROM jsonb_array_elements(cfg->'actions') a));
+              END IF;
+              IF cfg IS NOT NULL AND (cfg->'menusByRole') ? 'Marketing' THEN
+                cfg := jsonb_set(cfg, ARRAY['menusByRole','MarketingStaff'], cfg->'menusByRole'->'Marketing');
+              END IF;
+              IF cfg IS NOT NULL AND (cfg->'modulesByRole') ? 'Marketing' THEN
+                cfg := jsonb_set(cfg, ARRAY['modulesByRole','MarketingStaff'], cfg->'modulesByRole'->'Marketing');
+              END IF;
+              IF cfg IS NOT NULL THEN
+                UPDATE "SystemSettings" SET "Value" = cfg::text, "UpdatedAt" = now() WHERE "Key" = 'rbac.config';
+              END IF;
+              INSERT INTO "SystemSettings" ("Key", "Value", "UpdatedAt") VALUES ('migr_marketing_staff_v1', '1', now());
+            END $$;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "OrderDeductedWagons" integer NOT NULL DEFAULT 0;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "OrderDeductedNetWeight" numeric(18,3) NOT NULL DEFAULT 0;
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "DefectActNumber" character varying(40) NOT NULL DEFAULT '';

@@ -100,6 +100,14 @@ public class MonthlyOrder
     public string QrCodeBase64 { get; set; } = string.Empty;
     public DateTime? QrRegisteredAt { get; set; }
     // Qoldig‘i bo‘lsa ham qo‘lda yopilgan buyurtma — qayta hisoblashda «Ijroda»ga qaytmaydi
+    // MS va MX ichki ko'rigi: xodim tayyorlaydi → bo'lim boshlig'i tasdiqlab kelishuvga yuboradi.
+    // "" — ko'rik yo'q, "Pending" — boshliqda, "Returned" — xodimga qaytarilgan. Umumiy holat (Status) Draft'da qoladi.
+    public string HeadReviewStatus { get; set; } = string.Empty;
+    public DateTime? HeadSubmittedAt { get; set; }
+    public string HeadSubmittedByName { get; set; } = string.Empty;
+    public DateTime? HeadApprovedAt { get; set; }
+    public string HeadApprovedByName { get; set; } = string.Empty;
+    public string HeadReturnComment { get; set; } = string.Empty;
     public bool ManuallyCompleted { get; set; }
     public DateTime? ManuallyCompletedAt { get; set; }
     public string ManuallyCompletedByName { get; set; } = string.Empty;

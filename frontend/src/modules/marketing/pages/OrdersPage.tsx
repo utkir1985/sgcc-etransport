@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Clock3, FileDown, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck, FileText, LifeBuoy } from 'lucide-react';
+import { Clock3, FileDown, RotateCcw, History, Hourglass, MessageSquareText, Paperclip, Pencil, PencilLine, Plus, Save, Send, CheckCircle2, Trash2, Truck, FileText, LifeBuoy } from 'lucide-react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
@@ -399,10 +399,17 @@ function MarketingOrdersPanel({
 
   const quantityTotals = useMemo(() => summarizeOrderQuantities(lines), [lines]);
 
+  // MS va MX ichki ko'rigi: xodim (submit-head, kelishuvga yubora olmaydi) → bo'lim boshlig'i (approve-head)
+  const { canSubmitApproval, canSubmitHead, canApproveHead } = useRbacPermission();
+  const isMarketingStaff = canSubmitHead && !canSubmitApproval;
+  const isHeadPending = (order: MonthlyOrder) => order.status === 'Draft' && order.headReviewStatus === 'Pending';
+
   const canEditOrderEntity = (order: MonthlyOrder) =>
     canUpdate
     && order.status !== 'Completed'
-    && order.status !== 'Cancelled';
+    && order.status !== 'Cancelled'
+    // Xodim faqat boshliqqa yuborilmagan qoralamani tahrirlaydi
+    && !(isMarketingStaff && (order.status !== 'Draft' || isHeadPending(order)));
 
   /** Ruxsat bo'lsa — yakunlanmagan buyurtmalarni o'chirish (shu jumladan Tasdiqlangan) */
   const canDeleteOrderEntity = (order: MonthlyOrder) =>
@@ -865,6 +872,51 @@ function MarketingOrdersPanel({
     setDeleteTarget(order);
   };
 
+  const [headReturnTarget, setHeadReturnTarget] = useState<MonthlyOrder | null>(null);
+  const [headReturnComment, setHeadReturnComment] = useState('');
+  const [headBusy, setHeadBusy] = useState(false);
+  const [headReturnError, setHeadReturnError] = useState('');
+
+  const submitToHead = async (order: MonthlyOrder) => {
+    if (!(order.attachments?.length)) {
+      startEditOrder(order);
+      setSaveError('Ilova biriktirish majburiy — kamida bitta fayl qo‘shing');
+      setAttachmentsModalOpen(true);
+      return;
+    }
+    setSaveError('');
+    setHeadBusy(true);
+    try {
+      await api.submitOrderToHead(order.id);
+      notifyOrdersUpdated();
+      await load({ silent: true });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Yuborishda xatolik');
+    } finally {
+      setHeadBusy(false);
+    }
+  };
+
+  const handleReturnToStaff = async () => {
+    if (!headReturnTarget) return;
+    if (headReturnComment.trim().length < 3) {
+      setHeadReturnError('Qaytarish sababini yozing');
+      return;
+    }
+    setHeadBusy(true);
+    setHeadReturnError('');
+    try {
+      await api.returnOrderToStaff(headReturnTarget.id, headReturnComment.trim());
+      setHeadReturnTarget(null);
+      notifyOrdersUpdated();
+      await load({ silent: true });
+    } catch (err) {
+      setHeadReturnError(err instanceof Error ? err.message : 'Qaytarishda xatolik');
+    } finally {
+      setHeadBusy(false);
+    }
+  };
+
   const [completeTarget, setCompleteTarget] = useState<MonthlyOrder | null>(null);
   const [completeReason, setCompleteReason] = useState('');
   const [completing, setCompleting] = useState(false);
@@ -993,7 +1045,33 @@ function MarketingOrdersPanel({
 
     return (
       <div className="order-sheet-footer-actions">
-        {order.status === 'Draft' && (
+        {order.status === 'Draft' && isMarketingStaff && (
+          isHeadPending(order) ? (
+            <span className="order-sheet-pending-note">Bo‘lim boshlig‘i ko‘rib chiqmoqda</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { void submitToHead(order); }}
+              disabled={headBusy}
+              className="btn-primary order-sheet-submit-btn"
+            >
+              <Send className="w-4 h-4" />
+              {headBusy ? 'Yuborilmoqda...' : order.headReviewStatus === 'Returned' ? 'Bo‘lim boshlig‘iga qayta yuborish' : 'Bo‘lim boshlig‘iga yuborish'}
+            </button>
+          )
+        )}
+        {order.status === 'Draft' && !isMarketingStaff && canApproveHead && isHeadPending(order) && (
+          <button
+            type="button"
+            onClick={() => { setHeadReturnTarget(order); setHeadReturnComment(''); setHeadReturnError(''); }}
+            disabled={submitting || headBusy}
+            className="btn-secondary order-sheet-submit-btn"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Xodimga qaytarish
+          </button>
+        )}
+        {order.status === 'Draft' && !isMarketingStaff && (
           <button
             type="button"
             onClick={() => submitForApproval(order.id)}
@@ -1001,10 +1079,17 @@ function MarketingOrdersPanel({
             className="btn-primary order-sheet-submit-btn"
           >
             <Send className="w-4 h-4" />
-            {submitting ? 'Yuborilmoqda...' : isCondensate ? 'Direktor o‘rinbosari tasdig‘iga yuborish' : 'Buxgalteriya bilan kelishish'}
+            {submitting
+              ? 'Yuborilmoqda...'
+              : isHeadPending(order)
+                ? (isCondensate ? 'Tasdiqlash va direktor o‘rinbosariga yuborish' : 'Tasdiqlash va kelishuvga yuborish')
+                : (isCondensate ? 'Direktor o‘rinbosari tasdig‘iga yuborish' : 'Buxgalteriya bilan kelishish')}
           </button>
         )}
-        {order.status === 'ReturnedToMarketing' && (
+        {order.status === 'ReturnedToMarketing' && isMarketingStaff && (
+          <span className="order-sheet-pending-note">Qaytarildi — bo‘lim boshlig‘i ko‘rib chiqadi</span>
+        )}
+        {order.status === 'ReturnedToMarketing' && !isMarketingStaff && (
           <button
             type="button"
             onClick={() => resubmitRejected(order.id)}
@@ -1498,6 +1583,27 @@ function MarketingOrdersPanel({
           {saveError ? (
             <p className="order-save-error" role="alert">{saveError}</p>
           ) : null}
+          {viewOrder.status === 'Draft' && viewOrder.headReviewStatus === 'Pending' ? (
+            <div className="order-head-review-note" role="note">
+              <Clock3 className="order-head-review-note__icon" aria-hidden />
+              <div>
+                <strong>Bo‘lim boshlig‘i ko‘rib chiqmoqda</strong>
+                <span>
+                  {[viewOrder.headSubmittedByName ? `Tayyorladi: ${viewOrder.headSubmittedByName}` : '', viewOrder.headSubmittedAt ? formatDateTimeDisplay(viewOrder.headSubmittedAt) : '']
+                    .filter(Boolean).join(' · ')}
+                </span>
+              </div>
+            </div>
+          ) : null}
+          {viewOrder.status === 'Draft' && viewOrder.headReviewStatus === 'Returned' && viewOrder.headReturnComment ? (
+            <div className="order-head-review-note order-head-review-note--returned" role="note">
+              <RotateCcw className="order-head-review-note__icon" aria-hidden />
+              <div>
+                <strong>Bo‘lim boshlig‘i qaytardi</strong>
+                <p>Izoh: {viewOrder.headReturnComment}</p>
+              </div>
+            </div>
+          ) : null}
           {viewOrder.manuallyCompleted ? (
             <div className="order-manual-complete-note" role="note">
               <CheckCircle2 className="order-manual-complete-note__icon" aria-hidden />
@@ -1699,6 +1805,35 @@ function MarketingOrdersPanel({
           if (approvingId) return;
           setApproveConfirmOpen(false);
         }}
+      />
+
+      <ConfirmDialog
+        open={headReturnTarget !== null}
+        title="Xodimga qaytarish"
+        message={headReturnTarget ? (
+          <div className="order-complete-dialog">
+            <p>
+              <strong>{headReturnTarget.orderNumber}</strong> buyurtmasi tuzatish uchun xodimga qaytariladi.
+            </p>
+            <label>
+              <span>Qaytarish sababi <span className="text-rose-500">*</span></span>
+              <textarea
+                className="security-issue-note"
+                rows={3}
+                value={headReturnComment}
+                onChange={e => setHeadReturnComment(e.target.value)}
+                placeholder="Masalan: shartnoma raqami noto‘g‘ri, ilova to‘liq emas"
+                autoFocus
+              />
+            </label>
+          </div>
+        ) : ''}
+        confirmLabel="Qaytarish"
+        cancelLabel="Bekor qilish"
+        loading={headBusy}
+        error={headReturnError}
+        onConfirm={() => { void handleReturnToStaff(); }}
+        onCancel={() => { if (!headBusy) setHeadReturnTarget(null); }}
       />
 
       <ConfirmDialog

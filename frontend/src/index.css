@@ -20614,3 +20614,14 @@ html.dark .order-progress-track,
 /* Yangi buyurtma: "Buyurtma №" — mahsulot turi yonida bitta maydon */
 .marketing-order-number-field { width: 15rem; max-width: 100%; }
 .marketing-order-number-field .order-sheet-input { height: 40px; border-radius: 12px; font-size: 14px; padding: 0 12px; }
+
+/* MS va MX ichki ko'rigi: bo'lim boshlig'i ko'rib chiqmoqda / qaytardi */
+.order-head-review-note { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; font-size: 13px; }
+.order-head-review-note strong { display: block; font-weight: 600; }
+.order-head-review-note span, .order-head-review-note p { color: #475569; margin: 2px 0 0; }
+.order-head-review-note__icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; color: #2563eb; }
+.order-head-review-note--returned { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
+.order-head-review-note--returned .order-head-review-note__icon { color: #ea580c; }
+.dark .order-head-review-note { border-color: rgba(59,130,246,.35); background: rgba(59,130,246,.1); color: #bfdbfe; }
+.dark .order-head-review-note span, .dark .order-head-review-note p { color: #94a3b8; }
+.dark .order-head-review-note--returned { border-color: rgba(234,88,12,.35); background: rgba(234,88,12,.1); color: #fdba74; }

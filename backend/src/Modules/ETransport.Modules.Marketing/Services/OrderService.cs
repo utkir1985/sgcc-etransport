@@ -25,6 +25,8 @@ public interface IOrderService
     Task<MonthlyOrderDto?> ApproveDeputyAsync(Guid id, Guid userId);
     Task<MonthlyOrderDto?> ApproveDispatchAsync(Guid id, Guid userId);
     Task<MonthlyOrderDto?> CompleteManuallyAsync(Guid id, Guid userId, string reason);
+    Task<MonthlyOrderDto?> SubmitToHeadAsync(Guid id, Guid userId);
+    Task<MonthlyOrderDto?> ReturnToStaffAsync(Guid id, Guid userId, string comment);
     Task<bool> DeleteAsync(Guid id);
 }
 
@@ -166,7 +168,15 @@ public class OrderService(
         if (order is null) return null;
 
         var user = await db.Users.FindAsync(userId);
-        var isAdminOrMarketing = user?.Role is UserRoles.Admin or UserRoles.Marketing or UserRoles.DispatchSupervisor;
+        var isAdminOrMarketing = user?.Role is UserRoles.Admin or UserRoles.Marketing or UserRoles.MarketingStaff or UserRoles.DispatchSupervisor;
+        // MS va MX xodimi faqat qoralamani, bo'lim boshlig'iga yuborilmagan holda tahrirlaydi
+        if (user?.Role == UserRoles.MarketingStaff)
+        {
+            if (order.Status != OrderStatus.Draft)
+                throw new ArgumentException("Xodim faqat qoralama buyurtmani tahrirlashi mumkin. Keyingi o‘zgarishlarni bo‘lim boshlig‘i kiritadi.");
+            if (order.HeadReviewStatus == "Pending")
+                throw new ArgumentException("Buyurtma bo‘lim boshlig‘ida ko‘rib chiqilmoqda — hozir tahrirlab bo‘lmaydi");
+        }
         if (!isAdminOrMarketing && order.CreatedById != userId && order.CreatedById != Guid.Empty)
             throw new ArgumentException("Buyurtmani faqat uni yaratgan xodim yoki Administrator tahrirlashi mumkin");
         if (order.Status is OrderStatus.Completed or OrderStatus.Cancelled)
@@ -297,6 +307,14 @@ public class OrderService(
 
         order.SubmittedAt = DateTime.UtcNow;
         order.SubmittedById = userId;
+        if (order.HeadReviewStatus is "Pending" or "Returned")
+        {
+            // Xodim tayyorlagan buyurtma — bo'lim boshlig'i tasdiqlab kelishuvga yubordi
+            var headApprover = await db.Users.FindAsync(userId);
+            order.HeadReviewStatus = "Approved";
+            order.HeadApprovedAt = DateTime.UtcNow;
+            order.HeadApprovedByName = headApprover?.FullName ?? string.Empty;
+        }
 
         var submitter = await db.Users.FindAsync(userId);
         order.MarketingApproverName = submitter?.FullName ?? "";
@@ -567,6 +585,61 @@ public class OrderService(
         return ToDto(order);
     }
 
+    /// <summary>MS va MX xodimi tayyorlagan qoralamani bo'lim boshlig'iga yuboradi (umumiy holat Draft'da qoladi).</summary>
+    public async Task<MonthlyOrderDto?> SubmitToHeadAsync(Guid id, Guid userId)
+    {
+        var order = await LoadOrderAsync(id);
+        if (order is null) return null;
+        if (order.Status != OrderStatus.Draft)
+            throw new ArgumentException("Faqat qoralama buyurtmani bo‘lim boshlig‘iga yuborish mumkin");
+        if (order.HeadReviewStatus == "Pending")
+            throw new ArgumentException("Buyurtma allaqachon bo‘lim boshlig‘iga yuborilgan");
+        if (order.Attachments.Count == 0)
+            throw new ArgumentException("Ilova biriktirish majburiy — kamida bitta fayl qo‘shing");
+
+        var user = await db.Users.FindAsync(userId);
+        order.HeadReviewStatus = "Pending";
+        order.HeadSubmittedAt = DateTime.UtcNow;
+        order.HeadSubmittedByName = user?.FullName ?? string.Empty;
+        order.HeadReturnComment = string.Empty;
+        db.AuditLogs.Add(new AuditLog
+        {
+            UserId = userId,
+            Action = "OrderSubmittedToHead",
+            EntityType = nameof(MonthlyOrder),
+            EntityId = order.Id.ToString(),
+            Details = JsonSerializer.Serialize(new { orderNumber = order.OrderNumber, productType = order.ProductType }),
+        });
+        await db.SaveChangesAsync();
+        return ToDto(order);
+    }
+
+    /// <summary>Bo'lim boshlig'i buyurtmani izoh bilan xodimga qaytaradi.</summary>
+    public async Task<MonthlyOrderDto?> ReturnToStaffAsync(Guid id, Guid userId, string comment)
+    {
+        var order = await LoadOrderAsync(id);
+        if (order is null) return null;
+        if (order.Status != OrderStatus.Draft || order.HeadReviewStatus != "Pending")
+            throw new ArgumentException("Faqat ko‘rib chiqishdagi buyurtmani qaytarish mumkin");
+        var trimmed = (comment ?? string.Empty).Trim();
+        if (trimmed.Length < 3)
+            throw new ArgumentException("Qaytarish sababini yozing");
+        if (trimmed.Length > 1000) trimmed = trimmed[..1000];
+
+        order.HeadReviewStatus = "Returned";
+        order.HeadReturnComment = trimmed;
+        db.AuditLogs.Add(new AuditLog
+        {
+            UserId = userId,
+            Action = "OrderReturnedToStaff",
+            EntityType = nameof(MonthlyOrder),
+            EntityId = order.Id.ToString(),
+            Details = JsonSerializer.Serialize(new { orderNumber = order.OrderNumber, comment = trimmed }),
+        });
+        await db.SaveChangesAsync();
+        return ToDto(order);
+    }
+
     public async Task<MonthlyOrderDto?> CompleteManuallyAsync(Guid id, Guid userId, string reason)
     {
         var order = await LoadOrderAsync(id);
@@ -574,6 +647,8 @@ public class OrderService(
 
         if (order.Status != OrderStatus.Active)
             throw new ArgumentException("Faqat ijrodagi buyurtmani yakunlash mumkin");
+        if ((await db.Users.FindAsync(userId))?.Role == UserRoles.MarketingStaff)
+            throw new ArgumentException("Buyurtmani yakunlash bo‘lim boshlig‘i vakolatida");
 
         var trimmed = (reason ?? string.Empty).Trim();
         if (trimmed.Length < 3)
@@ -912,7 +987,7 @@ public class OrderService(
         var user = await db.Users.FindAsync(userId);
         var isCondensate = productType.Contains("kondensat", StringComparison.OrdinalIgnoreCase);
 
-        if (user?.Role == UserRoles.Marketing && isCondensate)
+        if (user?.Role is UserRoles.Marketing or UserRoles.MarketingStaff && isCondensate)
             throw new ArgumentException("Marketing xodimi «Tabiiy gaz kondensati» mahsulotini kirita olmaydi. Ushbu mahsulot faqat IChDX boshlig‘i tomonidan kiritiladi.");
 
         if (user?.Role == UserRoles.DispatchSupervisor && !isCondensate)
@@ -1130,7 +1205,13 @@ public class OrderService(
             o.ManuallyCompleted,
             o.ManuallyCompletedAt,
             o.ManuallyCompletedByName ?? string.Empty,
-            o.ManualCompletionReason ?? string.Empty);
+            o.ManualCompletionReason ?? string.Empty,
+            o.HeadReviewStatus ?? string.Empty,
+            o.HeadSubmittedAt,
+            o.HeadSubmittedByName ?? string.Empty,
+            o.HeadApprovedAt,
+            o.HeadApprovedByName ?? string.Empty,
+            o.HeadReturnComment ?? string.Empty);
     }
 
     public static MonthlyOrderPdfModel BuildMonthlyOrderPdfModel(MonthlyOrder order)

@@ -293,6 +293,8 @@ public class OrdersController(
         // (O‘chirish esa avvalgidek faqat qoralama/qaytarilgan buyurtmada — tasdiqlangan hujjat saqlanadi.)
         if (order.Status is OrderStatus.Completed or OrderStatus.Cancelled)
             return BadRequest(new ApiResponse<OrderAttachmentDto>(false, null, "Yakunlangan yoki bekor qilingan buyurtmaga ilova qo'shib bo'lmaydi"));
+        if (IsStaffLocked(order))
+            return BadRequest(new ApiResponse<OrderAttachmentDto>(false, null, StaffLockedMessage));
 
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await using var stream = file.OpenReadStream();
@@ -393,6 +395,8 @@ public class OrdersController(
         var order = attachment.MonthlyOrder;
         if (order is null || order.Status is not (OrderStatus.Draft or OrderStatus.ReturnedToMarketing))
             return BadRequest(new ApiResponse<object>(false, null, "Faqat qoralama yoki qaytarilgan buyurtmadan ilovani o'chirish mumkin"));
+        if (IsStaffLocked(order))
+            return BadRequest(new ApiResponse<object>(false, null, StaffLockedMessage));
 
         var objectKey = attachment.ObjectKey;
         var role = User.FindFirstValue(ClaimTypes.Role) ?? "Marketing";
@@ -559,6 +563,49 @@ public class OrdersController(
             var order = await orderService.ApproveDispatchAsync(id, userId);
             if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
             return Ok(new ApiResponse<MonthlyOrderDto>(true, order));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ApiResponse<MonthlyOrderDto>(false, null, ex.Message));
+        }
+    }
+
+    private const string StaffLockedMessage = "Buyurtma bo‘lim boshlig‘ida yoki kelishuvda — xodim o‘zgartira olmaydi";
+
+    /// <summary>MS va MX xodimi faqat bo'lim boshlig'iga yuborilmagan qoralamani o'zgartiradi.</summary>
+    private bool IsStaffLocked(MonthlyOrder order) =>
+        User.IsInRole(UserRoles.MarketingStaff)
+        && (order.Status != OrderStatus.Draft || order.HeadReviewStatus == "Pending");
+
+    /// <summary>MS va MX xodimi: buyurtmani bo'lim boshlig'iga yuborish.</summary>
+    [HttpPost("{id:guid}/submit-to-head")]
+    [RequirePermission("orders.submit-head")]
+    public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> SubmitToHead(Guid id)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var order = await orderService.SubmitToHeadAsync(id, userId);
+            if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
+            return Ok(new ApiResponse<MonthlyOrderDto>(true, order, "Buyurtma bo‘lim boshlig‘iga yuborildi"));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ApiResponse<MonthlyOrderDto>(false, null, ex.Message));
+        }
+    }
+
+    /// <summary>MS va MX bo'lim boshlig'i: buyurtmani izoh bilan xodimga qaytarish.</summary>
+    [HttpPost("{id:guid}/return-to-staff")]
+    [RequirePermission("orders.approve-head")]
+    public async Task<ActionResult<ApiResponse<MonthlyOrderDto>>> ReturnToStaff(Guid id, [FromBody] ReturnToStaffRequest request)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var order = await orderService.ReturnToStaffAsync(id, userId, request.Comment);
+            if (order is null) return NotFound(new ApiResponse<MonthlyOrderDto>(false, null, "Buyurtma topilmadi"));
+            return Ok(new ApiResponse<MonthlyOrderDto>(true, order, "Buyurtma xodimga qaytarildi"));
         }
         catch (ArgumentException ex)
         {

@@ -117,6 +117,16 @@ export const RBAC_ROLES: RbacRoleDef[] = [
     iconName: 'megaphone',
   },
   {
+    key: 'MarketingStaff',
+    label: ROLE_LABELS.MarketingStaff,
+    department: 'MS va MX',
+    description: 'Buyurtma tayyorlaydi va bo‘lim boshlig‘iga yuboradi; barcha buyurtmalarni ko‘radi.',
+    tone: 'sky',
+    seedUser: 'ms_xodim',
+    isSystem: true,
+    iconName: 'user',
+  },
+  {
     key: 'Dispatching',
     label: ROLE_LABELS.Dispatching,
     department: 'ICHDX',
@@ -281,6 +291,7 @@ export function getRoleIcon(role: RbacRoleDef): LucideIcon {
     DispatchSupervisor: 'crown',
     DeputyDirector: 'shield',
     Marketing: 'megaphone',
+    MarketingStaff: 'megaphone',
     Accounting: 'calculator',
     Economist: 'calculator',
     Railway: 'train',
@@ -346,6 +357,7 @@ export const ROLE_MENUS: Record<string, string[]> = {
     'admin-server-status',
   ),
   Marketing: withCore(),
+  MarketingStaff: withCore(),
   Dispatching: withCore('registry-approve'),
   DispatchSupervisor: withCore('order-dispatch-approvals', 'registry-approve'),
   Accounting: withCore('order-approvals'),
@@ -411,6 +423,7 @@ export const RBAC_MODULES: RbacModuleDef[] = [
 export const ROLE_MODULES: Record<string, string[]> = {
   Admin: ['marketing', 'accounting', 'deputy', 'dispatching', 'railway', 'security', 'permit', 'scale', 'warehouse', 'documents', 'road', 'admin', 'reports'],
   Marketing: ['marketing', 'reports'],
+  MarketingStaff: ['marketing', 'reports'],
   Accounting: ['accounting', 'marketing', 'reports'],
   DeputyDirector: ['deputy', 'marketing', 'reports'],
   DispatchSupervisor: ['dispatching', 'marketing', 'documents', 'reports'],
@@ -490,6 +503,8 @@ export const RBAC_RESOURCES: RbacResourceDef[] = [
       D: ['Admin', 'Marketing'],
     },
     workflowActions: [
+      { key: 'orders.submit-head', order: 0, label: 'Bo‘lim boshlig‘iga yuborish', description: 'MS va MX xodimi buyurtmani bo‘lim boshlig‘i ko‘rigiga yuboradi', roles: ['Admin', 'MarketingStaff'] },
+      { key: 'orders.approve-head', order: 0, label: 'Bo‘lim boshlig‘i tasdig‘i', description: 'Xodim buyurtmasini tasdiqlab kelishuvga yuborish yoki qaytarish', roles: ['Admin', 'Marketing'] },
       { key: 'orders.submit-approval', order: 1, label: 'Buxgalteriya kelishuviga yuborish', description: 'MS va MX buyurtmani tekshiruvga yuboradi', roles: ['Admin', 'Marketing'] },
       { key: 'orders.resubmit', order: 2, label: 'Qaytarilgan buyurtmani qayta yuborish', description: 'Kamchiliklar tuzatilib qayta kelishuvga yuborish', roles: ['Admin', 'Marketing'] },
       { key: 'orders.accounting-save', order: 3, label: 'Buxgalteriya to‘lov/limit kelishuvi', description: 'To‘lov va limit ma\'lumotlarini kiritish va kelishish', roles: ['Admin', 'Accounting'] },
@@ -768,7 +783,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Oylik rejalarni ko‘rish',
     description: 'GET /api/plans — oylik reja monitoringi va ko‘rsatkichlar',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Dispatching', 'DeputyDirector', 'Management', 'Economist', 'Accounting'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Dispatching', 'DeputyDirector', 'Management', 'Economist', 'Accounting'],
   },
   {
     key: 'plans.create',
@@ -810,7 +825,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     description: 'GET /api/plans/export — oylik reja jadvallarini Excel yuklab olish',
     flags: ['A'],
     order: 2,
-    roles: ['Admin', 'Marketing', 'Economist', 'DeputyDirector'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Economist', 'DeputyDirector'],
   },
 
   // --- STATISTIKA VA TAHLIL (REPORTS) ---
@@ -820,7 +835,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Statistika va diagrammalarni ko‘rish',
     description: 'GET /api/reports — logistika statistikasi va monitoring grafiklari',
     flags: ['R'],
-    roles: ['Admin', 'Management', 'Marketing', 'Dispatching', 'Accounting', 'DeputyDirector', 'Economist'],
+    roles: ['Admin', 'Management', 'Marketing', 'MarketingStaff', 'Dispatching', 'Accounting', 'DeputyDirector', 'Economist'],
   },
   {
     key: 'reports.create',
@@ -853,7 +868,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     description: 'GET /api/reports/export — hisobotlarni fayl shaklida eksport qilish',
     flags: ['A'],
     order: 1,
-    roles: ['Admin', 'Management', 'Marketing', 'Dispatching', 'Accounting', 'DeputyDirector', 'Economist'],
+    roles: ['Admin', 'Management', 'Marketing', 'MarketingStaff', 'Dispatching', 'Accounting', 'DeputyDirector', 'Economist'],
   },
   {
     key: 'reports.filter',
@@ -862,7 +877,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     description: 'GET /api/reports/advanced — ko‘p o‘lchovli filtrlar yordamida tahlil',
     flags: ['A'],
     order: 2,
-    roles: ['Admin', 'Management', 'Marketing', 'DeputyDirector'],
+    roles: ['Admin', 'Management', 'Marketing', 'MarketingStaff', 'DeputyDirector'],
   },
 
   // --- TELEGRAM BOT VA BILDIRISHNOMALAR (TELEGRAM) ---
@@ -923,7 +938,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Buyurtmalarni ko\'rish',
     description: 'GET /api/orders — barcha temir yo‘l va avtotransport buyurtmalari',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
   },
   {
     key: 'orders.create',
@@ -931,7 +946,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Yangi buyurtma yaratish',
     description: 'POST /api/orders — temir yo‘l / avto buyurtma kiritish',
     flags: ['C'],
-    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'DispatchSupervisor'],
   },
   {
     key: 'orders.update',
@@ -939,7 +954,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Buyurtmani tahrirlash',
     description: 'PUT /api/orders/{id} — loyiha holatidagi buyurtmani tahrirlash',
     flags: ['U'],
-    roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'DispatchSupervisor'],
   },
   {
     key: 'orders.delete',
@@ -957,6 +972,24 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     flags: ['A'],
     order: 1,
     roles: ['Admin', 'Marketing', 'DispatchSupervisor'],
+  },
+  {
+    key: 'orders.submit-head',
+    module: 'marketing',
+    label: 'Bo‘lim boshlig‘iga yuborish',
+    description: 'POST /api/orders/{id}/submit-to-head — MS va MX xodimi tayyorlagan buyurtmani bo‘lim boshlig‘i ko‘rigiga yuborish',
+    flags: ['A'],
+    order: 0,
+    roles: ['Admin', 'MarketingStaff'],
+  },
+  {
+    key: 'orders.approve-head',
+    module: 'marketing',
+    label: 'Bo‘lim boshlig‘i tasdig‘i',
+    description: 'Xodim yuborgan buyurtmani tasdiqlab kelishuvga yuborish yoki izoh bilan qaytarish (POST /api/orders/{id}/return-to-staff)',
+    flags: ['A'],
+    order: 0,
+    roles: ['Admin', 'Marketing'],
   },
   {
     key: 'orders.resubmit',
@@ -1011,7 +1044,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Normativ hujjatlarni ko‘rish',
     description: 'Normativ hujjatlar ro‘yxatini ko‘rish, hujjatni ochish va yuklab olish',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Accounting', 'DeputyDirector', 'DispatchSupervisor', 'Dispatching', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Accounting', 'DeputyDirector', 'DispatchSupervisor', 'Dispatching', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management'],
   },
   {
     key: 'normative-docs.create',
@@ -1076,7 +1109,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Mahsulotlar katalogini ko‘rish',
     description: 'GET /api/products — mahsulot turlari va prefikslari',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Accounting', 'Dispatching', 'Railway', 'Warehouse', 'Scale', 'Management', 'Economist'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Accounting', 'Dispatching', 'Railway', 'Warehouse', 'Scale', 'Management', 'Economist'],
   },
   {
     key: 'products.create',
@@ -1108,7 +1141,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Kontragentlar ro‘yxatini ko‘rish',
     description: 'GET /api/contractors — mijozlar va shartnoma limitlari',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Accounting', 'Dispatching', 'Economist', 'Management', 'DeputyDirector', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Accounting', 'Dispatching', 'Economist', 'Management', 'DeputyDirector', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security'],
   },
   {
     key: 'contractors.create',
@@ -1140,7 +1173,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Stansiyalar ro‘yxatini ko‘rish',
     description: 'GET /api/stations — temir yo‘l stansiyalari va O‘TY kodlari',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Railway', 'Dispatching', 'Accounting', 'Economist', 'Management'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Railway', 'Dispatching', 'Accounting', 'Economist', 'Management'],
   },
   {
     key: 'stations.create',
@@ -1391,7 +1424,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Yuk xatlari reestrini ko\'rish',
     description: 'GET /api/documents/loading-registry — shakllantirilgan yuk xatlari va vagonlar tarkibi',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
   },
   {
     key: 'documents.registry.create',
@@ -1479,7 +1512,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Majmuadagi vagonlar monitoringi (Kirish nazoratida / Yuklashda / Chiqishga tayyor / Nosoz)',
     description: 'GET /api/transport — korxonadagi barcha vagonlar va transport vositalari dislokatsiyasi',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
   },
 
   // --- 6. AVTOTRANSPORT (ROAD SHIPMENTS) ---
@@ -1655,7 +1688,7 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
     label: 'Jarayonlar tarixi arxivi',
     description: 'GET /api/history — barcha yakunlangan jarayonlar arxivi',
     flags: ['R'],
-    roles: ['Admin', 'Marketing', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
+    roles: ['Admin', 'Marketing', 'MarketingStaff', 'Dispatching', 'DispatchSupervisor', 'Accounting', 'Railway', 'Road', 'Warehouse', 'Scale', 'Permit', 'Security', 'Economist', 'Management', 'DeputyDirector'],
   },
   {
     key: 'reports.analytics',

@@ -192,6 +192,13 @@ export interface MonthlyOrder {
   qrCodeBase64?: string;
   qrRegisteredAt?: string | null;
   manuallyCompleted?: boolean;
+  /** MS va MX ichki ko'rigi: '' | 'Pending' (bo'lim boshlig'ida) | 'Returned' | 'Approved' */
+  headReviewStatus?: string;
+  headSubmittedAt?: string | null;
+  headSubmittedByName?: string;
+  headApprovedAt?: string | null;
+  headApprovedByName?: string;
+  headReturnComment?: string;
   manuallyCompletedAt?: string | null;
   manuallyCompletedByName?: string;
   manualCompletionReason?: string;
@@ -638,7 +645,8 @@ export interface LoadingRegistry {
 
 export const ROLE_LABELS: Record<string, string> = {
   Admin: 'Administrator',
-  Marketing: 'MS va MX',
+  Marketing: 'MS va MX bo‘lim boshlig‘i',
+  MarketingStaff: 'MS va MX xodimi',
   Dispatching: 'ICHDX smena boshlig\'i',
   DispatchSupervisor: 'ICHDX boshlig\'i',
   Accounting: 'Buxgalteriya',

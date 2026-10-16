@@ -751,6 +751,16 @@ class ApiClient {
     return this.request(`/orders/${id}`, { method: 'DELETE' });
   }
 
+  /** MS va MX xodimi: buyurtmani bo'lim boshlig'iga yuborish */
+  submitOrderToHead(id: string) {
+    return this.request(`/orders/${id}/submit-to-head`, { method: 'POST', body: '{}' });
+  }
+
+  /** MS va MX bo'lim boshlig'i: izoh bilan xodimga qaytarish */
+  returnOrderToStaff(id: string, comment: string) {
+    return this.request(`/orders/${id}/return-to-staff`, { method: 'POST', body: JSON.stringify({ comment }) });
+  }
+
   submitOrderForApproval(id: string) {
     return this.request(`/orders/${id}/submit-for-approval`, { method: 'POST', body: '{}' });
   }

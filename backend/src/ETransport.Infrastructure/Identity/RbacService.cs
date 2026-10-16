@@ -29,13 +29,13 @@ public class RbacService(AppDbContext db) : IRbacService
     private static readonly Dictionary<string, string[]> DefaultActionRoles = new(StringComparer.OrdinalIgnoreCase)
     {
         // Plans
-        ["plans.read"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Dispatching, UserRoles.DeputyDirector, UserRoles.Management, UserRoles.Economist, UserRoles.Accounting],
+        ["plans.read"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Dispatching, UserRoles.DeputyDirector, UserRoles.Management, UserRoles.Economist, UserRoles.Accounting],
         ["plans.create"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Economist],
         ["plans.update"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Economist],
         ["plans.delete"] = [UserRoles.Admin],
         ["plans.approve"] = [UserRoles.Admin, UserRoles.DeputyDirector, UserRoles.Management],
-        ["plans.export"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Economist, UserRoles.DeputyDirector],
-        ["plans.view"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Dispatching, UserRoles.DeputyDirector, UserRoles.Management],
+        ["plans.export"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Economist, UserRoles.DeputyDirector],
+        ["plans.view"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Dispatching, UserRoles.DeputyDirector, UserRoles.Management],
 
         // Mahsulot ishlab chiqarish ko'rsatkichlari (Sfera Balance paneli)
         ["sfera.view"] = [UserRoles.Admin, UserRoles.Management, UserRoles.DispatchSupervisor, UserRoles.DeputyDirector],
@@ -44,18 +44,21 @@ public class RbacService(AppDbContext db) : IRbacService
         ["sfera.admin"] = [UserRoles.Admin],
 
         // Reports
-        ["reports.read"] = [UserRoles.Admin, UserRoles.Management, UserRoles.Marketing, UserRoles.Dispatching, UserRoles.Accounting, UserRoles.DeputyDirector, UserRoles.Economist],
+        ["reports.read"] = [UserRoles.Admin, UserRoles.Management, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Dispatching, UserRoles.Accounting, UserRoles.DeputyDirector, UserRoles.Economist],
         ["reports.create"] = [UserRoles.Admin, UserRoles.Management, UserRoles.DeputyDirector],
         ["reports.update"] = [UserRoles.Admin],
         ["reports.delete"] = [UserRoles.Admin],
-        ["reports.export"] = [UserRoles.Admin, UserRoles.Management, UserRoles.Marketing, UserRoles.Dispatching, UserRoles.Accounting, UserRoles.DeputyDirector, UserRoles.Economist],
-        ["reports.filter"] = [UserRoles.Admin, UserRoles.Management, UserRoles.Marketing, UserRoles.DeputyDirector],
+        ["reports.export"] = [UserRoles.Admin, UserRoles.Management, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Dispatching, UserRoles.Accounting, UserRoles.DeputyDirector, UserRoles.Economist],
+        ["reports.filter"] = [UserRoles.Admin, UserRoles.Management, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.DeputyDirector],
         ["reports.view"] = [UserRoles.Admin],
 
         // Orders
         ["orders.read"] = UserRoles.All,
-        ["orders.create"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
-        ["orders.update"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
+        ["orders.create"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.DispatchSupervisor],
+        ["orders.update"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.DispatchSupervisor],
+        // MS va MX ichki ko'rigi: xodim → bo'lim boshlig'i
+        ["orders.submit-head"] = [UserRoles.Admin, UserRoles.MarketingStaff],
+        ["orders.approve-head"] = [UserRoles.Admin, UserRoles.Marketing],
         ["orders.delete"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
         ["orders.submit-approval"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
         ["orders.resubmit"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.DispatchSupervisor],
@@ -99,7 +102,7 @@ public class RbacService(AppDbContext db) : IRbacService
         ["flow.seal-edit"] = [UserRoles.Admin, UserRoles.Scale, UserRoles.Warehouse, UserRoles.Security],
 
         // References
-        ["products.read"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Accounting, UserRoles.Dispatching, UserRoles.Railway, UserRoles.Warehouse, UserRoles.Scale, UserRoles.Management, UserRoles.Economist],
+        ["products.read"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Accounting, UserRoles.Dispatching, UserRoles.Railway, UserRoles.Warehouse, UserRoles.Scale, UserRoles.Management, UserRoles.Economist],
         ["products.create"] = [UserRoles.Admin, UserRoles.Marketing],
         ["products.update"] = [UserRoles.Admin, UserRoles.Marketing],
         ["products.delete"] = [UserRoles.Admin, UserRoles.Marketing],
@@ -109,7 +112,7 @@ public class RbacService(AppDbContext db) : IRbacService
         ["contractors.update"] = [UserRoles.Admin, UserRoles.Marketing],
         ["contractors.delete"] = [UserRoles.Admin, UserRoles.Marketing],
 
-        ["stations.read"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Railway, UserRoles.Dispatching, UserRoles.Accounting, UserRoles.Economist, UserRoles.Management],
+        ["stations.read"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.MarketingStaff, UserRoles.Railway, UserRoles.Dispatching, UserRoles.Accounting, UserRoles.Economist, UserRoles.Management],
         ["stations.create"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Marketing],
         ["stations.update"] = [UserRoles.Admin, UserRoles.Railway, UserRoles.Marketing],
         ["stations.delete"] = [UserRoles.Admin, UserRoles.Railway],

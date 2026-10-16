@@ -3,7 +3,10 @@ namespace ETransport.Core.Constants;
 public static class UserRoles
 {
     public const string Admin = "Admin";
+    /// <summary>MS va MX bo'lim boshlig'i (buyurtmani kelishuvga yuboradi).</summary>
     public const string Marketing = "Marketing";
+    /// <summary>MS va MX xodimi — buyurtma tayyorlaydi, bo'lim boshlig'i tasdiqlaydi.</summary>
+    public const string MarketingStaff = "MarketingStaff";
     public const string Dispatching = "Dispatching";
     public const string DispatchSupervisor = "DispatchSupervisor";
     public const string Accounting = "Accounting";
@@ -20,7 +23,7 @@ public static class UserRoles
 
     public static readonly string[] All =
     [
-        Admin, Marketing, Dispatching, DispatchSupervisor, Accounting, Railway, Road,
+        Admin, Marketing, MarketingStaff, Dispatching, DispatchSupervisor, Accounting, Railway, Road,
         Warehouse, Scale, Permit, Security, Economist, Management, DeputyDirector
     ];
 }

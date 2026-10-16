@@ -262,6 +262,7 @@ public class MenuService(IRbacService rbacService) : IMenuService
             new("admin-server-status", "Server holati", "/admin/server-status", "Activity"),
         ]),
         [Core.Constants.UserRoles.Marketing] = CoreMenu(),
+        [Core.Constants.UserRoles.MarketingStaff] = CoreMenu(),
         [Core.Constants.UserRoles.Dispatching] = CoreMenu(),
         [Core.Constants.UserRoles.DispatchSupervisor] = CoreMenu([
             new("order-dispatch-approvals", "Ijroga qabul qilish", "/order-dispatch-approvals", "FileCheck"),
