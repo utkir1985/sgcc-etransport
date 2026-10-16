@@ -90,7 +90,7 @@ export function OrderListRow({ order, logisticsType, active = false, onClick, on
               </span>
             )}
           </span>
-          <OrderStatusBadge status={order.status} />
+          <OrderStatusBadge status={order.status} headReviewStatus={order.headReviewStatus} />
           {isOrderLoadingOverdue(order) ? (
             <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
           ) : null}
@@ -400,7 +400,7 @@ export function OrderList({
                   {has('status') && (
                     <td className="text-center text-xs">
                       <div className="marketing-orders-table__status">
-                        <OrderStatusBadge status={order.status} />
+                        <OrderStatusBadge status={order.status} headReviewStatus={order.headReviewStatus} />
                         {isOrderLoadingOverdue(order) ? (
                           <span className="marketing-orders-table__overdue">Muddat o‘tgan</span>
                         ) : null}

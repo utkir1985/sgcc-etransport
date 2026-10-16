@@ -524,7 +524,7 @@ export function OrderSheetView({
                   </span>
                 ) : null}
               </span>
-              <OrderStatusBadge status={order.status} />
+              <OrderStatusBadge status={order.status} headReviewStatus={order.headReviewStatus} />
               {(() => {
                 if (!isOrderLoadingOverdue(order)) return null;
                 return (

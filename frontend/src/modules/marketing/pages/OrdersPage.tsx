@@ -1040,15 +1040,16 @@ function MarketingOrdersPanel({
     }
 
     if (!canCreate && !canUpdate) return null;
+    // Xodim: boshliqda turgan buyurtmada jadval ostida amal yo'q (holat belgisida ko'rinadi)
+    if (isMarketingStaff && isHeadPending(order)) return null;
 
     const isCondensate = order.productType.toLowerCase().includes('kondensat');
 
     return (
       <div className="order-sheet-footer-actions">
         {order.status === 'Draft' && isMarketingStaff && (
-          isHeadPending(order) ? (
-            <span className="order-sheet-pending-note">Bo‘lim boshlig‘i ko‘rib chiqmoqda</span>
-          ) : (
+          // Ko'rib chiqishda — holat belgisi va tepadagi yozuvda ko'rinadi, jadval ostida takrorlanmaydi
+          isHeadPending(order) ? null : (
             <button
               type="button"
               onClick={() => { void submitToHead(order); }}
