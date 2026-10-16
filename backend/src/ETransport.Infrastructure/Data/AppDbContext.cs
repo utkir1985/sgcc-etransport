@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ShippingRegistry> ShippingRegistries => Set<ShippingRegistry>();
     public DbSet<LoadingRegistry> LoadingRegistries => Set<LoadingRegistry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<NormativeDocument> NormativeDocuments => Set<NormativeDocument>();
     public DbSet<Contractor> Contractors => Set<Contractor>();
     public DbSet<ContractorDestination> ContractorDestinations => Set<ContractorDestination>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();

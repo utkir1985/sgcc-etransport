@@ -38,7 +38,6 @@ import type {
   TrashListResponse,
   TrashFilterParams,
   NormativeDocument,
-  CreateNormativeDocPayload,
 } from '../types';
 import type { TelegramConfig } from './telegramService';
 import type { ApiResponse } from '../types';
@@ -1840,8 +1839,34 @@ class ApiClient {
   // ==========================================
   // NORMATIVE DOCUMENTS (Normativ hujjatlar)
   // ==========================================
-  private getNormativeSidecarBase(): string {
-    return '';
+  // ===== Normativ hujjatlar — server (bazada saqlanadi, barcha kompyuterlarda bir xil) =====
+  private normativeAuthHeaders(): Record<string, string> {
+    const token = this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  private mapNormativeDoc(d: Record<string, unknown>): NormativeDocument {
+    return {
+      Id: String(d.id ?? ''),
+      Title: String(d.title ?? ''),
+      DocumentNumber: String(d.documentNumber ?? ''),
+      DocumentDate: (d.documentDate as string) || undefined,
+      Category: String(d.category ?? 'internal'),
+      Description: (d.description as string) || undefined,
+      FileName: String(d.fileName ?? ''),
+      FileSize: Number(d.fileSize ?? 0),
+      MimeType: String(d.mimeType ?? 'application/pdf'),
+      UploadedBy: (d.uploadedBy as string) || undefined,
+      CreatedAt: String(d.createdAt ?? new Date().toISOString()),
+      UpdatedAt: (d.updatedAt as string) || undefined,
+    };
+  }
+
+  private async normativeError(res: Response, fallback: string): Promise<Error> {
+    if (res.status === 403) return new Error('Bu amal uchun huquqingiz yo‘q');
+    if (res.status === 413) return new Error('Fayl hajmi juda katta (25 MB gacha)');
+    const data = await res.json().catch(() => ({} as Record<string, unknown>));
+    return new Error((data as { message?: string }).message || fallback);
   }
 
   async getNormativeDocuments(params?: { category?: string; search?: string }): Promise<NormativeDocument[]> {
@@ -1849,74 +1874,63 @@ class ApiClient {
     if (params?.category && params.category !== 'all') sp.set('category', params.category);
     if (params?.search && params.search.trim()) sp.set('search', params.search.trim());
     const query = sp.toString() ? `?${sp.toString()}` : '';
-
-    try {
-      const res = await fetch(`/api/normative-docs${query}`);
-      if (res.ok) {
-        const data = await res.json();
-        return Array.isArray(data) ? data : (data.data || []);
-      }
-    } catch {
-      // offline / fallback
-    }
-    return [];
+    const res = await fetch(`${API_URL}/normative-docs${query}`, { headers: this.normativeAuthHeaders() });
+    if (!res.ok) throw await this.normativeError(res, 'Hujjatlarni yuklashda xatolik');
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.data || []);
+    return (list as Record<string, unknown>[]).map(d => this.mapNormativeDoc(d));
   }
 
-  async uploadNormativeDocument(payload: CreateNormativeDocPayload): Promise<NormativeDocument> {
-    const sidecarUrl = `${this.getNormativeSidecarBase()}/api/normative-docs`;
-    try {
-      const res = await fetch(sidecarUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) return await res.json();
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || errData.message || 'Hujjat yuklashda xatolik');
-    } catch (e: any) {
-      const res = await fetch(`/api/normative-docs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) return await res.json();
-      throw new Error(e.message || 'Hujjat yuklashda xatolik yuz berdi');
-    }
+  private normativeForm(fields: { title: string; documentNumber?: string; documentDate?: string; category: string; description?: string }, file?: File | null): FormData {
+    const form = new FormData();
+    form.append('title', fields.title);
+    if (fields.documentNumber) form.append('documentNumber', fields.documentNumber);
+    if (fields.documentDate) form.append('documentDate', fields.documentDate);
+    form.append('category', fields.category);
+    if (fields.description) form.append('description', fields.description);
+    if (file) form.append('file', file, file.name);
+    return form;
+  }
+
+  async createNormativeDocument(
+    fields: { title: string; documentNumber?: string; documentDate?: string; category: string; description?: string },
+    file: File,
+  ): Promise<NormativeDocument> {
+    const res = await fetch(`${API_URL}/normative-docs`, {
+      method: 'POST',
+      headers: this.normativeAuthHeaders(),
+      body: this.normativeForm(fields, file),
+    });
+    if (!res.ok) throw await this.normativeError(res, 'Hujjatni saqlashda xatolik');
+    const data = await res.json();
+    return this.mapNormativeDoc(data.data ?? data);
+  }
+
+  async updateNormativeDocument(
+    id: string,
+    fields: { title: string; documentNumber?: string; documentDate?: string; category: string; description?: string },
+    file?: File | null,
+  ): Promise<NormativeDocument> {
+    const res = await fetch(`${API_URL}/normative-docs/${id}`, {
+      method: 'PUT',
+      headers: this.normativeAuthHeaders(),
+      body: this.normativeForm(fields, file),
+    });
+    if (!res.ok) throw await this.normativeError(res, 'Hujjatni saqlashda xatolik');
+    const data = await res.json();
+    return this.mapNormativeDoc(data.data ?? data);
   }
 
   async deleteNormativeDocument(id: string): Promise<{ success: boolean; message?: string }> {
-    try {
-      const res = await fetch(`${this.getNormativeSidecarBase()}/api/normative-docs/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) return await res.json();
-    } catch {}
-    const res = await fetch(`/api/normative-docs/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Hujjatni o‘chirishda xatolik');
-    return await res.json();
-  }
-
-  getNormativeDocViewUrl(id: string): string {
-    return `${this.getNormativeSidecarBase()}/api/normative-docs/${id}/view`;
-  }
-
-  getNormativeDocDownloadUrl(id: string): string {
-    return `${this.getNormativeSidecarBase()}/api/normative-docs/${id}/download`;
+    const res = await fetch(`${API_URL}/normative-docs/${id}`, { method: 'DELETE', headers: this.normativeAuthHeaders() });
+    if (!res.ok) throw await this.normativeError(res, 'Hujjatni o‘chirishda xatolik');
+    return { success: true };
   }
 
   async downloadNormativeDocument(id: string, fileName: string): Promise<void> {
-    let blob: Blob | null = null;
-    try {
-      const res = await fetch(`${this.getNormativeSidecarBase()}/api/normative-docs/${id}/download`);
-      if (res.ok) blob = await res.blob();
-    } catch {}
-
-    if (!blob) {
-      const res = await fetch(`/api/normative-docs/${id}/download`);
-      if (!res.ok) throw new Error('Faylni yuklab olishda xatolik');
-      blob = await res.blob();
-    }
-
+    const res = await fetch(`${API_URL}/normative-docs/${id}/download`, { headers: this.normativeAuthHeaders() });
+    if (!res.ok) throw await this.normativeError(res, 'Faylni yuklab olishda xatolik');
+    const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1944,16 +1958,8 @@ class ApiClient {
   }
 
   async fetchNormativeDocumentBlob(id: string): Promise<{ blob: Blob; url: string }> {
-    let res: Response | null = null;
-    try {
-      res = await fetch(`${this.getNormativeSidecarBase()}/api/normative-docs/${id}/view`);
-    } catch {
-      res = null;
-    }
-    if (!res || !res.ok) {
-      res = await fetch(`/api/normative-docs/${id}/view`);
-    }
-    if (!res.ok) throw new Error('Hujjat faylini ochishda xatolik');
+    const res = await fetch(`${API_URL}/normative-docs/${id}/view`, { headers: this.normativeAuthHeaders() });
+    if (!res.ok) throw await this.normativeError(res, 'Hujjat fayli topilmadi');
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     return { blob, url };

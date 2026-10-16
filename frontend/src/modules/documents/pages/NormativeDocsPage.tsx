@@ -26,17 +26,9 @@ import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { DocumentChipButton } from '../../../shared/components/DocumentPackChip';
 import { DocumentPrintButton } from '../../../shared/components/DocumentPrintButton';
 import { PdfPagesViewer, printPdfUrl } from '../../../shared/components/PdfPagesViewer';
-import type { NormativeDocument, CreateNormativeDocPayload } from '../../../shared/types';
-import { useAuth } from '../../../shared/contexts/AuthContext';
+import type { NormativeDocument } from '../../../shared/types';
 import { useRbacPermission } from '../../../shared/hooks/useRbacPermission';
 import { DatePicker } from '../../../shared/components/DatePicker';
-import {
-  getLocalNormativeDocs,
-  saveLocalNormativeDoc,
-  updateLocalNormativeDoc,
-  deleteLocalNormativeDoc,
-  getLocalNormativeDocFile,
-} from '../../../shared/utils/normativeDocsStorage';
 
 // Kategoriya ma'lumotlari va ranglari
 const CATEGORIES: { key: string; label: string; icon: React.ComponentType<{ className?: string }>; color: string; badgeClass: string }[] = [
@@ -120,7 +112,6 @@ function formatDate(dateStr?: string): string {
 }
 
 export default function NormativeDocsPage() {
-  const { user } = useAuth();
   const [documents, setDocuments] = useState<NormativeDocument[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -154,28 +145,8 @@ export default function NormativeDocsPage() {
     setLoading(true);
     setError(null);
     try {
-      // 1. First get from reliable local persistent storage (instant response)
-      const localDocs = await getLocalNormativeDocs();
-      if (localDocs && localDocs.length > 0) {
-        setDocuments(localDocs);
-      }
-
-      // 2. Try background sync from server if available (non-blocking)
-      try {
-        const serverDocs = await api.getNormativeDocuments();
-        if (serverDocs && serverDocs.length > 0) {
-          // Merge server docs with local docs (preserving newly uploaded local docs)
-          const localMap = new Map(localDocs.map(d => [d.Id, d]));
-          for (const sd of serverDocs) {
-            localMap.set(sd.Id, sd);
-          }
-          const merged = Array.from(localMap.values());
-          merged.sort((a, b) => new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime());
-          setDocuments(merged);
-        }
-      } catch (e) {
-        // Server sidecar not reachable or offline - perfectly fine, local store used
-      }
+      // Hujjatlar serverda (bazada) — barcha kompyuter va foydalanuvchilarda bir xil
+      setDocuments(await api.getNormativeDocuments());
     } catch (err: any) {
       console.error('Fetch normative docs error:', err);
       setError(err.message || 'Hujjatlarni yuklashda xatolik yuz berdi');
@@ -218,57 +189,17 @@ export default function NormativeDocsPage() {
   const handleOpenPreview = async (doc: NormativeDocument) => {
     setPreviewError(null);
     setPreviewDoc(doc);
-    const mimeOf = (fallback?: string) => doc.MimeType || fallback || 'application/pdf';
-    if (
-      !doc.LocalFile && (doc.Id.startsWith('seed-') ||
-      (doc.FileName && [
-        'SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf',
-        'SHGKM_ichki_transport_yoriqnomasi_312.pdf',
-        'SUG_xavfsizlik_reglamenti_84.pdf',
-        'Temir_yollarda_yuk_tashish_qoidalari_142.pdf',
-        'Temir_yol_jarayoni_protsedura.pdf'
-      ].includes(doc.FileName)))
-    ) {
-      setPreview(null);
-      setPreviewLoading(true);
-      try {
-        const res = await fetch(`/normative-files/${encodeURIComponent(doc.FileName)}`);
-        const blob = res.ok ? await res.blob() : null;
-        // Fayl yo‘q bo‘lsa server sayt sahifasini (HTML) qaytaradi — uni hujjat sifatida ko‘rsatmaymiz
-        if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);
-        setPreview({ doc, url: URL.createObjectURL(blob), mime: mimeOf(blob.type), revoke: true });
-        return;
-      } catch (err: any) {
-        // Fallback: Agar serverdan yuklab bo'lmasa, lokal brauzer xotirasidan olishga urinish
-        try {
-          const { blob: localBlob } = await getLocalNormativeDocFile(doc.Id);
-          setPreview({ doc, url: URL.createObjectURL(localBlob), mime: mimeOf(localBlob.type), revoke: true });
-          return;
-        } catch {
-          setPreviewError(err?.message || MISSING_FILE);
-        }
-      } finally {
-        setPreviewLoading(false);
-      }
-      return;
-    }
-
     setPreview(null);
     setPreviewLoading(true);
     try {
-      try {
-        const { blob } = await getLocalNormativeDocFile(doc.Id);
-        setPreview({ doc, url: URL.createObjectURL(blob), mime: mimeOf(blob.type), revoke: true });
-      } catch {
-        const { blob, url } = await api.fetchNormativeDocumentBlob(doc.Id);
-        if (blob.type.includes('text/html') || blob.size === 0) {
-          URL.revokeObjectURL(url);
-          throw new Error(MISSING_FILE);
-        }
-        setPreview({ doc, url, mime: mimeOf(blob.type), revoke: true });
+      const { blob, url } = await api.fetchNormativeDocumentBlob(doc.Id);
+      if (blob.type.includes('text/html') || blob.size === 0) {
+        URL.revokeObjectURL(url);
+        throw new Error(MISSING_FILE);
       }
+      setPreview({ doc, url, mime: doc.MimeType || blob.type || 'application/pdf', revoke: true });
     } catch (err: any) {
-      setPreviewError(err?.message || 'Hujjatni ochib bo‘lmadi');
+      setPreviewError(err?.message || MISSING_FILE);
     } finally {
       setPreviewLoading(false);
     }
@@ -277,38 +208,6 @@ export default function NormativeDocsPage() {
   // Handle download
   const handleDownload = async (doc: NormativeDocument) => {
     try {
-      // If it is a seed document with a static file, download directly
-      if (!doc.LocalFile && (doc.Id.startsWith('seed-') || (doc.FileName && ['SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf', 'SHGKM_ichki_transport_yoriqnomasi_312.pdf', 'SUG_xavfsizlik_reglamenti_84.pdf', 'Temir_yollarda_yuk_tashish_qoidalari_142.pdf', 'Temir_yol_jarayoni_protsedura.pdf'].includes(doc.FileName)))) {
-        const res = await fetch(`/normative-files/${encodeURIComponent(doc.FileName)}`);
-        const blob = res.ok ? await res.blob() : null;
-        if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.FileName || `${doc.Title}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        return;
-      }
-
-      // 1. Try local storage file
-      try {
-        const { blob, fileName } = await getLocalNormativeDocFile(doc.Id);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.FileName || fileName || `${doc.Title}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        return;
-      } catch {
-        // Fallback to API
-      }
-
       await api.downloadNormativeDocument(doc.Id, doc.FileName || `${doc.Title}.pdf`);
     } catch (err: any) {
       alert(err.message || 'Yuklab olishda xatolik');
@@ -320,13 +219,7 @@ export default function NormativeDocsPage() {
     if (!docToDelete) return;
     setDeleting(true);
     try {
-      // Delete from local store
-      await deleteLocalNormativeDoc(docToDelete.Id);
-
-      // Also try delete from server (non-blocking)
-      try {
-        await api.deleteNormativeDocument(docToDelete.Id);
-      } catch {}
+      await api.deleteNormativeDocument(docToDelete.Id);
 
       setDocuments(prev => prev.filter(d => d.Id !== docToDelete.Id));
       setDocToDelete(null);
@@ -387,22 +280,13 @@ export default function NormativeDocsPage() {
       setUploading(true);
       setUploadError(null);
       try {
-        const updated: NormativeDocument = {
-          ...editingDoc,
-          Title: formTitle.trim(),
-          DocumentNumber: formNumber.trim(),
-          DocumentDate: formDate || undefined,
-          Category: formCategory,
-          Description: formDescription.trim() || undefined,
-          UpdatedAt: new Date().toISOString(),
-          ...(selectedFile ? {
-            FileName: selectedFile.name,
-            FileSize: selectedFile.size,
-            MimeType: selectedFile.type || 'application/pdf',
-            LocalFile: true,
-          } : {}),
-        };
-        await updateLocalNormativeDoc(updated, selectedFile);
+        const updated = await api.updateNormativeDocument(editingDoc.Id, {
+          title: formTitle.trim(),
+          documentNumber: formNumber.trim(),
+          documentDate: formDate || undefined,
+          category: formCategory,
+          description: formDescription.trim() || undefined,
+        }, selectedFile);
         setDocuments(prev => prev.map(d => (d.Id === updated.Id ? updated : d)));
         closeUploadModal();
       } catch (err: any) {
@@ -418,65 +302,15 @@ export default function NormativeDocsPage() {
     setUploadError(null);
 
     try {
-      // Generate unique ID
-      const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `doc-${Date.now()}`;
-      const nowIso = new Date().toISOString();
-
-      // Agar hujjat raqami kiritilmagan bo'lsa (propustit qilingan bo'lsa) - bo'sh string saqlanadi
-      const docNumberClean = formNumber.trim();
-
-      const newDoc: NormativeDocument = {
-        Id: newId,
-        Title: formTitle.trim(),
-        DocumentNumber: docNumberClean, // Bo'sh bo'lishi mumkin (propusk)
-        DocumentDate: formDate || undefined,
-        Category: formCategory,
-        Description: formDescription.trim() || undefined,
-        FileName: selectedFile.name,
-        FileSize: selectedFile.size,
-        MimeType: selectedFile.type || 'application/pdf',
-        UploadedBy: user?.fullName || user?.username || 'Admin',
-        CreatedAt: nowIso,
-        UpdatedAt: nowIso,
-      };
-
-      // 1. Save directly into persistent browser storage with the full file Blob
-      await saveLocalNormativeDoc(newDoc, selectedFile);
-
-      // 2. Update UI immediately
-      setDocuments(prev => [newDoc, ...prev]);
-
-      // 3. Try to sync with server in background (graceful, non-blocking)
-      try {
-        const reader = new FileReader();
-        const base64Promise = new Promise<string>((resolve) => {
-          reader.onload = () => {
-            const res = reader.result as string;
-            resolve(res.split(',')[1] || '');
-          };
-          reader.onerror = () => resolve('');
-        });
-        reader.readAsDataURL(selectedFile);
-        const fileBase64 = await base64Promise;
-
-        if (fileBase64) {
-          const payload: CreateNormativeDocPayload = {
-            title: newDoc.Title,
-            documentNumber: newDoc.DocumentNumber,
-            documentDate: newDoc.DocumentDate,
-            category: newDoc.Category,
-            description: newDoc.Description,
-            fileName: newDoc.FileName,
-            fileSize: selectedFile.size,
-            mimeType: newDoc.MimeType,
-            fileBase64,
-            uploadedBy: newDoc.UploadedBy,
-          };
-          api.uploadNormativeDocument(payload).catch(() => {});
-        }
-      } catch {
-        // Non-blocking sync error ignored
-      }
+      const created = await api.createNormativeDocument({
+        title: formTitle.trim(),
+        // Hujjat raqami kiritilmagan bo'lsa — bo'sh
+        documentNumber: formNumber.trim(),
+        documentDate: formDate || undefined,
+        category: formCategory,
+        description: formDescription.trim() || undefined,
+      }, selectedFile);
+      setDocuments(prev => [created, ...prev]);
 
       // Reset form
       setFormTitle('');

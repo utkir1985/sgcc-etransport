@@ -344,6 +344,24 @@ public class LoadingRegistry
     public string QrFinalFileHash { get; set; } = string.Empty;
 }
 
+/// <summary>Normativ hujjat (qonun, qoida, yo'riqnoma, reglament) — fayli bazada saqlanadi.</summary>
+public class NormativeDocument
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = string.Empty;
+    public string? DocumentNumber { get; set; }
+    public string? DocumentDate { get; set; }
+    public string Category { get; set; } = "internal";
+    public string? Description { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public long FileSize { get; set; }
+    public string MimeType { get; set; } = "application/pdf";
+    public byte[]? FileData { get; set; }
+    public string? UploadedBy { get; set; }
+    public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class AuditLog
 {
     public Guid Id { get; set; } = Guid.NewGuid();

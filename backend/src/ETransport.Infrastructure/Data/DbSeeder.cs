@@ -1283,6 +1283,29 @@ public static class DbSeeder
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ShiftSupervisorApprovedByName" character varying(200) NOT NULL DEFAULT '';
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ExitedToKengsoyByName" character varying(200) NOT NULL DEFAULT '';
 
+            -- Normativ hujjatlar: fayl bazada (barcha kompyuter/foydalanuvchilar uchun bir xil)
+            CREATE TABLE IF NOT EXISTS "NormativeDocuments" (
+              "Id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+              "Title" character varying NOT NULL,
+              "DocumentNumber" character varying NULL,
+              "DocumentDate" character varying NULL,
+              "Category" character varying NOT NULL DEFAULT 'internal',
+              "Description" text NULL,
+              "FileName" character varying NOT NULL,
+              "FileSize" bigint NOT NULL DEFAULT 0,
+              "MimeType" character varying NOT NULL DEFAULT 'application/pdf',
+              "FileData" bytea NULL,
+              "UploadedBy" character varying NULL,
+              "CreatedAt" timestamp with time zone NULL DEFAULT now(),
+              "UpdatedAt" timestamp with time zone NULL DEFAULT now()
+            );
+            -- Avvalgi sinov/namuna yozuvlari (haqiqiy hujjat emas): "dummy test content" va 1-3 KB lik namunalar
+            DELETE FROM "NormativeDocuments"
+            WHERE position(convert_to('dummy test content', 'UTF8') in substring("FileData" from 1 for 64)) > 0
+               OR ("FileName" IN ('Temir_yol_jarayoni_protsedura.pdf','SHGKM_jarayoni_tahrir_2.pdf','Temir_yol_transporti_qonuni_103.pdf',
+                                  'SHGKM_ichki_transport_yoriqnomasi_312.pdf','SUG_xavfsizlik_reglamenti_84.pdf','Temir_yollarda_yuk_tashish_qoidalari_142.pdf')
+                   AND octet_length("FileData") < 3000);
+
             -- Kelishilgan yuk xatida TM va XA imzosi yo'q (yuklash tizimda qayd etilmagan) bo'lsa —
             -- yuk xati tayyorlanishidan oldingi 2 kunda faol bo'lgan TM va XA xodimi, bo'lmasa eng faol xodim.
             UPDATE "EmptyWagonArrivals" a
