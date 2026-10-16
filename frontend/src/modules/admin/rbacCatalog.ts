@@ -30,7 +30,6 @@ import {
   Truck,
   Users,
   Warehouse,
-  Gauge,
 } from 'lucide-react';
 import { ROLE_LABELS } from '../../shared/types';
 
@@ -1042,16 +1041,32 @@ export const RBAC_ACTIONS: RbacActionDef[] = [
   {
     key: 'sfera.view',
     module: 'reports',
-    label: 'Sfera Balance panelini ko‘rish',
-    description: 'FB-8104 sfera va kondensat rezervuarlari real vaqt monitoringi (alohida tizim, E-Transport ichida panel)',
+    label: 'Mahsulot ishlab chiqarish ko‘rsatkichlarini ko‘rish',
+    description: 'Yon menyuda «Mahsulot ishlab chiqarish ko‘rsatkichlari» bandi va sahifaning o‘zi (Sfera Balance): suyultirilgan gaz hamda gaz kondensati bo‘yicha real vaqt, sutkalik, oylik va yillik ko‘rsatkichlar. Huquq olib qo‘yilsa, menyu bandi ham yo‘qoladi.',
     flags: ['R'],
     roles: ['Admin', 'Management', 'DispatchSupervisor', 'DeputyDirector'],
   },
   {
+    key: 'sfera.update',
+    module: 'reports',
+    label: 'Sozlamalar va qo‘lda kiritish',
+    description: 'Sfera sozlamalari (uskunalar registri, chegaralar, PIN) va sutkalik kirim qiymatini qo‘lda kiritish',
+    flags: ['U'],
+    roles: ['Admin'],
+  },
+  {
+    key: 'sfera.delete',
+    module: 'reports',
+    label: 'Sutkalik hisobotni o‘chirish',
+    description: 'Noto‘g‘ri yozilgan sutkalik hisobotni jadvaldan olib tashlash va qayta tiklash',
+    flags: ['D'],
+    roles: ['Admin'],
+  },
+  {
     key: 'sfera.admin',
     module: 'reports',
-    label: 'Sfera Balance — to‘liq rejim',
-    description: 'Sferaning barcha bo‘limlari (kiruvchi gaz, telemetriya, manbalar, hisoblashlar, sozlamalar) va Admin rejimi tugmasi; Sfera PIN-kodi baribir so‘raladi',
+    label: 'Texnik bo‘limlar va to‘liq rejim',
+    description: 'Kiruvchi gaz, sfera telemetriyasi, ma’lumot manbalari, hisoblashlar va V1/V2 tahlili. Admin rejimi tugmasi ham shu huquq bilan ochiladi; Sfera PIN-kodi baribir so‘raladi. Bu huquq qolgan uchtasini (ko‘rish, sozlamalar, o‘chirish) ham o‘z ichiga oladi.',
     flags: ['A'],
     roles: ['Admin'],
   },
@@ -1774,7 +1789,7 @@ export const RESOURCE_META: Record<string, ResourceMeta> = {
   plans: { label: 'Oylik reja monitoringi', icon: Target, module: 'marketing', order: 6 },
   // --- Ma\'lumotnomalar ---
   'normative-docs': { label: 'Normativ hujjatlar', icon: BookOpen, module: 'reports', order: 19 },
-  sfera: { label: 'Sfera Balance', icon: Gauge, module: 'reports', order: 19.5 },
+  sfera: { label: 'Mahsulot ishlab chiqarish ko‘rsatkichlari', icon: Factory, module: 'reports', order: 19.5 },
   products: { label: 'Mahsulotlar katalogi', icon: Package, module: 'admin', order: 20 },
   contractors: { label: 'Kontragentlar', icon: Building2, module: 'admin', order: 21 },
   stations: { label: 'Stansiyalar', icon: MapPinned, module: 'admin', order: 22 },
@@ -1928,7 +1943,7 @@ export const RESOURCE_EXPLANATIONS: Record<string, string> = {
   flow: 'Estakadada yuklash, bo‘sh/to‘la (Tara/Brutto) tortish va rasmiy plombalash',
   road: 'Avtosisternalar navbati, tarozida tortish va nazorat punktidan chiqish',
   plans: 'Oylik va sutkalik rejalarning bajarilish monitoringi va tasdiqlash zanjiri',
-  sfera: 'Alohida Sfera Balance tizimi: sfera sathi, hajm, zichlik va massa real vaqtda',
+  sfera: 'Yon menyudagi «Mahsulot ishlab chiqarish ko‘rsatkichlari» sahifasi (Sfera Balance tizimi): suyultirilgan gaz va gaz kondensati bo‘yicha real vaqt, sutkalik, oylik va yillik ko‘rsatkichlar',
   'normative-docs': 'Qonunlar, O‘ztemiryo‘l qoidalari, korxona yo‘riqnomalari va texnik reglamentlar bazasi',
   products: 'Yuklanadigan mahsulotlar (Polietilen, Polipropilen va b.) turlari va zichlik standartlari',
   contractors: 'Mahsulot oluvchi mijozlar, yuk oluvchilar va shartnoma parametrlari',

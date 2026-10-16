@@ -79,8 +79,11 @@ export function useRbacPermission() {
     canNormativeUpdate: can('normative-docs.update'),
     canNormativeDelete: can('normative-docs.delete'),
 
-    // Sfera Balance (tashqi tizim paneli)
+    // Mahsulot ishlab chiqarish ko'rsatkichlari (Sfera Balance paneli).
+    // sfera.admin qolgan uchta huquqni ham o'z ichiga oladi.
     canSferaView: can('sfera.view') || can('sfera.admin'),
+    canSferaUpdate: can('sfera.update') || can('sfera.admin'),
+    canSferaDelete: can('sfera.delete') || can('sfera.admin'),
     canSferaAdmin: can('sfera.admin'),
 
     // Ma'lumotnomalar

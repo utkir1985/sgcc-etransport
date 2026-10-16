@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Bell, Check, CheckCheck, ChevronDown, LogOut, Menu, User, X,
+  Bell, Check, CheckCheck, ChevronDown, ChevronRight, LogOut, Menu, RefreshCw, User, X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { findActiveMenuTrail, augmentMenuItems } from '../../utils/menuNav';
+import { findActiveMenuPath, augmentMenuItems } from '../../utils/menuNav';
 import { ROLE_LABELS } from '../../types';
 import { api } from '../../services/api';
 import ThemeToggle from '../ThemeToggle';
@@ -147,12 +147,19 @@ export default function Header({
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeTrail = findActiveMenuTrail(augmentMenuItems(menu, user?.role, true), location.pathname, location.search);
-  const currentItem = activeTrail?.item ?? menu[0];
-  const headerTitle =
-    location.pathname === '/profile'
-      ? 'Profilni tahrirlash'
-      : (activeTrail?.parent?.label ?? currentItem?.label ?? 'Boshqaruv paneli');
+  // Sarlavhadagi yo'l (breadcrumb): menyudagi joylashuvdan — asosiy panel › ichki guruh › sahifa
+  const menuPath = findActiveMenuPath(augmentMenuItems(menu, user?.role, true), location.pathname, location.search);
+  const crumbs: Array<{ key: string; label: string; to?: string }> = location.pathname === '/profile'
+    ? [{ key: 'profile', label: 'Profilni tahrirlash' }]
+    : menuPath.length
+      ? menuPath.map((entry, i) => ({
+        key: entry.key,
+        label: entry.label,
+        // Faqat birinchi (asosiy panel) bosiladi; ichki guruh — oddiy matn; oxirgisi — joriy sahifa
+        to: i === 0 && menuPath.length > 1 && entry.path ? entry.path : undefined,
+      }))
+      : [{ key: 'home', label: menu[0]?.label ?? 'Boshqaruv paneli' }];
+  const isSferaPage = location.pathname === '/sfera';
 
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -290,12 +297,39 @@ export default function Header({
           </button>
         )}
 
-        <h2 className="text-base sm:text-[18px] font-semibold text-gray-900 dark:text-slate-100 truncate">
-          {headerTitle}
-        </h2>
+        <nav className="header-crumbs" aria-label="Joriy sahifa">
+          {crumbs.map((crumb, i) => {
+            const last = i === crumbs.length - 1;
+            // Telefonda faqat oxirgi ikki qism
+            const mobileHidden = i < crumbs.length - 2 ? ' header-crumbs__part--far' : '';
+            return (
+              <span key={crumb.key} className={`header-crumbs__part${mobileHidden}`}>
+                {i > 0 ? <ChevronRight className="header-crumbs__sep" aria-hidden="true" /> : null}
+                {last ? (
+                  <h2 className="header-crumbs__current" title={crumb.label}>{crumb.label}</h2>
+                ) : crumb.to ? (
+                  <button type="button" className="header-crumbs__link" onClick={() => navigate(crumb.to!)} title={crumb.label}>{crumb.label}</button>
+                ) : (
+                  <span className="header-crumbs__text" title={crumb.label}>{crumb.label}</span>
+                )}
+              </span>
+            );
+          })}
+        </nav>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        {isSferaPage ? (
+          <button
+            type="button"
+            className="btn-icon"
+            title="Ko‘rsatkichlarni yangilash"
+            aria-label="Ko‘rsatkichlarni yangilash"
+            onClick={() => window.dispatchEvent(new Event('sfera:reload'))}
+          >
+            <RefreshCw className="w-[18px] h-[18px] mx-auto" />
+          </button>
+        ) : null}
         <ThemeToggle />
 
         <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-[var(--color-dark-border)]" />

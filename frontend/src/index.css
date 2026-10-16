@@ -20567,3 +20567,25 @@ html.dark .order-progress-track,
   overflow: hidden;
 }
 .sidebar-nav-item:has(.nav-label--wrap) { height: auto; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+
+/* ===== Sarlavhadagi yo'l (breadcrumb): asosiy panel › ichki guruh › sahifa ===== */
+.header-crumbs { display: flex; align-items: center; min-width: 0; flex: 1; gap: 2px; font-size: 15px; line-height: 1.3; }
+.header-crumbs__part { display: inline-flex; align-items: center; min-width: 0; gap: 2px; }
+.header-crumbs__part:not(:last-child) { flex-shrink: 1; }
+.header-crumbs__part:last-child { flex-shrink: 0; max-width: 100%; }
+.header-crumbs__sep { width: 16px; height: 16px; margin: 0 4px; color: #94a3b8; flex-shrink: 0; }
+.header-crumbs__link, .header-crumbs__text { color: #64748b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.header-crumbs__link { background: none; border: 0; padding: 2px 4px; margin: 0 -4px; border-radius: 6px; cursor: pointer; }
+.header-crumbs__link:hover { color: #0f172a; background: #f1f5f9; }
+.header-crumbs__current { color: #0f172a; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.dark .header-crumbs__sep { color: #475569; }
+.dark .header-crumbs__link, .dark .header-crumbs__text { color: #94a3b8; }
+.dark .header-crumbs__link:hover { color: #f1f5f9; background: rgba(148, 163, 184, .12); }
+.dark .header-crumbs__current { color: #f1f5f9; }
+@media (max-width: 640px) {
+  .header-crumbs__part--far { display: none; }
+  .header-crumbs__part--far + .header-crumbs__part .header-crumbs__sep { display: none; }
+  .header-crumbs, .header-crumbs__current { font-size: 14px; }
+}
+/* Sfera sahifasi sarlavhadan to'g'ridan-to'g'ri boshlanadi */
+.sfera-page { height: calc(100dvh - 104px); }

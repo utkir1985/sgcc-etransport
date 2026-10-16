@@ -148,9 +148,9 @@ function buildNormativeDocsItem(byKey: Map<string, MenuItem>): MenuItem {
 /**
  * Sfera Balance — alohida tizim; E-Transport ichida bitta asosiy panel
  * (Mahsulot ishlab chiqarish ko‘rsatkichlari) → mahsulot guruhlari → sahifalar.
- * full=true (sfera.admin) — Sferaning admin bo‘limlari ham ko‘rinadi.
+ * full=true (sfera.admin) — texnik bo‘limlar; canUpdate (sfera.update) — sozlamalar.
  */
-export function buildSferaItems(full = false): MenuItem[] {
+export function buildSferaItems(full = false, canUpdate = false): MenuItem[] {
   const lpg = [
     item('sfera-lpg', 'Real vaqtdagi ko‘rsatkichlar', '/sfera?p=lpg', 'LayoutDashboard'),
     item('sfera-lpg-daily', 'Sutkalik ko‘rsatkichlar', '/sfera?p=lpg-daily', 'CalendarRange'),
@@ -162,6 +162,8 @@ export function buildSferaItems(full = false): MenuItem[] {
       item('sfera-lpg-sources', 'Ma’lumot manbalari', '/sfera?p=lpg-sources', 'Database'),
       item('sfera-lpg-calc', 'Hisoblashlar', '/sfera?p=lpg-calc', 'Sigma'),
       item('sfera-lpg-history', 'V1/V2 tahlili', '/sfera?p=lpg-history', 'TrendingUp'),
+    ] : []),
+    ...(canUpdate ? [
       item('sfera-lpg-settings', 'Sozlamalar', '/sfera?p=lpg-settings', 'SlidersHorizontal'),
     ] : []),
   ];
@@ -174,6 +176,8 @@ export function buildSferaItems(full = false): MenuItem[] {
     ...(full ? [
       item('sfera-cond-flow', 'Kiruvchi gaz kondensati', '/sfera?p=cond-flow', 'ArrowDownToLine'),
       item('sfera-cond-telemetry', 'Silindr telemetriyasi', '/sfera?p=cond-telemetry', 'Clock'),
+    ] : []),
+    ...(canUpdate ? [
       item('sfera-cond-settings', 'Sozlamalar', '/sfera?p=cond-settings', 'SlidersHorizontal'),
     ] : []),
   ];
@@ -201,11 +205,11 @@ function buildLoadingItem(byKey: Map<string, MenuItem>): MenuItem {
  * Boshqaruv paneli → Buyurtmalar → Yuklash jarayonlari → Majmuadagi vagonlar → Hisobotlar va reja.
  * Tarozi, TM/XA va boshqa ish panellari faqat tegishli rolning qo‘shimcha bandlari.
  */
-export function augmentMenuItems(menu: MenuItem[], role?: string, sferaFull = false): MenuItem[] {
+export function augmentMenuItems(menu: MenuItem[], role?: string, sferaFull = false, sferaUpdate = false): MenuItem[] {
   // Sfera panellari Normativ hujjatlardan keyin turadi
   const base = buildMenuItems(menu, role);
   const at = base.findIndex(entry => entry.key === 'normative-docs');
-  const sfera = buildSferaItems(sferaFull);
+  const sfera = buildSferaItems(sferaFull, sferaUpdate || sferaFull);
   return at >= 0 ? [...base.slice(0, at + 1), ...sfera, ...base.slice(at + 1)] : [...base, ...sfera];
 }
 
@@ -428,6 +432,25 @@ export function menuItemMatches(entry: MenuItem, pathname: string, search = ''):
 
 export function findActiveMenuItem(menu: MenuItem[], pathname: string, search = ''): MenuItem | undefined {
   return findActiveMenuTrail(menu, pathname, search)?.item;
+}
+
+/** Faol band uchun to'liq yo'l: [asosiy panel, (ichki guruh), sahifa] — sarlavhadagi breadcrumb uchun. */
+export function findActiveMenuPath(menu: MenuItem[], pathname: string, search = ''): MenuItem[] {
+  const walk = (list: MenuItem[], trail: MenuItem[]): MenuItem[] | null => {
+    for (const entry of list) {
+      if (entry.children?.length) {
+        const deep = walk(entry.children, [...trail, entry]);
+        if (deep) return deep;
+      } else if (entry.path && menuItemMatches(entry, pathname, search)) {
+        return [...trail, entry];
+      }
+    }
+    return null;
+  };
+  const found = walk(menu, []);
+  if (found) return found;
+  const top = menu.find(entry => !entry.children?.length && menuItemMatches(entry, pathname, search));
+  return top ? [top] : [];
 }
 
 export function findActiveMenuTrail(

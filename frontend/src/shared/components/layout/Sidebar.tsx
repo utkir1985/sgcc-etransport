@@ -392,10 +392,11 @@ export default function Sidebar({ isDesktop, collapsed, mobileOpen, onNavigate }
 
   const { can } = useRbacPermission();
   const canSferaAdmin = can('sfera.admin');
+  const canSferaUpdate = can('sfera.update') || canSferaAdmin;
   const canSfera = can('sfera.view') || canSferaAdmin;
   const items = useMemo(
-    () => augmentMenuItems(menu, user?.role, canSferaAdmin).filter(entry => entry.key !== 'sfera' || canSfera),
-    [menu, user?.role, canSfera, canSferaAdmin],
+    () => augmentMenuItems(menu, user?.role, canSferaAdmin, canSferaUpdate).filter(entry => entry.key !== 'sfera' || canSfera),
+    [menu, user?.role, canSfera, canSferaAdmin, canSferaUpdate],
   );
   const [emptyWagonAlertCount, setEmptyWagonAlertCount] = useState(0);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});

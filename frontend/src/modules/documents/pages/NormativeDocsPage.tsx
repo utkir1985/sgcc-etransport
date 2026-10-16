@@ -225,7 +225,8 @@ export default function NormativeDocsPage() {
         'SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf',
         'SHGKM_ichki_transport_yoriqnomasi_312.pdf',
         'SUG_xavfsizlik_reglamenti_84.pdf',
-        'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'
+        'Temir_yollarda_yuk_tashish_qoidalari_142.pdf',
+        'Temir_yol_jarayoni_protsedura.pdf'
       ].includes(doc.FileName)))
     ) {
       setPreview(null);
@@ -236,8 +237,16 @@ export default function NormativeDocsPage() {
         // Fayl yo‘q bo‘lsa server sayt sahifasini (HTML) qaytaradi — uni hujjat sifatida ko‘rsatmaymiz
         if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);
         setPreview({ doc, url: URL.createObjectURL(blob), mime: mimeOf(blob.type), revoke: true });
+        return;
       } catch (err: any) {
-        setPreviewError(err?.message || MISSING_FILE);
+        // Fallback: Agar serverdan yuklab bo'lmasa, lokal brauzer xotirasidan olishga urinish
+        try {
+          const { blob: localBlob } = await getLocalNormativeDocFile(doc.Id);
+          setPreview({ doc, url: URL.createObjectURL(localBlob), mime: mimeOf(localBlob.type), revoke: true });
+          return;
+        } catch {
+          setPreviewError(err?.message || MISSING_FILE);
+        }
       } finally {
         setPreviewLoading(false);
       }
@@ -269,7 +278,7 @@ export default function NormativeDocsPage() {
   const handleDownload = async (doc: NormativeDocument) => {
     try {
       // If it is a seed document with a static file, download directly
-      if (!doc.LocalFile && (doc.Id.startsWith('seed-') || (doc.FileName && ['SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf', 'SHGKM_ichki_transport_yoriqnomasi_312.pdf', 'SUG_xavfsizlik_reglamenti_84.pdf', 'Temir_yollarda_yuk_tashish_qoidalari_142.pdf'].includes(doc.FileName)))) {
+      if (!doc.LocalFile && (doc.Id.startsWith('seed-') || (doc.FileName && ['SHGKM_jarayoni_tahrir_2.pdf', 'Temir_yol_transporti_qonuni_103.pdf', 'SHGKM_ichki_transport_yoriqnomasi_312.pdf', 'SUG_xavfsizlik_reglamenti_84.pdf', 'Temir_yollarda_yuk_tashish_qoidalari_142.pdf', 'Temir_yol_jarayoni_protsedura.pdf'].includes(doc.FileName)))) {
         const res = await fetch(`/normative-files/${encodeURIComponent(doc.FileName)}`);
         const blob = res.ok ? await res.blob() : null;
         if (!blob || blob.type.includes('text/html') || blob.size === 0) throw new Error(MISSING_FILE);

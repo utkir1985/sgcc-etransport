@@ -72,6 +72,13 @@ export default function SferaBalancePage() {
 
   useEffect(() => { void check(); }, [check]);
 
+  // Qayta yuklash: sarlavhadagi yangilash tugmasi (sfera:reload) yoki "Qayta urinish"
+  const reload = useCallback(() => { setFrameKey(k => k + 1); void check(); }, [check]);
+  useEffect(() => {
+    window.addEventListener('sfera:reload', reload);
+    return () => window.removeEventListener('sfera:reload', reload);
+  }, [reload]);
+
   // Tema o‘zgarsa, sahifani qayta yuklamasdan Sferaga xabar beriladi
   useEffect(() => {
     frameRef.current?.contentWindow?.postMessage({ type: 'sfera-theme', theme }, SFERA_ORIGIN);
@@ -96,29 +103,18 @@ export default function SferaBalancePage() {
   // admin=1 — Sfera sarlavhasi (Admin rejimi tugmasi) ko‘rinadi; Sfera PIN-kodi baribir so‘raladi
   srcUrl.searchParams.set('admin', canSferaAdmin ? '1' : '0');
   const src = srcUrl.toString();
-  const reload = () => { setFrameKey(k => k + 1); void check(); };
 
   return (
     <div className="sfera-page">
-      <div className="sfera-page__bar">
-        <nav className="sfera-page__crumbs" aria-label="Sfera bo‘limi">
-          <span>{page.group}</span><i>›</i><b>{page.title}</b>
-        </nav>
-        <span className={`sfera-page__status is-${status}`} title={status === 'online' ? 'Sfera Balance serveri ulangan' : undefined}>
-          <i />{status === 'online' ? 'Ulangan' : status === 'offline' ? 'Mavjud emas' : 'Tekshirilmoqda…'}
-        </span>
-        <div className="sfera-page__actions">
-          <button type="button" className="sfera-page__btn" onClick={reload} title="Yangilash" aria-label="Yangilash">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
       {status === 'checking' && frameKey === 0 ? null : status === 'offline' ? (
         <div className="docs-panel sfera-page__offline">
           <div className="thub-empty">
             <WifiOff className="mx-auto mb-2 h-8 w-8 text-slate-400" />
             <p className="thub-empty__title">Sfera Balance hozir mavjud emas</p>
-            <p className="thub-empty__text">Sfera Balance'ga kirish ochilmadi. E-Transport ishlashiga bu ta'sir qilmaydi. Birozdan keyin «Yangilash»ni bosing.</p>
+            <p className="thub-empty__text">Sfera Balance'ga kirish ochilmadi. E-Transport ishlashiga bu ta'sir qilmaydi.</p>
+            <button type="button" className="btn-secondary mt-3 inline-flex items-center gap-1.5" onClick={reload}>
+              <RefreshCw className="w-4 h-4" /> Qayta urinish
+            </button>
           </div>
         </div>
       ) : (
