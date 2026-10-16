@@ -1335,20 +1335,20 @@ export function RolesCrudPanel() {
         )}
       </div>
 
-      {/* Asosiy Jarayonlar va CRUD Jadvali — Excel uslubidagi to‘liq setkali jadval */}
-      <div className="ui-card overflow-hidden border border-slate-300 dark:border-slate-700 shadow-sm rounded-xl">
-        <div className="admin-table-scroll">
-          <table className="w-full border-collapse border border-slate-300 dark:border-slate-700 text-xs">
+      {/* Asosiy Jarayonlar va CRUD jadvali — tizimdagi boshqa jadvallar uslubida */}
+      <div>
+        <div className="thub-table-wrap reestr-table-wrap rbac-crud-wrap">
+          <table className="thub-table reestr-table rbac-crud-table w-full">
             <thead>
-              <tr className="bg-slate-200/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700">
-                <th className="py-2.5 px-2 text-center text-xs font-bold uppercase w-12 border-r border-slate-300 dark:border-slate-700">№</th>
-                <th style={{ minWidth: 240 }} className="py-2.5 px-3.5 text-left text-xs font-bold uppercase tracking-wider border-r border-slate-300 dark:border-slate-700">Jarayon / Obyekt</th>
-                <th style={{ minWidth: 280 }} className="py-2.5 px-3.5 text-left text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300 border-r border-slate-300 dark:border-slate-700">Nima uchun kerak? (Vazifasi)</th>
+              <tr>
+                <th className="py-2.5 px-2 text-center w-12">№</th>
+                <th style={{ minWidth: 240 }} className="py-2.5 px-3.5 text-left">Jarayon / Obyekt</th>
+                <th style={{ minWidth: 280 }} className="py-2.5 px-3.5 text-left">Nima uchun kerak? (Vazifasi)</th>
                 {TABLE_OPS.map(op => (
-                  <th key={op} className="text-center py-2.5 px-2 text-xs font-bold uppercase border-r border-slate-300 dark:border-slate-700 w-20">{CRUD_OP_LABEL[op]}</th>
+                  <th key={op} className="text-center py-2.5 px-2 w-20">{CRUD_OP_LABEL[op]}</th>
                 ))}
-                <th className="text-center py-2.5 px-2 text-xs font-bold uppercase border-r border-slate-300 dark:border-slate-700 w-36">Tasdiqlash zanjiri</th>
-                <th className="text-center py-2.5 px-2 text-xs font-bold uppercase w-24">Hammasi</th>
+                <th className="text-center py-2.5 px-2 w-36">Tasdiqlash zanjiri</th>
+                <th className="text-center py-2.5 px-2 w-24">Hammasi</th>
               </tr>
             </thead>
             <tbody>
@@ -1364,17 +1364,14 @@ export function RolesCrudPanel() {
                 const allOn = total > 0 && granted === total;
                 const baGranted = (o.actions ?? []).filter(a => Array.isArray(a.roles) && a.roles.includes(role)).length;
                 const isOpen = expanded.has(o.key);
-                const zebraBg = idx % 2 === 0
-                  ? 'bg-white dark:bg-slate-900'
-                  : 'bg-slate-100/80 dark:bg-slate-800/50';
                 const purpose = RESOURCE_EXPLANATIONS[o.key] ?? '';
                 return (
                   <Fragment key={o.key}>
-                    <tr className={`${zebraBg} hover:bg-blue-50/70 dark:hover:bg-slate-800/90 transition-colors border-b border-slate-300 dark:border-slate-700 group`}>
-                      <td className="py-2 px-2 text-center font-bold text-xs text-slate-500 dark:text-slate-400 border-r border-slate-300 dark:border-slate-700">
+                    <tr className="group">
+                      <td className="py-2 px-2 text-center text-slate-500 dark:text-slate-400">
                         {idx + 1}
                       </td>
-                      <td className="py-2 px-3 border-r border-slate-300 dark:border-slate-700">
+                      <td className="py-2 px-3">
                         {/* Uzun izoh ustunni kengaytirib, jadvalni yon tomonga surmasin */}
                         <div className="flex items-center gap-2.5 max-w-[420px]">
                           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-2xs ${iconStyle}`}>
@@ -1386,17 +1383,17 @@ export function RolesCrudPanel() {
                           </span>
                         </div>
                       </td>
-                      <td className="py-2 px-3.5 text-left border-r border-slate-300 dark:border-slate-700">
+                      <td className="py-2 px-3.5 text-left">
                         <p className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-snug">
                           {purpose || 'Korxonaning asosiy operativ biznes jarayoni'}
                         </p>
                       </td>
                       {TABLE_OPS.map(op => (
-                        <td key={op} className="text-center py-2 px-1 border-r border-slate-300 dark:border-slate-700">
+                        <td key={op} className="text-center py-2 px-1">
                           <CrudToggle binding={o.ops[op]} role={role} onToggle={k => toggleActionRole(k, role)} />
                         </td>
                       ))}
-                      <td className="text-center py-2 px-2 border-r border-slate-300 dark:border-slate-700">
+                      <td className="text-center py-2 px-2">
                         {o.actions.length === 0 ? (
                           <span className="text-slate-300 dark:text-slate-600 font-bold select-none text-xs">–</span>
                         ) : (
@@ -1431,8 +1428,8 @@ export function RolesCrudPanel() {
                       </td>
                     </tr>
                     {isOpen && o.actions.length > 0 && (
-                      <tr className="bg-blue-50/30 dark:bg-slate-900/60 border-b border-slate-300 dark:border-slate-700">
-                        <td colSpan={TABLE_OPS.length + 5} className="px-5 py-4 border-t border-slate-300 dark:border-slate-700 shadow-inner">
+                      <tr className="rbac-crud-detail">
+                        <td colSpan={TABLE_OPS.length + 5} className="px-5 py-4 shadow-inner">
                           <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3.5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-xs" />
