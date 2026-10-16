@@ -20648,3 +20648,23 @@ html.dark .order-progress-track,
 .order-sheet-footer-actions .order-sheet-return-btn {
   @apply w-full sm:w-auto justify-center;
 }
+
+/* Buyurtma jadvali (ko‘rish): qator ma'lumotlari markazda, stansiyalar ustma-ust */
+.order-sheet-table:not(.order-sheet-table--edit) .order-sheet-contractor,
+.order-sheet-table:not(.order-sheet-table--edit) .order-sheet-destination {
+  text-align: center;
+}
+.order-sheet-station-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.35;
+}
+.order-sheet-table:not(.order-sheet-table--edit) .order-sheet-station-shipments {
+  align-items: center;
+}
+/* Amallar jadval ramkasidan keyin — oraliq bir xil (12px) */
+.order-sheet-table-box.mb-4 + .order-sheet-table-footer {
+  margin-top: -1rem;
+}

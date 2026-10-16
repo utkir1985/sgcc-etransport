@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, FileDown, MapPin, AlertCircle } from 'lucide-react';
+import { CheckCircle2, FileDown, AlertCircle } from 'lucide-react';
+import { StationStack } from './StationStack';
 import type { MonthlyOrder } from '../types';
 import { getTableHeaders, isWagonPlanOrder } from '../constants/productTypes';
 import type { LogisticsType } from '../constants/logisticsTypes';
@@ -51,7 +52,15 @@ export function OrderAccountingSheet({
   menuItems = [],
 }: OrderAccountingSheetProps) {
   const wagonPlan = isWagonPlanOrder(order.lines);
-  const headers = [...getTableHeaders(logisticsType, wagonPlan), 'Kelishish'];
+  const isPolyethylene = order.productType?.toLowerCase().includes('polietilen')
+    || order.productType?.toLowerCase().includes('полиэтилен');
+  // Buyurtma ko‘rinishidagi kabi: yuklash oxirgi sanasi ustuni
+  const showDeadline = isPolyethylene || !wagonPlan || order.lines.some(l => Boolean(l.lastLoadingDate));
+  const headers = [
+    ...getTableHeaders(logisticsType, wagonPlan),
+    ...(showDeadline ? ['Yuklash oxirgi sanasi'] : []),
+    'Kelishish',
+  ];
   const groups = useMemo(() => getPendingContractorGroups(order), [order]);
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>(() => initCheckedMap(groups));
   const [finalizing, setFinalizing] = useState(false);
@@ -100,6 +109,7 @@ export function OrderAccountingSheet({
     const quantityTotals = summarizeOrderQuantities(lines);
 
     return (
+      <>
       <div className={`order-sheet-table-box mb-4 overflow-hidden rounded-2xl border ${
         badgeVariant === 'approved'
           ? 'border-emerald-200 dark:border-emerald-800/60 shadow-sm'
@@ -167,11 +177,18 @@ export function OrderAccountingSheet({
                       </>
                     )}
                     <td className="order-sheet-destination">
-                      <span className="order-sheet-destination__inner">
-                        <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-                        <span>{line.destinationStation || '—'}</span>
-                      </span>
+                      <StationStack value={line.destinationStation} />
                     </td>
+                    {showDeadline && (() => {
+                      const lineDeadline = line.lastLoadingDate || (wagonPlan ? order.deadline : null);
+                      return (
+                        <td className="order-sheet-center px-2 py-1">
+                          <div className="text-xs font-semibold tabular-nums">
+                            {lineDeadline ? new Date(lineDeadline).toLocaleDateString('ru-RU') : '—'}
+                          </div>
+                        </td>
+                      );
+                    })()}
                     {isFirstInGroup && (
                       <td rowSpan={groupRowSpan} className="order-sheet-review-col">
                         {isApproved ? (
@@ -207,26 +224,27 @@ export function OrderAccountingSheet({
                 <td colSpan={2} className="order-sheet-total-label">JAMI</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{wagonPlan ? quantityTotals.wagonTotal : ''}</td>
                 <td className="order-sheet-center order-sheet-qty order-sheet-qty--total">{quantityTotals.tonTotal}</td>
-                <td colSpan={wagonPlan ? 3 : 4} />
+                <td colSpan={(wagonPlan ? 3 : 4) + (showDeadline ? 1 : 0)} />
               </tr>
             </tbody>
           </table>
         </div>
 
-        {showFooterAction && (
-          <OrderSheetTableFooter>
-            <button
-              type="button"
-              onClick={() => setFinalizeConfirmOpen(true)}
-              disabled={finalizing || !canFinalize}
-              className="btn-primary order-sheet-submit-btn"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {finalizing ? 'Kelishilmoqda...' : 'Buyurtmani kelishish'}
-            </button>
-          </OrderSheetTableFooter>
-        )}
       </div>
+      {showFooterAction && (
+        <OrderSheetTableFooter>
+          <button
+            type="button"
+            onClick={() => setFinalizeConfirmOpen(true)}
+            disabled={finalizing || !canFinalize}
+            className="btn-primary order-sheet-submit-btn"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {finalizing ? 'Kelishilmoqda...' : 'Buyurtmani kelishish'}
+          </button>
+        </OrderSheetTableFooter>
+      )}
+      </>
     );
   };
 

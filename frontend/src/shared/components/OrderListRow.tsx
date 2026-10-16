@@ -27,6 +27,14 @@ function stageEnteredAt(order: MonthlyOrder): string | null | undefined {
   }
 }
 
+/** Buyurtma qatorlaridagi yuklash oxirgi sanalari (takrorsiz, o‘sish tartibida); qatorlarda bo‘lmasa — buyurtma muddati. */
+function orderLoadingDeadlines(order: MonthlyOrder): string[] {
+  const raw = (order.lines ?? []).map(l => l.lastLoadingDate).filter((d): d is string => Boolean(d));
+  const source = raw.length ? raw : (order.deadline ? [order.deadline] : []);
+  const times = Array.from(new Set(source.map(d => new Date(d).setHours(0, 0, 0, 0)))).sort((a, b) => a - b);
+  return times.map(t => new Date(t).toLocaleDateString('ru-RU'));
+}
+
 function renderDateTimeCell(iso?: string | null) {
   const formatted = formatDateTimeDisplay(iso);
   if (!formatted || formatted === "—" || !formatted.includes(" ")) {
@@ -138,24 +146,24 @@ export type OrderListVariant = 'all' | 'faol' | 'tasdiq' | 'yakun';
 
 type OrderColumnKey =
   | 'num' | 'order' | 'product' | 'wagons' | 'tons' | 'done' | 'remain' | 'shipped' | 'stage' | 'waiting' | 'customer'
-  | 'contract' | 'created' | 'approved' | 'status' | 'doc' | 'actions';
+  | 'contract' | 'created' | 'approved' | 'deadline' | 'status' | 'doc' | 'actions';
 
 /** Ustunlar nisbiy kengligi — ko‘rinadigan ustunlar bo‘yicha 100% ga moslanadi. */
 const COLUMN_WEIGHT: Record<OrderColumnKey, number> = {
   num: 3, order: 15, product: 14, wagons: 8, tons: 7, done: 11, remain: 8, shipped: 10, stage: 16, waiting: 13,
-  contract: 9, customer: 9, created: 11, approved: 11, status: 11, doc: 8, actions: 8,
+  contract: 9, customer: 9, created: 11, approved: 11, deadline: 10, status: 11, doc: 8, actions: 8,
 };
 
 function orderColumns(variant: OrderListVariant, showActions: boolean): OrderColumnKey[] {
   switch (variant) {
     case 'faol':
-      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'customer', 'contract', 'created', 'approved', 'doc'];
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'customer', 'contract', 'created', 'approved', 'deadline', 'doc'];
     case 'tasdiq':
-      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'customer', 'contract', 'created', 'doc'];
+      return ['num', 'order', 'product', 'tons', 'stage', 'waiting', 'customer', 'contract', 'created', 'deadline', 'doc'];
     case 'yakun':
       return ['num', 'order', 'product', 'wagons', 'tons', 'shipped', 'customer', 'contract', 'created', 'approved', 'doc'];
     default:
-      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'customer', 'contract', 'created', 'approved', 'status', 'doc',
+      return ['num', 'order', 'product', 'wagons', 'tons', 'done', 'remain', 'customer', 'contract', 'created', 'approved', 'deadline', 'status', 'doc',
         ...(showActions ? ['actions' as const] : [])];
   }
 }
@@ -217,6 +225,7 @@ export function OrderList({
     customer: { label: 'Buyurtma №', className: 'text-center', title: 'Hujjatdagi (kontragent) buyurtma raqami' },
     created: { label: 'Yaratilgan', className: 'text-center', title: 'Yaratilgan sana va vaqt' },
     approved: { label: 'Tasdiqlangan', className: 'text-center', title: 'Tasdiqlangan sana va vaqt' },
+    deadline: { label: 'Yuklash oxirgi sanasi', className: 'text-center !whitespace-normal leading-tight', title: 'Buyurtma qatorlaridagi yuklash oxirgi sanasi' },
     status: { label: 'Holat', className: 'text-center' },
     doc: { label: 'Hujjat', className: 'text-center' },
     actions: { label: 'Amallar', className: 'text-center' },
@@ -397,6 +406,18 @@ export function OrderList({
                       {renderDateTimeCell(approvedAt)}
                     </td>
                   )}
+                  {has('deadline') && (() => {
+                    const dates = orderLoadingDeadlines(order);
+                    const label = dates.length ? dates[dates.length - 1] : '—';
+                    return (
+                      <td className="whitespace-nowrap text-center text-xs tabular-nums font-semibold" title={dates.length > 1 ? dates.join(', ') : undefined}>
+                        {label}
+                        {dates.length > 1 ? (
+                          <span className="ml-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">+{dates.length - 1}</span>
+                        ) : null}
+                      </td>
+                    );
+                  })()}
                   {has('status') && (
                     <td className="text-center text-xs">
                       <div className="marketing-orders-table__status">

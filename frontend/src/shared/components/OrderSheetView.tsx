@@ -1,4 +1,5 @@
-import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { StationStack } from './StationStack';
 import { splitStations } from '../utils/stations';
 import { isOrderLoadingOverdue } from './OrderFulfillmentStatus';
 import type { MonthlyOrder } from '../types';
@@ -43,12 +44,7 @@ function getLineFulfilledTons(line: { wagonCount?: number | null; tonCount?: num
 function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][number]; showShipped: boolean }) {
   const fixedStation = line.destinationStation?.trim();
   if (!showShipped) {
-    return (
-      <span className="order-sheet-destination__inner">
-        <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-        <span>{fixedStation || '—'}</span>
-      </span>
-    );
+    return <StationStack value={fixedStation} />;
   }
   // Qatorda bitta stansiya — barcha vagonlar o‘sha stansiyaga (qator yig‘indisi, 0 ta bo‘lsa ham).
   // Bir nechta stansiya ("Oqjar, Xayrabod") — umumiy reja; yuk xati qilingan stansiyalar o‘z vagon/tonnasi bilan.
@@ -62,12 +58,7 @@ function LineDestination({ line, showShipped }: { line: MonthlyOrder['lines'][nu
       ? fromRegistries.filter(x => x.wagons > 0)
       : fromRegistries;
   if (listed.length > 1 && shipments.length === 0) {
-    return (
-      <span className="order-sheet-destination__inner">
-        <MapPin className="order-sheet-destination__icon" strokeWidth={1.75} />
-        <span>{listed.join(', ')}</span>
-      </span>
-    );
+    return <StationStack value={fixedStation} />;
   }
   if (shipments.length === 0) {
     return <span className="text-slate-400 dark:text-slate-500 italic">Yuk xatida tanlanadi</span>;
