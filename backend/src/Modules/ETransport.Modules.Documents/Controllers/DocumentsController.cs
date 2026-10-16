@@ -291,6 +291,7 @@ public class DocumentsController(
         if (!string.Equals(unit.Status, EmptyWagonUnitStatuses.Returned, StringComparison.OrdinalIgnoreCase))
         {
             unit.Status = EmptyWagonUnitStatuses.Returned;
+            EmptyWagonUnitSync.MarkEstakadaRemoved(unit);
         }
 
         if (string.IsNullOrWhiteSpace(unit.DefectActNumber))

@@ -587,6 +587,10 @@ public class EmptyWagonUnit
     public string DefectActUploadedByName { get; set; } = string.Empty;
     /// <summary>Kirish partiyasidan mustaqil TM/XA yuklash guruhi.</summary>
     public string LoadingBatchNumber { get; set; } = string.Empty;
+    /// <summary>Vagon estakadaga (yuklash joyiga) qo‘yilgan vaqt.</summary>
+    public DateTime? EstakadaPlacedAt { get; set; }
+    /// <summary>Vagon estakadadan olingan vaqt — taroziga jo‘natilgan yoki qaytarilgan.</summary>
+    public DateTime? EstakadaRemovedAt { get; set; }
     public DateTime? LoadingStartedAt { get; set; }
     public DateTime? LoadingCompletedAt { get; set; }
     /// <summary>Vagon yuklashini yakunlagan TM va XA smena muxandisi.</summary>

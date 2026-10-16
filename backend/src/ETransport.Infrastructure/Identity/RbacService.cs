@@ -37,8 +37,10 @@ public class RbacService(AppDbContext db) : IRbacService
         ["plans.export"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Economist, UserRoles.DeputyDirector],
         ["plans.view"] = [UserRoles.Admin, UserRoles.Marketing, UserRoles.Dispatching, UserRoles.DeputyDirector, UserRoles.Management],
 
-        // Sfera Balance (tashqi tizim paneli)
+        // Mahsulot ishlab chiqarish ko'rsatkichlari (Sfera Balance paneli)
         ["sfera.view"] = [UserRoles.Admin, UserRoles.Management, UserRoles.DispatchSupervisor, UserRoles.DeputyDirector],
+        ["sfera.update"] = [UserRoles.Admin],
+        ["sfera.delete"] = [UserRoles.Admin],
         ["sfera.admin"] = [UserRoles.Admin],
 
         // Reports

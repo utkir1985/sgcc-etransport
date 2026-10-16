@@ -215,8 +215,21 @@ public partial class OneCEmptyWagonSyncService(
                 if (near.Count != 1) continue;
                 exact = near[0];
             }
-            unit.SealConfirmedByScaleName = exact.WeigherName.Trim();
+            unit.SealConfirmedByScaleName = NormalizeWeigherName(exact.WeigherName);
             weigherBackfilled++;
+        }
+
+        // Avval 1C'dan yozilgan ismlar: katta harf / bir nechta tarozichi → bitta, oddiy yozuvda
+        foreach (var unit in units)
+        {
+            var current = unit.SealConfirmedByScaleName ?? "";
+            if (current.Length == 0) continue;
+            var normalized = NormalizeWeigherName(current);
+            if (LooksLikeOneCName(current) && normalized != current)
+            {
+                unit.SealConfirmedByScaleName = normalized;
+                weigherBackfilled++;
+            }
         }
         if (weigherBackfilled > 0)
             logger.LogInformation("1C tarozichi ismi yopilgan tashriflarga yozildi: {Count}", weigherBackfilled);
@@ -296,7 +309,7 @@ public partial class OneCEmptyWagonSyncService(
 
             // Tarozi imzosi: 1C'dagi tortgan tarozichi (weigherName). Faqat ism yoziladi —
             // tarozi tasdig'i vaqti (SealConfirmedByScaleAt) jarayon bosqichi bo'lgani uchun tegilmaydi.
-            var weigher = (item.WeigherName ?? "").Trim();
+            var weigher = NormalizeWeigherName(item.WeigherName);
             if (!string.IsNullOrWhiteSpace(weigher) && IsPlaceholderScaleName(unit.SealConfirmedByScaleName))
             {
                 unit.SealConfirmedByScaleName = weigher;
@@ -545,7 +558,7 @@ public partial class OneCEmptyWagonSyncService(
                     ScaleExitedAt = outUtc,
                     SealNumber = item.StampNumber.Trim(),
                     SealConfirmedByScaleAt = null,
-                    SealConfirmedByScaleName = (item.WeigherName ?? "").Trim(),
+                    SealConfirmedByScaleName = NormalizeWeigherName(item.WeigherName),
                     SealEnteredToUngAt = outUtc ?? DateTime.UtcNow,
                     SealConfirmedBySecurityAt = null,
                     SealConfirmedBySecurityName = string.Empty,
@@ -591,6 +604,30 @@ public partial class OneCEmptyWagonSyncService(
     /// bir yozuv ikkala tashrifga tushib, eski hujjatning plombasi va og‘irligini
     /// o‘zgartirib yubormasligi uchun eng yaqin juftlikdan boshlab taqsimlanadi.
     /// </summary>
+    /// <summary>
+    /// 1C tarozichi ismi: bir nechta bo'lsa birinchisi; KATTA HARF bo'lsa oddiy yozuvga
+    /// ("SHAMURADOV  ASROR" → "Shamuradov Asror"); "o`g`li"/"O'G'LI" → "o'g'li".
+    /// </summary>
+    public static string NormalizeWeigherName(string? raw)
+    {
+        var first = (raw ?? "").Split([',', ';', '/'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault() ?? "";
+        if (first.Length == 0) return "";
+        var unified = first.Replace('`', '\'').Replace('‘', '\'').Replace('’', '\'').Replace('ʻ', '\'').Replace('ʼ', '\'');
+        var words = unified.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w =>
+        {
+            var lower = w.ToLowerInvariant();
+            if (lower is "o'g'li" or "og'li" or "ogli" or "qizi") return lower == "ogli" ? "o'g'li" : lower;
+            return char.ToUpperInvariant(lower[0]) + lower[1..];
+        });
+        return string.Join(' ', words);
+    }
+
+    private static bool LooksLikeOneCName(string name) =>
+        name.Contains(',') || name.Contains('`') || name.Contains("  ")
+        || name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(w => w.Length > 2 && w.Any(char.IsLetter) && w.Where(char.IsLetter).All(char.IsUpper))
+        || name.Contains("O'g'li") || name.Contains("O`g`li");
+
     /// <summary>Tarozi imzosida haqiqiy ism emas — bo'sh, manba belgisi yoki avval qo'yilgan o'rinbosar.</summary>
     private static bool IsPlaceholderScaleName(string? name)
     {

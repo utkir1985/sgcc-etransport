@@ -157,6 +157,10 @@ public static class EmptyWagonUnitSync
                 unit.GrossWeight = gross;
 
             // Statusni faqat yangi/bo‘sh unit uchun party stage dan taxmin qilamiz.
+            // Bu ikki tarmoq o‘tmishdagi holatni tiklaydi, jismoniy hodisani emas —
+            // shuning uchun MarkEstakadaPlaced ataylab chaqirilmaydi: UtcNow bu yerda
+            // yolg‘on oraliq hosil qilib, Sfera Balansda nettoni xato sutkaga bo‘lardi.
+            // Haqiqiy o‘tkazish quyida (AwaitingTare → Estakada) belgilanadi.
             if (isNewUnit || string.IsNullOrWhiteSpace(unit.Status))
             {
                 unit.Status = InferStatusFromArrival(arrival, unit);
@@ -172,6 +176,7 @@ public static class EmptyWagonUnitSync
                         || (arrival.EntryPermitPermitApprovedAt != null && arrival.EntryPermitSecurityApprovedAt != null)))
                 {
                     unit.Status = EmptyWagonUnitStatuses.Estakada;
+                    MarkEstakadaPlaced(unit);
                 }
             }
         }
@@ -437,6 +442,7 @@ public static class EmptyWagonUnitSync
         foreach (var u in active)
         {
             u.Status = EmptyWagonUnitStatuses.Estakada;
+            MarkEstakadaPlaced(u);
             u.TareWeighedAt ??= DateTime.UtcNow;
         }
 
@@ -460,12 +466,36 @@ public static class EmptyWagonUnitSync
         foreach (var unit in active)
         {
             if (unit.Status == EmptyWagonUnitStatuses.AwaitingTare)
+            {
                 unit.Status = EmptyWagonUnitStatuses.Estakada;
+                MarkEstakadaPlaced(unit);
+            }
         }
 
         arrival.Stage = "EstakadaPlaced";
         SyncMirrors(arrival);
         return true;
+    }
+
+    /// <summary>
+    /// Vagon estakadaga qo‘yildi. Mahsulot sferadan aynan shu paytdan boshlab chiqadi,
+    /// shuning uchun Sfera Balance sutkalik disbalansni shu oraliq bo‘yicha hisoblaydi.
+    /// Oldingi sikl yopilgan bo‘lsa (vagon qaytarilib, qayta qo‘yilsa) — yangi oraliq.
+    /// </summary>
+    public static void MarkEstakadaPlaced(EmptyWagonUnit unit)
+    {
+        if (unit.EstakadaRemovedAt is not null || unit.EstakadaPlacedAt is null)
+        {
+            unit.EstakadaPlacedAt = DateTime.UtcNow;
+            unit.EstakadaRemovedAt = null;
+        }
+    }
+
+    /// <summary>Vagon estakadadan olindi — taroziga jo‘natildi yoki nuqson bilan qaytarildi.</summary>
+    public static void MarkEstakadaRemoved(EmptyWagonUnit unit)
+    {
+        if (unit.EstakadaPlacedAt is not null && unit.EstakadaRemovedAt is null)
+            unit.EstakadaRemovedAt = DateTime.UtcNow;
     }
 
     public static EmptyWagonUnit? FindUnit(EmptyWagonArrival arrival, string wagonNumber) =>

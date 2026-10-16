@@ -134,6 +134,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         foreach (var u in ready)
         {
             u.Status = EmptyWagonUnitStatuses.Loading;
+            EmptyWagonUnitSync.MarkEstakadaPlaced(u);
             u.LoadingStartedAt = DateTime.UtcNow;
             if (!string.IsNullOrWhiteSpace(request?.Comment))
                 u.LoadingComment = request.Comment.Trim();
@@ -178,6 +179,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
             throw new InvalidOperationException("Faqat estakadadagi vagon yuklashga olinadi.");
 
         unit.Status = EmptyWagonUnitStatuses.Loading;
+        EmptyWagonUnitSync.MarkEstakadaPlaced(unit);
         unit.LoadingStartedAt ??= DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(request?.Comment))
             unit.LoadingComment = request.Comment.Trim();
@@ -269,6 +271,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         if (unit.Status != EmptyWagonUnitStatuses.Loading)
         {
             unit.Status = EmptyWagonUnitStatuses.Loading;
+            EmptyWagonUnitSync.MarkEstakadaPlaced(unit);
             unit.LoadingStartedAt ??= DateTime.UtcNow;
         }
 
@@ -317,6 +320,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         unit.Status = EmptyWagonUnitStatuses.Returned;
         unit.LoadingComment = reason;
         unit.LoadingCompletedAt = null;
+        EmptyWagonUnitSync.MarkEstakadaRemoved(unit);
         AppendArrivalNotes(arrival, reason, $"Yuklash kamchilik · {unit.WagonNumber}");
         _ = userId;
         _ = user;
@@ -362,6 +366,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
         unit.Status = EmptyWagonUnitStatuses.Returned;
         unit.LoadingComment = reason;
         unit.LoadingCompletedAt = null;
+        EmptyWagonUnitSync.MarkEstakadaRemoved(unit);
         AppendArrivalNotes(arrival, reason, $"Rollback · {unit.WagonNumber}");
 
         EmptyWagonUnitSync.SyncMirrors(arrival);
@@ -398,6 +403,7 @@ public class WarehouseLoadingService(AppDbContext db, IAuditService auditService
             throw new InvalidOperationException("Faqat yuklangan vagonni taroziga jo‘natish mumkin.");
 
         unit.Status = EmptyWagonUnitStatuses.ToRailwayScale;
+        EmptyWagonUnitSync.MarkEstakadaRemoved(unit);
         if (!string.IsNullOrWhiteSpace(comment))
             unit.LoadingComment = comment.Trim();
 
@@ -765,6 +771,7 @@ public class WarehouseController(
         foreach (var unit in units)
         {
             unit.Status = EmptyWagonUnitStatuses.Loading;
+            EmptyWagonUnitSync.MarkEstakadaPlaced(unit);
             unit.LoadingStartedAt = DateTime.UtcNow;
             unit.LoadingBatchNumber = batch;
             if (!string.IsNullOrWhiteSpace(request.Comment)) unit.LoadingComment = request.Comment.Trim();
@@ -890,6 +897,7 @@ public class WarehouseController(
         foreach (var unit in units)
         {
             unit.Status = EmptyWagonUnitStatuses.ToRailwayScale;
+            EmptyWagonUnitSync.MarkEstakadaRemoved(unit);
             if (!string.IsNullOrWhiteSpace(request.Comment)) unit.LoadingComment = request.Comment.Trim();
         }
         var arrivalIds = units.Select(u => u.EmptyWagonArrivalId).Distinct().ToList();

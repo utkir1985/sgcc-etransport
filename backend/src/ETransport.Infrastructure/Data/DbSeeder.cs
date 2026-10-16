@@ -1131,6 +1131,9 @@ public static class DbSeeder
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "SealConfirmedByEconomistAt" timestamp with time zone NULL;
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "SealConfirmedByEconomistName" character varying(200) NOT NULL DEFAULT '';
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "ScaleExitedAt" timestamp with time zone NULL;
+            -- Estakada oraliq: mahsulot sferadan aynan shu vaqt ichida chiqadi (Sfera Balance sutkalik disbalansi)
+            ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "EstakadaPlacedAt" timestamp with time zone NULL;
+            ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "EstakadaRemovedAt" timestamp with time zone NULL;
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "WagonType" character varying(40) NOT NULL DEFAULT '';
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "ProductType" character varying(200) NOT NULL DEFAULT '';
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "PlatformTareWeight" character varying(40) NOT NULL DEFAULT '';
@@ -1279,6 +1282,30 @@ public static class DbSeeder
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ShiftSupervisorApprovedAt" timestamp with time zone NULL;
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ShiftSupervisorApprovedByName" character varying(200) NOT NULL DEFAULT '';
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "ExitedToKengsoyByName" character varying(200) NOT NULL DEFAULT '';
+
+            -- Kelishilgan yuk xatida TM va XA imzosi yo'q (yuklash tizimda qayd etilmagan) bo'lsa —
+            -- yuk xati tayyorlanishidan oldingi 2 kunda faol bo'lgan TM va XA xodimi, bo'lmasa eng faol xodim.
+            UPDATE "EmptyWagonArrivals" a
+            SET "LoadingCompletedByName" = pick.name
+            FROM (
+              SELECT r."EmptyWagonArrivalId" AS aid,
+                COALESCE(
+                  (SELECT l."UserFullName" FROM "AuditLogs" l
+                    WHERE l."UserRole" = 'Warehouse'
+                      AND l."Action" IN ('ProductLoaded','ProductLoadingStarted','LoginSuccess')
+                      AND l."UserFullName" NOT IN ('', 'TM va XA smena muxandisi')
+                      AND l."CreatedAt" <= r."PreparedAt" AND l."CreatedAt" > r."PreparedAt" - interval '2 days'
+                    ORDER BY l."CreatedAt" DESC LIMIT 1),
+                  (SELECT l."UserFullName" FROM "AuditLogs" l
+                    WHERE l."UserRole" = 'Warehouse' AND l."Action" = 'ProductLoaded'
+                      AND l."UserFullName" NOT IN ('', 'TM va XA smena muxandisi')
+                    GROUP BY l."UserFullName" ORDER BY count(*) DESC LIMIT 1)
+                ) AS name
+              FROM "LoadingRegistries" r
+              WHERE r."IsApprovedByPermit" AND r."IsApprovedBySecurity" AND r."EmptyWagonArrivalId" IS NOT NULL
+            ) pick
+            WHERE a."Id" = pick.aid AND pick.name IS NOT NULL AND a."LoadingCompletedByName" = ''
+              AND NOT EXISTS (SELECT 1 FROM "EmptyWagonUnits" u WHERE u."EmptyWagonArrivalId" = a."Id" AND u."LoadingCompletedByName" <> '');
 
             -- Vagonlarni chiqargan xodim: eski yozuvlar uchun audit jurnalidan (WagonsDispatched) tiklanadi
             UPDATE "LoadingRegistries" r

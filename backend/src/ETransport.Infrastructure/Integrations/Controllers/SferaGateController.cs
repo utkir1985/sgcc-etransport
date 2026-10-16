@@ -93,9 +93,18 @@ public class SferaGateController(IConfiguration configuration, IRbacService rbac
 
         // Huquq olib qo'yilsa, darhol amal qiladi
         var canAdmin = await rbac.HasActionAsync(role, "sfera.admin");
-        if (!canAdmin && !await rbac.HasActionAsync(role, "sfera.view")) return Unauthorized();
+        var canView = canAdmin || await rbac.HasActionAsync(role, "sfera.view");
+        if (!canView) return Unauthorized();
+
+        // Sfera CRUD huquqlarini alohida biladi: ko'rish, sozlash, o'chirish, texnik bo'limlar.
+        // "admin" qolgan uchtasini o'z ichiga oladi.
+        var rights = new List<string> { "view" };
+        if (canAdmin || await rbac.HasActionAsync(role, "sfera.update")) rights.Add("update");
+        if (canAdmin || await rbac.HasActionAsync(role, "sfera.delete")) rights.Add("delete");
+        if (canAdmin) rights.Add("admin");
 
         Response.Headers["X-Sfera-Admin"] = canAdmin ? "1" : "0";
+        Response.Headers["X-Sfera-Perms"] = string.Join(",", rights);
         return NoContent();
     }
 

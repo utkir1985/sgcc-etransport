@@ -928,7 +928,10 @@ public class EmptyWagonsController(
 
         unit.TareCheckedAt ??= DateTime.UtcNow;
         if (unit.Status == EmptyWagonUnitStatuses.AwaitingTare)
+        {
             unit.Status = EmptyWagonUnitStatuses.Estakada;
+            EmptyWagonUnitSync.MarkEstakadaPlaced(unit);
+        }
 
         arrival.DailyPlanLineId = null;
         if (arrival.Stage is not ("Loading" or "Loaded" or "ToRailwayScale" or "GrossWeighed" or "SealInstallation" or "Sealed" or "DocumentsIssued" or "RegistryPrepared"))
@@ -983,7 +986,10 @@ public class EmptyWagonsController(
         {
             unit.TareCheckedAt ??= now;
             if (unit.Status == EmptyWagonUnitStatuses.AwaitingTare)
+            {
                 unit.Status = EmptyWagonUnitStatuses.Estakada;
+                EmptyWagonUnitSync.MarkEstakadaPlaced(unit);
+            }
         }
 
         arrival.DailyPlanLineId = null;
@@ -1204,6 +1210,7 @@ public class EmptyWagonsController(
             return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null, "Vagon allaqachon qaytarilgan."));
 
         unit.Status = EmptyWagonUnitStatuses.Returned;
+        EmptyWagonUnitSync.MarkEstakadaRemoved(unit);
         unit.LoadingComment = reason;
         unit.TareWeight = string.Empty;
         unit.TareWeighedAt = null;
@@ -1278,7 +1285,9 @@ public class EmptyWagonsController(
             return BadRequest(new ApiResponse<EmptyWagonArrivalDto>(false, null,
                 "Plomba o‘rnatilgan vagonni yuklashga qaytarib bo‘lmaydi."));
 
+        // Bruttodan yuklashga qaytarilgan vagon yana estakadada turadi.
         unit.Status = EmptyWagonUnitStatuses.Loading;
+        EmptyWagonUnitSync.MarkEstakadaPlaced(unit);
         unit.GrossWeight = string.Empty;
         unit.GrossWeighedAt = null;
         unit.LoadingCompletedAt = null;
