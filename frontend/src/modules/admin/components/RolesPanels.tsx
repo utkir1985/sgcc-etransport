@@ -989,12 +989,13 @@ const isCustomAction = (key: string) => key.startsWith('custom.');
 
 function ApiNote({ description }: { description: string }) {
   const { method, path, note } = parseApi(description);
-  if (!method) return <span className="block text-xs text-slate-500 dark:text-slate-400 truncate" title={description}>{description}</span>;
+  // Tavsif kesilmaydi — kerak bo'lsa 2 qatorga o'raladi (to'liq matn sichqoncha ustida)
+  if (!method) return <span className="rbac-desc block text-xs text-slate-500 dark:text-slate-400" title={description}>{description}</span>;
   return (
-    <span className="flex items-center gap-1.5 min-w-0 mt-0.5">
-      <span className={`rbac-method !text-[11px] !font-bold !px-2 !py-0.5 ${METHOD_TONE[method] ?? 'bg-slate-100 text-slate-600'}`}>{method}</span>
-      <code className="text-xs text-slate-600 dark:text-slate-300 font-mono shrink-0 whitespace-nowrap">{path}</code>
-      {note && <span className="text-xs text-slate-500 dark:text-slate-400 truncate hidden xl:inline">· {note}</span>}
+    <span className="rbac-desc block mt-0.5 text-xs" title={note ? `${path} · ${note}` : path}>
+      <span className={`rbac-method !text-[11px] !font-bold !px-2 !py-0.5 mr-1.5 align-middle ${METHOD_TONE[method] ?? 'bg-slate-100 text-slate-600'}`}>{method}</span>
+      <code className="text-xs text-slate-600 dark:text-slate-300 font-mono align-middle">{path}</code>
+      {note && <span className="text-slate-500 dark:text-slate-400 align-middle"> · {note}</span>}
     </span>
   );
 }

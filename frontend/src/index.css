@@ -20600,3 +20600,16 @@ html.dark .order-progress-track,
 .rbac-crud-table tr.rbac-crud-detail > td { background: #f8fafc; }
 .dark .rbac-crud-table tr.rbac-crud-detail > td { background: rgba(15, 23, 42, .6); }
 .rbac-crud-table th:nth-child(2), .rbac-crud-table th:nth-child(3) { text-align: left !important; }
+/* Huquqlar jadvali: 13px shrift, tavsiflar 2 qatorgacha (kesilmaydi) */
+.rbac-crud-table, .rbac-crud-table .text-xs, .rbac-crud-table code.text-xs { font-size: 13px !important; line-height: 1.4 !important; }
+.rbac-crud-table th { font-size: 13px !important; }
+.rbac-crud-table .rbac-desc {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.rbac-crud-table td:nth-child(2) .truncate { white-space: normal; }
