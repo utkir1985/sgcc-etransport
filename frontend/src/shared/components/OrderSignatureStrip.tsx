@@ -31,8 +31,11 @@ export function OrderSignatureStrip({ order, visibility }: OrderSignatureStripPr
       key: 'marketing',
       label: 'Yaratildi',
       role: 'MS va MX boshlig‘i',
-      name: order.marketingApproverName || order.createdBy,
-      timestamp: order.createdAt,
+      // Xodim yaratgan buyurtma: imzo faqat bo'lim boshlig'i tasdiqlaganda (xodimning QR imzosi yo'q)
+      name: order.headApprovedAt
+        ? (order.headApprovedByName || order.marketingApproverName)
+        : order.marketingApproverName,
+      timestamp: order.headApprovedAt || order.createdAt,
     },
     {
       key: 'accounting',

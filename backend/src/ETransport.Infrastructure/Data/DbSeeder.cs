@@ -1459,6 +1459,13 @@ public static class DbSeeder
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadApprovedByName" text NOT NULL DEFAULT '';
             ALTER TABLE "MonthlyOrders" ADD COLUMN IF NOT EXISTS "HeadReturnComment" text NOT NULL DEFAULT '';
 
+            -- MS va MX xodimi yaratgan, hali bo'lim boshlig'i tasdiqlamagan buyurtmalarda xodim imzosi bo'lmaydi
+            UPDATE "MonthlyOrders" o
+            SET "MarketingApproverName" = ''
+            FROM "Users" u
+            WHERE u."Id" = o."CreatedById" AND u."Role" = 'MarketingStaff'
+              AND o."HeadApprovedAt" IS NULL AND o."MarketingApproverName" <> '';
+
             -- Bir martalik: saqlangan RBAC sozlamasiga "MS va MX xodimi" roli; mavjud rol "MS va MX bo'lim boshlig'i" deb ataladi.
             -- Xodim MS va MX'ning barcha o'qish/ko'rish huquqlarini va buyurtma yaratish/tahrirlashni oladi (kelishuvga yuborish, o'chirish yo'q).
             DO $$

@@ -221,8 +221,8 @@ export function ProductOrderDocument({
         <div className="yxn-signatures">
           <SignerBlock
             title={order.productType.toLowerCase().includes('kondensat') ? "IChDX boshlig‘i" : "MS va MX boshlig‘i"}
-            name={order.marketingApproverName || order.createdBy}
-            at={order.createdAt}
+            name={order.headApprovedAt ? (order.headApprovedByName || order.marketingApproverName) : order.marketingApproverName}
+            at={order.headApprovedAt || order.createdAt}
             status="Yaratildi"
           />
           {!order.productType.toLowerCase().includes('kondensat') && (

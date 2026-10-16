@@ -2144,7 +2144,7 @@ public class DocumentsController(
             DeputyApproverName: order.DeputyApproverName,
             DeputyApprovedAt: order.DeputyApprovedAt,
             MarketingApproverName: order.MarketingApproverName ?? order.CreatedBy?.FullName,
-            MarketingApprovedAt: order.CreatedAt,
+            MarketingApprovedAt: order.HeadApprovedAt ?? order.CreatedAt,
             AccountingApproverName: order.AccountingApproverName,
             AccountingApprovedAt: order.ApprovedAt,
             QrVerificationUrl: order.QrVerificationUrl,

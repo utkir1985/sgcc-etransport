@@ -137,7 +137,9 @@ public class OrderService(
             Deadline = ToUtcDate(request.Deadline),
             Status = OrderStatus.Draft,
             CreatedById = userId,
-            MarketingApproverName = creator?.FullName ?? "",
+            // MS va MX xodimi yaratgan buyurtmada xodimning QR imzosi bo'lmaydi —
+            // "Yaratildi" imzosi bo'lim boshlig'i tasdiqlaganda shakllanadi.
+            MarketingApproverName = creator?.Role == UserRoles.MarketingStaff ? "" : (creator?.FullName ?? ""),
             Lines = MapLines(request.Lines),
         };
 
@@ -1250,7 +1252,8 @@ public class OrderService(
             DeputyApproverName: order.DeputyApproverName,
             DeputyApprovedAt: order.DeputyApprovedAt,
             MarketingApproverName: order.MarketingApproverName ?? order.CreatedBy?.FullName,
-            MarketingApprovedAt: order.CreatedAt,
+            // Xodim buyurtmasi: imzo vaqti — bo'lim boshlig'i tasdiqlagan payt
+            MarketingApprovedAt: order.HeadApprovedAt ?? order.CreatedAt,
             AccountingApproverName: order.AccountingApproverName,
             AccountingApprovedAt: order.ApprovedAt,
             QrVerificationUrl: order.QrVerificationUrl,
