@@ -490,9 +490,8 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                                 {
                                     c.Spacing(3.5f);
                                     c.Item().Text(t => { t.Span("Hujjat holati: ").Bold().FontSize(9.5f); t.Span(model.PermitOk ? "Tasdiqlangan" : "Jarayonda").FontSize(9.5f); });
-                                    c.Item().Text(t => { t.Span("Kiritish xizmat xati №: ").Bold().FontSize(9.5f); t.Span(model.LoadingTaskNo ?? "—").FontSize(9.5f); });
+                                    c.Item().Text(t => { t.Span("Yuk xati №: ").Bold().FontSize(9.5f); t.Span(string.IsNullOrWhiteSpace(model.RegistryNumber) ? "—" : model.RegistryNumber).FontSize(9.5f); });
                                     c.Item().Text(t => { t.Span("Yukni chiqarish sanasi: ").Bold().FontSize(9.5f); t.Span(exitDisplay).FontSize(9.5f); });
-                                    c.Item().Text(t => { t.Span("Shartnoma №: ").Bold().FontSize(9.5f); t.Span(string.IsNullOrWhiteSpace(model.ContractNo) ? "—" : model.ContractNo).FontSize(9.5f); });
                                 });
                             });
 

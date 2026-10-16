@@ -18,7 +18,7 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
 {
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static string Hash(object model) => Convert.ToHexString(SHA256.HashData(
-        Encoding.UTF8.GetBytes((model is YukXatiPdfModel ? "final-pdf-v6:" : "final-pdf-v1:") + JsonSerializer.Serialize(model))));
+        Encoding.UTF8.GetBytes((model is YukXatiPdfModel ? "final-pdf-v7:" : "final-pdf-v1:") + JsonSerializer.Serialize(model))));
     private static string Name(params string?[] names) => names.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "Mas'ul xodim";
 
     public async Task<QrSyncResult> SyncAsync(CancellationToken ct = default)
