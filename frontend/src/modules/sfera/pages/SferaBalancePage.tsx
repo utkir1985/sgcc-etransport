@@ -9,16 +9,22 @@ import { useTheme } from '../../../shared/contexts/ThemeContext';
  * Sfera Balance — alohida tizim (o‘z serveri, bazasi va kodi bilan).
  * E-Transport uni faqat ichki oynada embed rejimida (?embed=1) ko‘rsatadi:
  * Sfera o‘z menyusini yashiradi, navigatsiya E-Transport menyusidan boshqariladi.
- * Hech qanday ma'lumot almashilmaydi. Manzil: VITE_SFERA_URL yoki joriy host'ning 8010-porti.
+ * Hech qanday ma'lumot almashilmaydi. Manzil: VITE_SFERA_URL yoki joriy saytning /sfera-app/ yo'li.
  */
 const SFERA_URL = (import.meta.env.VITE_SFERA_URL as string | undefined)
-  || `${window.location.protocol}//${window.location.hostname}:8010/`;
+  // Sfera E-Transport bilan bir manzildan (/sfera-app/) — domen, HTTPS va IP bilan bir xil ishlaydi
+  || `${window.location.origin}/sfera-app/`;
 const SFERA_ORIGIN = new URL(SFERA_URL).origin;
+/** Sfera ichki yo'lini ("/balance/daily") /sfera-app/ ostida to'liq manzilga aylantiradi */
+const sferaHref = (route: string) => new URL(route.replace(/^\//, ''), SFERA_URL);
 
 const LPG = 'Suyultirilgan gaz';
 const COND = 'Gaz kondensati';
-/** admin: true — faqat sfera.admin huquqi bilan (Sferaning admin bo‘limlari) */
-const PAGES: Record<string, { group: string; title: string; route: string; admin?: boolean }> = {
+/**
+ * admin: true — texnik bo‘limlar, sfera.admin huquqi bilan.
+ * update: true — sozlamalar, sfera.update (yoki sfera.admin) huquqi bilan.
+ */
+const PAGES: Record<string, { group: string; title: string; route: string; admin?: boolean; update?: boolean }> = {
   lpg: { group: LPG, title: 'Real vaqtdagi ko‘rsatkichlar', route: '/' },
   'lpg-daily': { group: LPG, title: 'Sutkalik ko‘rsatkichlar', route: '/balance/daily' },
   'lpg-monthly': { group: LPG, title: 'Oylik ko‘rsatkichlar', route: '/balance/monthly' },
@@ -28,7 +34,7 @@ const PAGES: Record<string, { group: string; title: string; route: string; admin
   'lpg-sources': { group: LPG, title: 'Ma’lumot manbalari', route: '/data-sources', admin: true },
   'lpg-calc': { group: LPG, title: 'Hisoblashlar', route: '/calculations', admin: true },
   'lpg-history': { group: LPG, title: 'V1/V2 tahlili', route: '/history', admin: true },
-  'lpg-settings': { group: LPG, title: 'Sozlamalar', route: '/settings?product=lpg', admin: true },
+  'lpg-settings': { group: LPG, title: 'Sozlamalar', route: '/settings?product=lpg', update: true },
   cond: { group: COND, title: 'Real vaqtdagi ko‘rsatkichlar', route: '/condensate/monitoring' },
   'cond-hourly': { group: COND, title: 'Soatlik ko‘rsatkichlar', route: '/condensate/hourly' },
   'cond-daily': { group: COND, title: 'Sutkalik ko‘rsatkichlar', route: '/condensate/daily' },
@@ -36,17 +42,20 @@ const PAGES: Record<string, { group: string; title: string; route: string; admin
   'cond-yearly': { group: COND, title: 'Yillik ko‘rsatkichlar', route: '/condensate/yearly' },
   'cond-flow': { group: COND, title: 'Kiruvchi gaz kondensati', route: '/condensate/flow-history', admin: true },
   'cond-telemetry': { group: COND, title: 'Silindr telemetriyasi', route: '/condensate/cylinder-telemetry', admin: true },
-  'cond-settings': { group: COND, title: 'Sozlamalar', route: '/settings?product=condensate', admin: true },
+  'cond-settings': { group: COND, title: 'Sozlamalar', route: '/settings?product=condensate', update: true },
 };
 
 type Status = 'checking' | 'online' | 'offline';
 
 export default function SferaBalancePage() {
-  const { canSferaView, canSferaAdmin } = useRbacPermission();
+  const { canSferaView, canSferaUpdate, canSferaAdmin } = useRbacPermission();
   const { theme } = useTheme();
   const [params] = useSearchParams();
   const requested = PAGES[params.get('p') ?? ''];
-  const pageKey = requested && (!requested.admin || canSferaAdmin) ? params.get('p')! : 'lpg';
+  const allowed = requested
+    && (!requested.admin || canSferaAdmin)
+    && (!requested.update || canSferaUpdate);
+  const pageKey = allowed ? params.get('p')! : 'lpg';
   const page = PAGES[pageKey];
   const [status, setStatus] = useState<Status>('checking');
   const [frameKey, setFrameKey] = useState(0);
@@ -81,7 +90,7 @@ export default function SferaBalancePage() {
   }
 
   // Tema faqat birinchi yuklashda URL orqali, keyin postMessage bilan
-  const srcUrl = new URL(page.route, SFERA_URL);
+  const srcUrl = sferaHref(page.route);
   srcUrl.searchParams.set('embed', '1');
   srcUrl.searchParams.set('theme', themeRef.current === 'dark' ? 'dark' : 'light');
   // admin=1 — Sfera sarlavhasi (Admin rejimi tugmasi) ko‘rinadi; Sfera PIN-kodi baribir so‘raladi
@@ -102,7 +111,7 @@ export default function SferaBalancePage() {
           <button type="button" className="sfera-page__btn" onClick={reload} title="Yangilash" aria-label="Yangilash">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <a className="sfera-page__btn" href={new URL(page.route, SFERA_URL).toString()} target="_blank" rel="noopener noreferrer" title="Yangi oynada ochish (to‘liq tizim, admin bo‘limlari)" aria-label="Yangi oynada ochish">
+          <a className="sfera-page__btn" href={sferaHref(page.route).toString()} target="_blank" rel="noopener noreferrer" title="Yangi oynada ochish (to‘liq tizim, admin bo‘limlari)" aria-label="Yangi oynada ochish">
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
