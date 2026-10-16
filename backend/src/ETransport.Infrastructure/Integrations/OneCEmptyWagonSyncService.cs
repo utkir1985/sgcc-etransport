@@ -203,7 +203,18 @@ public partial class OneCEmptyWagonSyncService(
                 return dt is not null && !string.IsNullOrWhiteSpace(c.WeigherName)
                     && Math.Abs((ToUtc(dt.Value) - unit.GrossWeighedAt.Value).TotalMinutes) <= 2;
             });
-            if (exact is null) continue;
+            if (exact is null)
+            {
+                // Aniq vaqt topilmasa: ±1 kun ichida shu vagon uchun 1C'da yagona tortish bo'lsagina
+                var near = cands.Where(c =>
+                {
+                    var dt = ParseLocalDateTime(c.DatetimeOut) ?? ParseLocalDateTime(c.DatetimeIn);
+                    return dt is not null && !string.IsNullOrWhiteSpace(c.WeigherName)
+                        && Math.Abs((ToUtc(dt.Value) - unit.GrossWeighedAt.Value).TotalHours) <= 24;
+                }).ToList();
+                if (near.Count != 1) continue;
+                exact = near[0];
+            }
             unit.SealConfirmedByScaleName = exact.WeigherName.Trim();
             weigherBackfilled++;
         }
