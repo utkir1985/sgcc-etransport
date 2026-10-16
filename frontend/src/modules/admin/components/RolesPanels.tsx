@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { TablePagination } from '../../../shared/components/TablePagination';
 import { exportSheet, todayStamp, type SheetCell } from '../../../shared/utils/excelExport';
 import {
   buildObjectModel,
@@ -1205,19 +1206,6 @@ export function RolesCrudPanel() {
     return (o.label ?? '').toLowerCase().includes(q) || extra.includes(q);
   }), [objects, q]);
 
-  const grantsByRole = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const r of (state.roles ?? [])) if (r?.key) map[r.key] = 0;
-    for (const a of (state.actions ?? [])) {
-      if (Array.isArray(a?.roles)) {
-        for (const rk of a.roles) {
-          if (rk in map) map[rk] += 1;
-        }
-      }
-    }
-    return map;
-  }, [state.actions, state.roles]);
-
   const actionByKey = useMemo(() => {
     const m = new Map<string, RbacActionDef>();
     for (const a of (state.actions ?? [])) {
@@ -1242,6 +1230,14 @@ export function RolesCrudPanel() {
       });
     });
   }, [filteredObjects, showAll, role, actionByKey]);
+
+  // Sahifalash — boshqa jadvallardagidek (ichki aylantirish o'rniga)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  useEffect(() => { setPage(1); }, [role, search, showAll]);
+  const totalPages = Math.max(1, Math.ceil(tableObjects.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageObjects = tableObjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const toggleExpand = (key: string) => setExpanded(prev => {
     const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next;
@@ -1355,7 +1351,8 @@ export function RolesCrudPanel() {
             <tbody>
               {tableObjects.length === 0 ? (
                 <tr><td colSpan={TABLE_OPS.length + 5} className="text-center py-12 text-sm text-slate-400">Mos jarayon topilmadi</td></tr>
-              ) : tableObjects.map((o, idx) => {
+              ) : pageObjects.map((o, pageIdx) => {
+                const idx = (currentPage - 1) * pageSize + pageIdx;
                 const Icon = o.icon;
                 const iconStyle = MODULE_ICON_STYLE[o.key] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
                 const firstDesc = (o.ops?.R ?? o.ops?.C ?? o.ops?.U ?? o.ops?.D)?.description ?? o.actions?.[0]?.description ?? '';
@@ -1492,10 +1489,14 @@ export function RolesCrudPanel() {
             </tbody>
           </table>
         </div>
-        <div className="admin-table-footer bg-slate-50/60 dark:bg-slate-900 px-4 py-3.5 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs font-medium text-slate-500">
-          <span><strong>{tableObjects.length}</strong> ta jarayon · <strong>{grantsByRole[role] ?? 0}</strong> ta faol ruxsat</span>
-          <span>Har bir jarayon bo‘yicha CRUD va tasdiqlash zanjiri bosqichlari to‘liq boshqariladi</span>
-        </div>
+        <TablePagination
+          total={tableObjects.length}
+          page={currentPage}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+          unitLabel="jarayon"
+        />
       </div>
 
       <ActionFormDialog

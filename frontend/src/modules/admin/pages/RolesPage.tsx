@@ -13,7 +13,7 @@ const SECTIONS = {
   },
   crud: {
     title: 'Huquqlar va CRUD',
-    description: 'Barcha biznes jarayonlar, amallar, menyular va tasdiqlash zanjirlarini boshqarish.',
+    description: '',
   },
 } as const;
 

@@ -20608,3 +20608,5 @@ html.dark .order-progress-track,
   overflow-wrap: anywhere;
 }
 .rbac-crud-table td:nth-child(2) .truncate { white-space: normal; }
+/* Huquqlar jadvali — ichki aylantirish yo'q, sahifalash bilan */
+.rbac-crud-wrap { max-height: none !important; overflow-y: visible !important; }
