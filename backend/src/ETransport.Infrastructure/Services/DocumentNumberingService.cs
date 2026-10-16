@@ -25,7 +25,6 @@ public class DocumentNumberingService(AppDbContext db) : IDocumentNumberingServi
     private static readonly Dictionary<string, DocumentNumberingRuleModel> Defaults = new(StringComparer.OrdinalIgnoreCase)
     {
         ["InboundBatch"] = new() { DocumentType = "InboundBatch", Prefix = "IB", PeriodFormat = "MMYY", SequenceDigits = 3, ResetPeriod = "Monthly" },
-        ["EntryPermit"] = new() { DocumentType = "EntryPermit", Prefix = "ENP", PeriodFormat = "MMYY", SequenceDigits = 3, ResetPeriod = "Monthly" },
         ["DefectAct"] = new() { DocumentType = "DefectAct", Prefix = "DFA", PeriodFormat = "MMYY", SequenceDigits = 3, ResetPeriod = "Monthly" },
         ["SealDefectAct"] = new() { DocumentType = "SealDefectAct", Prefix = "PL", PeriodFormat = "MMYY", SequenceDigits = 3, ResetPeriod = "Monthly" },
         ["Waybill"] = new() { DocumentType = "Waybill", Prefix = "WB", PeriodFormat = "MMYY", SequenceDigits = 3, ResetPeriod = "Monthly" },
@@ -101,27 +100,6 @@ public class DocumentNumberingService(AppDbContext db) : IDocumentNumberingServi
     {
         // Chiqarish partiyasi va Yuk xati bitta narsa bo'lgani sababli to'g'ridan-to'g'ri Yuk xati raqami (WB) shakllantiriladi
         return await GenerateWaybillNumberAsync(null, ct);
-    }
-
-    public async Task<string> GenerateEntryPermitNumberAsync(CancellationToken ct = default)
-    {
-        var rule = await GetRuleAsync("EntryPermit", ct);
-        var now = DateTime.UtcNow;
-        var period = FormatPeriod(rule.PeriodFormat, now);
-        var prefix = $"{rule.Prefix.Trim().ToUpperInvariant()}-{period}-";
-
-        var existing = await db.EmptyWagonArrivals.AsNoTracking()
-            .Where(a => a.EntryPermitNumber.StartsWith(prefix))
-            .Select(a => a.EntryPermitNumber)
-            .ToListAsync(ct);
-
-        var maxSeq = existing
-            .Select(num => ParseSequence(num, prefix))
-            .DefaultIfEmpty(0)
-            .Max();
-
-        var digits = Math.Clamp(rule.SequenceDigits, 2, 6);
-        return $"{prefix}{(maxSeq + 1).ToString($"D{digits}")}";
     }
 
     public async Task<string> GenerateDefectActNumberAsync(CancellationToken ct = default)

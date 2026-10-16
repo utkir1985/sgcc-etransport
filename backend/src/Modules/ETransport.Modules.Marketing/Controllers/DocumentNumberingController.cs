@@ -48,23 +48,12 @@ public class DocumentNumberingController(AppDbContext db) : ControllerBase
         new DocumentNumberingRuleDto
         {
             DocumentType = "InboundBatch",
-            Title = "Kiritish partiyasi (Inbound)",
+            Title = "Kiritish xizmat xati",
             Prefix = "IB",
             PeriodFormat = "MMYY",
             SequenceDigits = 3,
             ResetPeriod = "Monthly",
-            Description = "Kengsoy temir yo‘l stansiyasidan korxonaga kirib kelgan vagonlar partiyasi kodi",
-            IsEditable = true
-        },
-        new DocumentNumberingRuleDto
-        {
-            DocumentType = "EntryPermit",
-            Title = "Kiritish xizmat xati (Permit)",
-            Prefix = "ENP",
-            PeriodFormat = "MMYY",
-            SequenceDigits = 3,
-            ResetPeriod = "Monthly",
-            Description = "Vagonlarni majmuaga kiritish uchun rasmiylashtirilgan xizmat xati / ruxsatnoma",
+            Description = "Kengsoy stansiyasidan kirib kelgan vagonlar partiyasi va ularni majmuaga kiritish xizmat xati (bitta raqam)",
             IsEditable = true
         },
         new DocumentNumberingRuleDto
@@ -304,7 +293,7 @@ public class DocumentNumberingController(AppDbContext db) : ControllerBase
         foreach (var arr in arrivals)
         {
             var isLegacyArrival = !Regex.IsMatch(arr.ArrivalNumber, @"^IB-\d{4}-\d{3,}$");
-            var isLegacyPermit = string.IsNullOrWhiteSpace(arr.EntryPermitNumber) || !Regex.IsMatch(arr.EntryPermitNumber, @"^ENP-\d{4}-\d{3,}$");
+            var isLegacyPermit = !string.Equals(arr.EntryPermitNumber, arr.ArrivalNumber, StringComparison.OrdinalIgnoreCase);
 
             if (!isLegacyArrival && !isLegacyPermit) continue;
 
@@ -328,8 +317,8 @@ public class DocumentNumberingController(AppDbContext db) : ControllerBase
             if (isLegacyPermit)
             {
                 var oldPermit = arr.EntryPermitNumber;
-                var seq = arrivalSeqByPrefix.GetValueOrDefault(key, 1);
-                var newPermit = $"ENP-{period}-{seq:D3}";
+                // Kiritish xizmat xati raqami — partiya raqamining o'zi
+                var newPermit = arr.ArrivalNumber;
                 arr.EntryPermitNumber = newPermit;
                 logs.Add($"Ruxsatnoma: {(string.IsNullOrWhiteSpace(oldPermit) ? "—" : oldPermit)} ➔ {newPermit}");
             }
@@ -427,7 +416,15 @@ public class DocumentNumberingController(AppDbContext db) : ControllerBase
 
             // Agar default rules da yangi qo‘shilgan qoidalar bo‘lsa, ularni ham qo‘shib beramiz
             // OutboundBatch o'chirilgan (Yuk xati bilan birlashtirilgan)
-            list = list.Where(x => !string.Equals(x.DocumentType, "OutboundBatch", StringComparison.OrdinalIgnoreCase)).ToList();
+            // EntryPermit o'chirilgan (kiritish xizmat xati partiya raqami bilan bitta — IB)
+            list = list.Where(x => !string.Equals(x.DocumentType, "OutboundBatch", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(x.DocumentType, "EntryPermit", StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var r in list.Where(x => string.Equals(x.DocumentType, "InboundBatch", StringComparison.OrdinalIgnoreCase)))
+            {
+                var def = DefaultRules.First(d => d.DocumentType == "InboundBatch");
+                r.Title = def.Title;
+                r.Description = def.Description;
+            }
             var existingTypes = list.Select(x => x.DocumentType).ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var def in DefaultRules)
             {

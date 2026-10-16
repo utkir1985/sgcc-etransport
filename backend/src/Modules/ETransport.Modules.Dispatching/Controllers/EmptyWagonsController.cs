@@ -430,7 +430,8 @@ public class EmptyWagonsController(
         var user = await db.Users.FindAsync(userId);
 
         var arrivalNumber = await numberingService.GenerateInboundBatchNumberAsync();
-        var permitNumber = await numberingService.GenerateEntryPermitNumberAsync();
+        // Kiritish partiyasi va kiritish xizmat xati bitta hujjat — raqami ham bitta (IB-…)
+        var permitNumber = arrivalNumber;
         var compact = string.Join(", ", intakeNumbers);
 
         var entity = new EmptyWagonArrival

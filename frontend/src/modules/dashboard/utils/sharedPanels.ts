@@ -517,7 +517,6 @@ export function buildHistoryTimeline(
         wagonCount: partyWagons.length,
         summary: 'ICHDX smena boshlig‘i kelishuvi',
         mainTitle: 'ICHDX ko‘rigi',
-        subNote: a.entryPermitNumber ? `Ruxsatnoma № ${a.entryPermitNumber}` : '',
         documentNumber: a.entryPermitNumber,
       });
     }

@@ -457,7 +457,7 @@ export function buildYukXatiModel(
     formedAt: registry.preparedAt,
     marketingOrderNo: registry.orderNumber || order?.orderNumber || plan?.orderNumber || '',
     dailyPlanNo: plan?.planNumber || arrival?.planNumber || '',
-    // Vagonlar kiritilgan kiritish xizmat xati (ENP-…); eski yozuvlarda — partiya raqami
+    // Vagonlar kiritilgan kiritish xizmat xati raqami (partiya raqami bilan bitta — IB-…)
     loadingTaskNo: arrival?.entryPermitNumber || arrival?.arrivalNumber || '',
     exitToKengsoyDate: fmtDate(registry.exitedToKengsoyAt),
     exitToKengsoyTime: fmtTime(registry.exitedToKengsoyAt),

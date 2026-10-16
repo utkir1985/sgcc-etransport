@@ -1183,7 +1183,6 @@ export function EmptyWagonsPage() {
       [
         '№',
         'Xizmat xati №',
-        'Partiya №',
         'Sana / vaqt',
         'Vagon soni',
         'Mahsulot turi',
@@ -1212,7 +1211,6 @@ export function EmptyWagonsPage() {
       }
 
       const docNo = arrival.entryPermitNumber || arrival.arrivalNumber || '—';
-      const partyNo = arrival.arrivalNumber || '—';
       const dateStr = formatDateTimeDisplay(
         arrival.entryPermitShiftApprovedAt ||
         arrival.entryPermitPermitApprovedAt ||
@@ -1229,7 +1227,6 @@ export function EmptyWagonsPage() {
         rows.push([
           rowIdx++,
           docNo,
-          partyNo,
           dateStr,
           countToDisplay,
           arrival.productType || '—',
@@ -1248,7 +1245,6 @@ export function EmptyWagonsPage() {
           rows.push([
             rowIdx++,
             docNo,
-            partyNo,
             dateStr,
             countToDisplay,
             u.productType || arrival.productType || '—',
@@ -1278,7 +1274,7 @@ export function EmptyWagonsPage() {
       [
         '№',
         'Vagon №',
-        'Partiya №',
+        'Xizmat xati №',
         'Dalolatnoma №',
         'Sana / vaqt',
         'Vagon turi',
@@ -2945,7 +2941,7 @@ export function EmptyWagonsPage() {
           <DocsHubToolbar
             search={hub.search}
             onSearchChange={hub.setSearch}
-            searchPlaceholder="Partiya, vagon yoki kirish hujjati №…"
+            searchPlaceholder="Xizmat xati № yoki vagon raqami…"
             preset={hub.preset}
             onPreset={hub.pickPreset}
             from={hub.from}
@@ -3127,7 +3123,7 @@ export function EmptyWagonsPage() {
             <DocsHubToolbar
               search={hub.search}
               onSearchChange={hub.setSearch}
-              searchPlaceholder="Partiya, vagon yoki kirish hujjati №…"
+              searchPlaceholder="Xizmat xati № yoki vagon raqami…"
               preset={hub.preset}
               onPreset={hub.pickPreset}
               from={hub.from}
@@ -3199,7 +3195,7 @@ export function EmptyWagonsPage() {
             <DocsHubToolbar
               search={hub.search}
               onSearchChange={hub.setSearch}
-              searchPlaceholder="Partiya, vagon yoki kirish hujjati №…"
+              searchPlaceholder="Xizmat xati № yoki vagon raqami…"
               preset={hub.preset}
               onPreset={hub.pickPreset}
               from={hub.from}

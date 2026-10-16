@@ -1342,6 +1342,11 @@ public static class DbSeeder
             WHERE r."ExitedToKengsoyByName" = '' AND r."ExitedToKengsoyAt" IS NOT NULL
               AND sub."EntityId" = r."Id"::text;
 
+            -- Kiritish partiyasi va kiritish xizmat xati — bitta hujjat, bitta raqam (IB-…)
+            UPDATE "EmptyWagonArrivals"
+            SET "EntryPermitNumber" = "ArrivalNumber"
+            WHERE "ArrivalNumber" <> '' AND "EntryPermitNumber" IS DISTINCT FROM "ArrivalNumber";
+
             -- Yuk xati vagonlari: har bir vagon yo'nalishiga buyurtma qatorining shartnoma raqami
             -- (qatorda bo'lmasa — buyurtma shartnomasi). Faqat hali kaliti yo'q yozuvlar to'ldiriladi.
             UPDATE "LoadingRegistries" r

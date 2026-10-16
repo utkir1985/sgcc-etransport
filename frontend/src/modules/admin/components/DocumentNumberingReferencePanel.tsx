@@ -21,24 +21,13 @@ import { notifyOrdersChanged } from '../../../shared/utils/realtimeSync';
 const DEFAULT_NUMBERING_RULES: DocumentNumberingRule[] = [
   {
     documentType: 'InboundBatch',
-    title: 'Kiritish partiyasi (Inbound)',
+    title: 'Kiritish xizmat xati',
     prefix: 'IB',
     periodFormat: 'MMYY',
     sequenceDigits: 3,
     resetPeriod: 'Monthly',
     examplePreview: 'IB-0926-001',
-    description: 'Kengsoy temir yo‘l stansiyasidan korxonaga kirib kelgan vagonlar partiyasi kodi',
-    isEditable: true,
-  },
-  {
-    documentType: 'EntryPermit',
-    title: 'Kiritish xizmat xati (Permit)',
-    prefix: 'ENP',
-    periodFormat: 'MMYY',
-    sequenceDigits: 3,
-    resetPeriod: 'Monthly',
-    examplePreview: 'ENP-0926-001',
-    description: 'Vagonlarni majmuaga kiritish uchun rasmiylashtirilgan xizmat xati / ruxsatnoma',
+    description: 'Kengsoy stansiyasidan kirib kelgan vagonlar partiyasi va ularni majmuaga kiritish xizmat xati (bitta raqam)',
     isEditable: true,
   },
   {
@@ -540,7 +529,7 @@ export function DocumentNumberingReferencePanel() {
       <ConfirmDialog
         open={confirmResetOpen}
         title="Standart qoidalarni tiklash"
-        message="Barcha hujjat prefikslari va raqamlash formatlari tizimning birlamchi standart qiymatlariga (IB, OB, ENP, DFA, WB, PE, LPG, SULF, COND) qaytarilsinmi? Saqlash uchun 'O‘zgarishlarni saqlash' tugmasini bosishingiz kerak bo‘ladi."
+        message="Barcha hujjat prefikslari va raqamlash formatlari tizimning birlamchi standart qiymatlariga (IB, DFA, WB, PE, LPG, SULF, COND) qaytarilsinmi? Saqlash uchun 'O‘zgarishlarni saqlash' tugmasini bosishingiz kerak bo‘ladi."
         confirmLabel="Tiklash"
         cancelLabel="Bekor qilish"
         variant="default"
@@ -552,7 +541,7 @@ export function DocumentNumberingReferencePanel() {
       <ConfirmDialog
         open={confirmMigrateOpen}
         title="Eski hujjat raqamlarini yangi standartga moslash"
-        message="Bazada ilgari yaratilgan barcha eski buyurtmalar (masalan, LPG-00001), bo‘sh vagon partiyalari (EWA-2026-001), ruxsatnomalar (PR-...) va yuk xati/reyestrlari (YX-EWA-...) yangi korporativ standart formatiga (LPG-0926-001, IB-0926-001, ENP-0926-001, WB-0926-001) xavfsiz o‘tkaziladi. O‘zaro bog‘langan barcha jadvallar sinxron yangilanadi. Davom etishni xohlaysizmi?"
+        message="Bazada ilgari yaratilgan barcha eski buyurtmalar (masalan, LPG-00001), bo‘sh vagon partiyalari (EWA-2026-001), ruxsatnomalar (PR-...) va yuk xati/reyestrlari (YX-EWA-...) yangi korporativ standart formatiga (LPG-0926-001, IB-0926-001, WB-0926-001) xavfsiz o‘tkaziladi. O‘zaro bog‘langan barcha jadvallar sinxron yangilanadi. Davom etishni xohlaysizmi?"
         confirmLabel="Standartga o‘tkazish"
         cancelLabel="Bekor qilish"
         variant="default"

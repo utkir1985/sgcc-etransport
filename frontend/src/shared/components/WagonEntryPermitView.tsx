@@ -120,7 +120,7 @@ export function WagonEntryPermitView({ arrival, onClose }: Props) {
         <div>
           <div className="yx-preview-bar__title">Xizmat xati — {permitNo}</div>
           <div className="mt-0.5 text-xs text-slate-400">
-            {arrival.arrivalNumber} · {rows.length} vagon{arrival.productType ? ` · ${arrival.productType}` : ''}
+            {rows.length} vagon{arrival.productType ? ` · ${arrival.productType}` : ''}
           </div>
         </div>
         <div className="yx-preview-bar__actions">
