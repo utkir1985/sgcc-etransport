@@ -733,7 +733,7 @@ function orderTiles(role: string, orders: MonthlyOrder[], orderId?: string | nul
   const staffView = role === 'MarketingStaff';
   const firstSteps: StepTile[] = staffView
     ? [
-      makeTile(role, 'o0', 'Buyurtma yaratish', 'MS va MX xodimi',
+      makeTile(role, 'o0', 'Buyurtma yaratish', 'Mahsulotlarni sotish va marketing xizmati xodimi',
         'Buyurtmani tayyorlab bo‘lim boshlig‘iga yuboradi',
         focusLink ?? '/orders', ClipboardPen,
         scoped.filter(o => o.status === 'Draft' && o.headReviewStatus !== 'Pending').length,
@@ -743,7 +743,7 @@ function orderTiles(role: string, orders: MonthlyOrder[], orderId?: string | nul
           ...scoped.filter(o => o.headReviewStatus === 'Pending' || o.headReviewStatus === 'Approved').map(o => o.headSubmittedAt),
           ...pastSubmit.filter(o => !o.headReviewStatus).map(o => o.createdAt),
         )),
-      makeTile(role, 'o1', 'Buyurtmani tasdiqlash', 'MS va MX bo‘lim boshlig‘i',
+      makeTile(role, 'o1', 'Buyurtmani tasdiqlash', 'Mahsulotlarni sotish va marketing xizmati boshlig‘i',
         'Buyurtmani tasdiqlab kelishuvga yuboradi',
         focusLink ?? '/orders', ClipboardCheck,
         scoped.filter(o => (o.status === 'Draft' && o.headReviewStatus === 'Pending') || o.status === 'ReturnedToMarketing').length,
