@@ -86,6 +86,7 @@ services:
       MinIO__Bucket: ${MINIO_BUCKET:-etransport-files}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://e-transport.sgcc.uz,https://e-transport.sgcc.uz,http://172.16.90.62,http://172.16.90.62:5173}
       Swagger__Enabled: ${SWAGGER_ENABLED:-false}
+      Sfera__IntegrationKey: ${SFERA_INTEGRATION_KEY:-}
       OneCScales__BaseUrl: ${ONEC_SCALES_URL:-}
       OneCScales__Username: ${ONEC_SCALES_USER:-}
       OneCScales__Password: ${ONEC_SCALES_PASSWORD:-}

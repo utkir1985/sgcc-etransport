@@ -203,7 +203,10 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
         return doc.GeneratePdf();
     }
 
-    public byte[] GenerateYukXatiPdf(YukXatiPdfModel model)
+    private enum YxItemKind { GroupHeader, Wagon, Subtotal, GrandTotal }
+    private sealed record YxItem(YxItemKind Kind, YukXatiWagonGroup? Group, YukXatiPdfWagonRow? Row, int DisplayIndex, bool Continued = false);
+
+    public byte[] GenerateYukXatiPdf(YukXatiPdfModel model, YukXatiPartInfo? part = null, bool numberedParts = true)
     {
         const string CheckCircleSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#16a34a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='m9 12 2 2 4-4'/></svg>";
         const string CheckedBoxSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#000000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2'/><path d='m8 12 3 3 5-5'/></svg>";
@@ -233,51 +236,107 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
 
         decimal NormalizeKg(decimal w) => (w > 0 && w < 1000) ? Math.Round(w * 1000m, 0) : w;
 
-        var totalTare = NormalizeKg(model.TotalTare > 0 ? model.TotalTare : model.Wagons.Sum(w => NormalizeKg(w.TareWeight)));
-        var totalBrutto = NormalizeKg(model.TotalBrutto > 0 ? model.TotalBrutto : model.Wagons.Sum(w => NormalizeKg(w.BruttoWeight)));
-        var totalNetto = NormalizeKg(model.TotalNetto > 0 ? model.TotalNetto : (model.Wagons.Sum(w => NormalizeKg(w.NettoWeight)) > 0 ? model.Wagons.Sum(w => NormalizeKg(w.NettoWeight)) : model.TotalNetto));
+        // Jami har bir vagonni kg ga o'tkazib yig'iladi: tonnadagi jami 1000 dan oshsa (1041.08 t) ham to'g'ri chiqadi
+        decimal RowSumKg(Func<YukXatiPdfWagonRow, decimal> pick) =>
+            (model.Wagons ?? []).Where(w => !YukXatiGrouping.IsDefective(w)).Sum(w => NormalizeKg(pick(w)));
+        var rowTare = RowSumKg(w => w.TareWeight);
+        var rowBrutto = RowSumKg(w => w.BruttoWeight);
+        var rowNetto = RowSumKg(w => w.NettoWeight);
+        var totalTare = rowTare > 0 ? rowTare : NormalizeKg(model.TotalTare);
+        var totalBrutto = rowBrutto > 0 ? rowBrutto : NormalizeKg(model.TotalBrutto);
+        var totalNetto = rowNetto > 0 ? rowNetto : NormalizeKg(model.TotalNetto);
 
         var exitDisplay = model.ExitDate != null
             ? FormatUzt(model.ExitDate.Value)
             : FormatUzt(model.PreparedAt);
 
-        var wagons = model.Wagons ?? new List<YukXatiPdfWagonRow>();
-        const int singlePageMaxWagons = 4;
-        const int firstPageLimitWithMultiPages = 4;
-        const int continuationLimit = 14;
-        const int continuationLimitWithSignatures = 7;
+        // Jadval elementlari: guruh sarlavhasi (WB-…-N · qabul qiluvchi · shartnoma), vagonlar, guruh jami, umumiy jami.
+        // Sahifalash birliklarda: vagon qatori = 2, ixcham qatorlar (sarlavha/jami) = 1.
+        var groups = YukXatiGrouping.Group(model, numberedParts);
+        var shippedGroups = groups.Where(g => !g.IsDefectiveSection).ToList();
+        var multiGroup = shippedGroups.Count > 1;
+        var tableItems = new List<YxItem>();
+        foreach (var g in groups)
+        {
+            if (g.IsDefectiveSection && multiGroup) tableItems.Add(new YxItem(YxItemKind.GrandTotal, null, null, 0));
+            tableItems.Add(new YxItem(YxItemKind.GroupHeader, g, null, 0));
+            var n = 1;
+            foreach (var w in g.Rows) tableItems.Add(new YxItem(YxItemKind.Wagon, g, w, n++));
+            if (multiGroup && !g.IsDefectiveSection) tableItems.Add(new YxItem(YxItemKind.Subtotal, g, null, 0));
+        }
+        if (multiGroup && !tableItems.Any(i => i.Kind == YxItemKind.GrandTotal)) tableItems.Add(new YxItem(YxItemKind.GrandTotal, null, null, 0));
 
-        bool signaturesOnFirstPage = wagons.Count <= singlePageMaxWagons;
-        List<YukXatiPdfWagonRow> firstPageRows;
-        var continuationPages = new List<List<YukXatiPdfWagonRow>>();
+        const int singlePageMaxUnits = 9;
+        const int firstPageLimitWithMultiPages = 9;
+        const int continuationLimit = 29;
+        const int continuationLimitWithSignatures = 15;
+
+        var pos = 0;
+        int Units(YxItem i) => i.Kind == YxItemKind.Wagon ? 2 : 1;
+        // Sahifa guruh o'rtasidan boshlansa — "(davomi)" sarlavhasi takrorlanadi
+        // Bitta guruhli hujjatda (ajratma) raqam sarlavhada bor — keyingi varaqda ustun sarlavhasi yetarli
+        bool NeedsContinuedHeader() => groups.Count > 1 && pos < tableItems.Count && pos > 0
+            && tableItems[pos].Kind is YxItemKind.Wagon or YxItemKind.Subtotal;
+        int RemainingUnits() => tableItems.Skip(pos).Sum(Units) + (NeedsContinuedHeader() ? 1 : 0);
+        List<YxItem> TakeChunk(int cap)
+        {
+            var chunk = new List<YxItem>();
+            var used = 0;
+            if (NeedsContinuedHeader())
+            {
+                chunk.Add(new YxItem(YxItemKind.GroupHeader, tableItems[pos].Group, null, 0, Continued: true));
+                used = 1;
+            }
+            while (pos < tableItems.Count && used + Units(tableItems[pos]) <= cap)
+            {
+                used += Units(tableItems[pos]);
+                chunk.Add(tableItems[pos++]);
+            }
+            // Guruh sarlavhasi sahifa oxirida yolg'iz qolmasin
+            if (pos < tableItems.Count && chunk.Count > 1 && chunk[^1].Kind == YxItemKind.GroupHeader && !chunk[^1].Continued)
+            {
+                chunk.RemoveAt(chunk.Count - 1);
+                pos--;
+            }
+            // Guruh/umumiy jami keyingi sahifaga yolg'iz o'tmasin — oxirgi vagon u bilan birga ko'chadi
+            if (pos < tableItems.Count && tableItems[pos].Kind is YxItemKind.Subtotal or YxItemKind.GrandTotal)
+            {
+                var lastWagon = chunk.FindLastIndex(i => i.Kind == YxItemKind.Wagon);
+                if (lastWagon > 1 && chunk[lastWagon - 1].Kind == YxItemKind.Wagon)
+                {
+                    pos -= chunk.Count - lastWagon;
+                    chunk.RemoveRange(lastWagon, chunk.Count - lastWagon);
+                }
+            }
+            return chunk;
+        }
+
+        bool signaturesOnFirstPage = RemainingUnits() <= singlePageMaxUnits;
+        List<YxItem> firstPageRows;
+        var continuationPages = new List<List<YxItem>>();
 
         if (signaturesOnFirstPage)
         {
-            firstPageRows = wagons.ToList();
+            firstPageRows = tableItems.ToList();
+            pos = tableItems.Count;
         }
         else
         {
-            firstPageRows = wagons.Take(firstPageLimitWithMultiPages).ToList();
-            var remainingRows = wagons.Skip(firstPageLimitWithMultiPages).ToList();
-
-            if (remainingRows.Count == 0)
+            firstPageRows = TakeChunk(firstPageLimitWithMultiPages);
+            if (pos >= tableItems.Count)
             {
-                continuationPages.Add(new List<YukXatiPdfWagonRow>());
+                continuationPages.Add(new List<YxItem>());
             }
             else
             {
-                int offset = 0;
-                while (offset < remainingRows.Count)
+                while (pos < tableItems.Count)
                 {
-                    int left = remainingRows.Count - offset;
-                    bool isLastChunk = left <= continuationLimitWithSignatures;
-                    int chunkSize = isLastChunk ? left : continuationLimit;
-                    continuationPages.Add(remainingRows.Skip(offset).Take(chunkSize).ToList());
-                    offset += chunkSize;
+                    bool isLastChunk = RemainingUnits() <= continuationLimitWithSignatures;
+                    continuationPages.Add(TakeChunk(isLastChunk ? continuationLimitWithSignatures : continuationLimit));
                 }
-                if (continuationPages.Count > 0 && continuationPages[^1].Count > continuationLimitWithSignatures)
+                if (continuationPages.Count > 0 && continuationPages[^1].Sum(Units) > continuationLimitWithSignatures)
                 {
-                    continuationPages.Add(new List<YukXatiPdfWagonRow>());
+                    continuationPages.Add(new List<YxItem>());
                 }
             }
         }
@@ -292,22 +351,20 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
             new("security", "Qo‘riqlash xizmati (NO‘J) xodimi", "Kelishildi", model.SecurityOfficerName, model.PreparedAt)
         };
 
-        void RenderWagonsTable(ColumnDescriptor col, List<YukXatiPdfWagonRow> rows)
+        void RenderWagonsTable(ColumnDescriptor col, List<YxItem> rows)
         {
             col.Item().Table(tbl =>
             {
                 tbl.ColumnsDefinition(c =>
                 {
-                    c.ConstantColumn(22);  // T/r
-                    c.ConstantColumn(66);  // Vagon raqami
-                    c.ConstantColumn(58);  // Tara
-                    c.ConstantColumn(58);  // Brutto
-                    c.ConstantColumn(58);  // Netto
-                    c.ConstantColumn(72);  // Plomba raqami
-                    c.ConstantColumn(68);  // Vagon turi
-                    c.ConstantColumn(85);  // Mahsulot turi
-                    c.ConstantColumn(72);  // Shartnoma №
-                    c.RelativeColumn();    // Qabul qiluvchi va stansiya
+                    c.RelativeColumn(4);   // T/r
+                    c.RelativeColumn(11);  // Vagon raqami
+                    c.RelativeColumn(10);  // Tara
+                    c.RelativeColumn(10);  // Brutto
+                    c.RelativeColumn(10);  // Netto
+                    c.RelativeColumn(17);  // Plomba raqami
+                    c.RelativeColumn(11);  // Vagon turi
+                    c.RelativeColumn(14);  // Mahsulot turi
                 });
 
                 tbl.Header(h =>
@@ -321,13 +378,57 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                     TH("Plomba raqami");
                     TH("Vagon turi");
                     TH("Mahsulot turi");
-                    TH("Shartnoma №");
-                    TH("Qabul qiluvchi tashkilot va stansiya");
                 });
 
-                foreach (var w in rows)
+                void SumRow(string label, int count, decimal tare, decimal brutto, decimal netto, string bg)
                 {
-                    var isDefective = w.IsDefective || w.Status == "Returned" || (w.ReceiverAndStation?.Contains("Nomuvofiqlik") == true);
+                    IContainer C(uint span = 1) => tbl.Cell().ColumnSpan(span).Border(0.6f).BorderColor(Colors.Black).Background(bg).PaddingVertical(3.5f).PaddingHorizontal(4f).AlignMiddle();
+                    C(2).AlignRight().Text($"{label}: {count} vagon").Bold().FontSize(9.5f);
+                    C().AlignCenter().Text(tare > 0 ? tare.ToString("N0") : "—").Bold().FontSize(10f);
+                    C().AlignCenter().Text(brutto > 0 ? brutto.ToString("N0") : "—").Bold().FontSize(10f);
+                    C().AlignCenter().Text(netto > 0 ? netto.ToString("N0") : "—").Bold().FontSize(10f);
+                    C(3).Text("");
+                }
+
+                foreach (var item in rows)
+                {
+                    var g = item.Group;
+                    if (item.Kind == YxItemKind.GroupHeader && g is not null)
+                    {
+                        tbl.Cell().ColumnSpan(8).Border(0.6f).BorderColor(Colors.Black).Background(g.IsDefectiveSection ? "#fdecec" : "#e6ebf2")
+                            .PaddingVertical(3.5f).PaddingHorizontal(6f).Row(hr =>
+                            {
+                                if (!g.IsDefectiveSection)
+                                {
+                                    hr.AutoItem().AlignMiddle().Background("#1e3a5f").PaddingHorizontal(5).PaddingVertical(1.5f)
+                                        .Text(g.Number).Bold().FontSize(9f).FontColor(Colors.White);
+                                    hr.ConstantItem(8);
+                                }
+                                hr.RelativeItem().AlignMiddle().Text(t =>
+                                {
+                                    var receiver = t.Span(g.Receiver).Bold().FontSize(10f);
+                                    if (g.IsDefectiveSection) receiver.FontColor(Colors.Red.Darken2);
+                                    if (!g.IsDefectiveSection && g.ContractNumber != "—")
+                                        t.Span($"  ·  Shartnoma № {g.ContractNumber}").Italic().FontSize(9.5f).FontColor(Colors.Grey.Darken2);
+                                    if (item.Continued) t.Span("  (davomi)").Italic().FontSize(9f).FontColor(Colors.Grey.Darken1);
+                                });
+                            });
+                        continue;
+                    }
+                    if (item.Kind == YxItemKind.Subtotal && g is not null)
+                    {
+                        SumRow("Jami", g.WagonCount, g.TareKg, g.BruttoKg, g.NettoKg, "#f1f3f5");
+                        continue;
+                    }
+                    if (item.Kind == YxItemKind.GrandTotal)
+                    {
+                        SumRow("UMUMIY JAMI", shippedGroups.Sum(x => x.WagonCount), shippedGroups.Sum(x => x.TareKg),
+                            shippedGroups.Sum(x => x.BruttoKg), shippedGroups.Sum(x => x.NettoKg), "#d7dee8");
+                        continue;
+                    }
+
+                    var w = item.Row!;
+                    var isDefective = YukXatiGrouping.IsDefective(w);
                     var wTare = NormalizeKg(w.TareWeight);
                     var wBrutto = NormalizeKg(w.BruttoWeight);
                     var wNetto = NormalizeKg(w.NettoWeight);
@@ -341,16 +442,17 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                         if (isRed) text.FontColor(Colors.Red.Darken2).Bold();
                     }
 
-                    TD(w.Index.ToString());
+                    TD(item.DisplayIndex.ToString());
                     TD(w.WagonNumber);
                     TD(!isDefective && wTare > 0 ? wTare.ToString("N0") : "—");
                     TD(!isDefective && wBrutto > 0 ? wBrutto.ToString("N0") : "—");
                     TD(!isDefective && wNetto > 0 ? wNetto.ToString("N0") : "—", bold: !isDefective && wNetto > 0);
-                    TD(!isDefective && !string.IsNullOrWhiteSpace(w.SealNumbers) ? FormatSealNumbers(w.SealNumbers) : "—");
+                    if (isDefective)
+                        TD(string.IsNullOrWhiteSpace(w.DefectActFileName) ? "Dalolatnoma" : w.DefectActFileName, isRed: true);
+                    else
+                        TD(!string.IsNullOrWhiteSpace(w.SealNumbers) ? FormatSealNumbers(w.SealNumbers) : "—");
                     TD(wType);
                     TD(w.ProductType ?? model.ProductType ?? "Suyultirilgan gaz");
-                    TD(isDefective ? "—" : (w.ContractNumber ?? RowContractFallback(model.ContractNo)));
-                    TD(w.ReceiverAndStation ?? model.CustomerName ?? model.DestinationStation ?? "—", isRed: isDefective);
                 }
             });
         }
@@ -475,6 +577,11 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                             c.Item().AlignCenter().Text("YUK XATI").Bold().FontSize(14f);
                             c.Item().AlignCenter().Text("BIR YUK XATI BILAN RASMIYLASHTIRILGAN VAGONLAR").Bold().FontSize(10.5f);
                             c.Item().AlignCenter().Text($"REESTRI № {model.RegistryNumber}").Bold().FontSize(10.5f);
+                            if (part is not null)
+                            {
+                                c.Item().AlignCenter().Border(0.6f).BorderColor("#1e3a5f").PaddingHorizontal(6).PaddingVertical(1.5f)
+                                    .Text($"{part.ParentRegistryNumber} asosiy yuk xatidan ajratma · {part.PartNo} / {part.PartCount}").FontSize(8.5f).FontColor("#1e3a5f");
+                            }
                         });
 
                         col.Item().Row(r =>
@@ -492,6 +599,10 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                                     c.Item().Text(t => { t.Span("Hujjat holati: ").Bold().FontSize(9.5f); t.Span(model.PermitOk ? "Tasdiqlangan" : "Jarayonda").FontSize(9.5f); });
                                     c.Item().Text(t => { t.Span("Yuk xati №: ").Bold().FontSize(9.5f); t.Span(string.IsNullOrWhiteSpace(model.RegistryNumber) ? "—" : model.RegistryNumber).FontSize(9.5f); });
                                     c.Item().Text(t => { t.Span("Yukni chiqarish sanasi: ").Bold().FontSize(9.5f); t.Span(exitDisplay).FontSize(9.5f); });
+                                    if (part is not null)
+                                        c.Item().Text(t => { t.Span("Asosiy yuk xati: ").Bold().FontSize(9.5f); t.Span(part.ParentRegistryNumber).FontSize(9.5f); });
+                                    else if (multiGroup && numberedParts)
+                                        c.Item().Text(t => { t.Span("Ajratmalar: ").Bold().FontSize(9.5f); t.Span($"{shippedGroups.Count} ta ({shippedGroups[0].Number} … {shippedGroups[^1].Number})").FontSize(9.5f); });
                                 });
                             });
 

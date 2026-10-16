@@ -350,6 +350,9 @@ public class LoadingRegistry
     public string QrCodeBase64 { get; set; } = string.Empty;
     public DateTime? QrRegisteredAt { get; set; }
     public string QrFinalFileHash { get; set; } = string.Empty;
+
+    /// <summary>Qo‘riqlashdan keyin qabul qiluvchilar bo‘yicha ajratmalar (WB-…-1, -2) va ularning QR'i, JSON (WaybillPartQrDto[]).</summary>
+    public string WaybillPartsJson { get; set; } = "[]";
 }
 
 /// <summary>Normativ hujjat (qonun, qoida, yo'riqnoma, reglament) — fayli bazada saqlanadi.</summary>

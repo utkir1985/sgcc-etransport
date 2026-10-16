@@ -19,7 +19,7 @@ export function hasPendingApprovalQr(root: ParentNode): boolean {
 
   return Boolean(
     root.querySelector(
-      '.yxn-sign:not(.is-approved), .yxn-head__side--right:not(.is-approved), .entry-permit-head__side--right:not(.is-approved)',
+      '.yxn-sign:not(.is-approved), .yxn-head__side--right:not(.is-approved), .entry-permit-head__side--right:not(.is-approved), .yxn-head-qr--pending',
     ),
   );
 }

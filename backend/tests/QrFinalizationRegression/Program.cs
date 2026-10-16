@@ -69,7 +69,7 @@ class FakeQr : IQrLinkService {
 }
 class FakePdf : IDocumentPdfGenerator {
  public YukXatiPdfModel? Last;
- public byte[] GenerateYukXatiPdf(YukXatiPdfModel m) { Last = m; return [1]; }
+ public byte[] GenerateYukXatiPdf(YukXatiPdfModel m, YukXatiPartInfo? part = null, bool numberedParts = true) { Last = m; return [1]; }
  public byte[] GenerateDefectActPdf(DefectActPdfModel m) => [1];
  public byte[] GenerateEntryPermitPdf(EntryPermitPdfModel m) => [1];
  public byte[] GenerateMonthlyOrderPdf(MonthlyOrderPdfModel m) => [1];

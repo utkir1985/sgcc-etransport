@@ -1,7 +1,7 @@
 import { BadgeCheck } from 'lucide-react';
 import { ApprovalQrCode } from './ApprovalQrCode';
-import type { YukXatiModel } from '../utils/yukXatiModel';
-import { formatYukXatiDateTime } from '../utils/yukXatiModel';
+import type { YukXatiModel, YukXatiWagonGroup, YukXatiWagonRow } from '../utils/yukXatiModel';
+import { formatYukXatiDateTime, groupYukXatiWagons } from '../utils/yukXatiModel';
 
 interface YukXatiViewProps {
   model: YukXatiModel;
@@ -94,19 +94,34 @@ function SignerBlock({ model, signer }: { model: YukXatiModel; signer: Signer })
   );
 }
 
-/** Vagonda shartnoma bo‘lmasa — yuk xatining yagona shartnomasi ("Bir nechta shartnoma" bo‘lsa — chiziqcha). */
-function rowContractFallback(contract?: string | null) {
-  const value = (contract ?? '').trim();
-  return !value || /bir nechta/i.test(value) ? '—' : value;
+/** Jadval elementi: guruh sarlavhasi (WB-…-N · qabul qiluvchi · shartnoma), vagon, guruh jami yoki umumiy jami. */
+type TableItem =
+  | { kind: 'group'; group: YukXatiWagonGroup; continued?: boolean }
+  | { kind: 'wagon'; group: YukXatiWagonGroup; row: YukXatiWagonRow; displayIndex: number }
+  | { kind: 'subtotal'; group: YukXatiWagonGroup }
+  | { kind: 'grand'; wagonCount: number; tareKg: number; bruttoKg: number; nettoKg: number };
+
+function SumRow({ label, count, tareKg, bruttoKg, nettoKg, className }: {
+  label: string; count: number; tareKg: number; bruttoKg: number; nettoKg: number; className: string;
+}) {
+  return (
+    <tr className={className}>
+      <td colSpan={2} className="yxn-sum__label">{label}: {count} vagon</td>
+      <td>{formatKg(tareKg)}</td>
+      <td>{formatKg(bruttoKg)}</td>
+      <td>{formatKg(nettoKg)}</td>
+      <td colSpan={3} />
+    </tr>
+  );
 }
 
-function WagonRegistryTable({ model, rows, continued = false }: {
+function WagonRegistryTable({ model, items, continued = false }: {
   model: YukXatiModel;
-  rows: YukXatiModel['wagons'];
+  items: TableItem[];
   continued?: boolean;
 }) {
   return (
-    <table className={`yxn-wagons${continued ? ' yxn-wagons--continued' : ''}`}>
+    <table className={`yxn-wagons yxn-wagons--grouped${continued ? ' yxn-wagons--continued' : ''}`}>
       <thead>
         <tr>
           <th>T/r</th>
@@ -117,70 +132,134 @@ function WagonRegistryTable({ model, rows, continued = false }: {
           <th>Plomba raqami</th>
           <th>Vagon turi</th>
           <th>Mahsulot turi</th>
-          <th>Shartnoma №</th>
-          <th>Qabul qiluvchi tashkilot va stansiya</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map(row => (
-          <tr key={row.index}>
-            <td>{row.index}</td>
-            <td className="yxn-mono">{row.wagonNumber}</td>
-            <td>{formatKg(row.tareKg)}</td>
-            <td>{formatKg(row.bruttoKg)}</td>
-            <td><b>{formatKg(row.nettoKg)}</b></td>
-            <td className="yxn-mono">{valueOrDash(row.sealNumber)}</td>
-            <td>{row.wagonType}</td>
-            <td>{row.productName || model.cargoName || '—'}</td>
-            <td className="yxn-mono">{row.isDefective ? '—' : (row.contractNumber || rowContractFallback(model.consigneeContract))}</td>
-            <td className={row.isDefective ? 'yxn-defect' : undefined}>
+        {items.map((item, i) => {
+          if (item.kind === 'group') {
+            const g = item.group;
+            return (
+              <tr key={`g-${g.number}-${i}`} className={`yxn-group${g.isDefectiveSection ? ' yxn-group--defect' : ''}`}>
+                <td colSpan={8}>
+                  {!g.isDefectiveSection ? <span className="yxn-group__no">{g.number}</span> : null}
+                  <span className="yxn-group__receiver">{g.receiver}</span>
+                  {!g.isDefectiveSection && g.contractNumber !== '—'
+                    ? <span className="yxn-group__contract"> · Shartnoma № {g.contractNumber}</span>
+                    : null}
+                  {item.continued ? <span className="yxn-group__contract"> (davomi)</span> : null}
+                </td>
+              </tr>
+            );
+          }
+          if (item.kind === 'subtotal') {
+            const g = item.group;
+            return <SumRow key={`s-${g.number}`} label="Jami" count={g.rows.length} tareKg={g.tareKg} bruttoKg={g.bruttoKg} nettoKg={g.nettoKg} className="yxn-subtotal" />;
+          }
+          if (item.kind === 'grand') {
+            return <SumRow key="grand" label="UMUMIY JAMI" count={item.wagonCount} tareKg={item.tareKg} bruttoKg={item.bruttoKg} nettoKg={item.nettoKg} className="yxn-grand" />;
+          }
+          const row = item.row;
+          return (
+            <tr key={`w-${row.index}`}>
+              <td>{item.displayIndex}</td>
+              <td className="yxn-mono">{row.wagonNumber}</td>
+              <td>{formatKg(row.tareKg)}</td>
+              <td>{formatKg(row.bruttoKg)}</td>
+              <td><b>{formatKg(row.nettoKg)}</b></td>
               {row.isDefective
-                ? (
-                  <span className="yxn-defect__line">
-                    Nomuvofiqlik aniqlangan
-                    {row.defectActFileName ? <small className="yxn-defect__act"> · {row.defectActFileName}</small> : null}
-                  </span>
-                )
-                : valueOrDash(row.receiverAndStation || model.finalConsignee || model.consigneeName)}
-            </td>
-          </tr>
-        ))}
+                ? <td className="yxn-defect">{row.defectActFileName || 'Dalolatnoma'}</td>
+                : <td className="yxn-mono">{valueOrDash(row.sealNumber)}</td>}
+              <td>{row.wagonType}</td>
+              <td>{row.productName || model.cargoName || '—'}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
 }
 
-const FIRST_PAGE_WAGON_LIMIT = 4;
+function buildTableItems(model: YukXatiModel) {
+  const groups = groupYukXatiWagons(model);
+  const shipped = groups.filter(g => !g.isDefectiveSection);
+  const multiGroup = shipped.length > 1;
+  const grand: TableItem = {
+    kind: 'grand',
+    wagonCount: shipped.reduce((s, g) => s + g.rows.length, 0),
+    tareKg: shipped.reduce((s, g) => s + g.tareKg, 0),
+    bruttoKg: shipped.reduce((s, g) => s + g.bruttoKg, 0),
+    nettoKg: shipped.reduce((s, g) => s + g.nettoKg, 0),
+  };
+  const items: TableItem[] = [];
+  for (const group of groups) {
+    if (group.isDefectiveSection && multiGroup) items.push(grand);
+    items.push({ kind: 'group', group });
+    group.rows.forEach((row, i) => items.push({ kind: 'wagon', group, row, displayIndex: i + 1 }));
+    if (multiGroup && !group.isDefectiveSection) items.push({ kind: 'subtotal', group });
+  }
+  if (multiGroup && !items.some(i => i.kind === 'grand')) items.push(grand);
+  return { items, shipped, multiGroup, groupCount: groups.length };
+}
+
+/* Sahifalash birliklarda: vagon qatori = 2, ixcham qatorlar (guruh sarlavhasi / jami) = 1 */
+const FIRST_PAGE_UNITS = 9;
 /** Davom varaqda imzo bloklari uchun joy qoldirish (A4 landscape) */
-const CONTINUATION_WAGON_LIMIT = 12;
-const CONTINUATION_WAGON_LIMIT_WITH_SIGNATURES = 8;
+const CONTINUATION_UNITS = 25;
+const CONTINUATION_UNITS_WITH_SIGNATURES = 17;
 
-function paginateYukXatiWagons(wagons: YukXatiModel['wagons']) {
-  const firstPageRows = wagons.slice(0, FIRST_PAGE_WAGON_LIMIT);
-  const remainingRows = wagons.slice(FIRST_PAGE_WAGON_LIMIT);
+function paginateYukXatiItems(items: TableItem[], groupCount: number) {
+  const units = (i: TableItem) => (i.kind === 'wagon' ? 2 : 1);
+  let pos = 0;
+  // Bitta guruhli hujjatda (ajratma) raqam sarlavhada bor — keyingi varaqda ustun sarlavhasi yetarli
+  const needsContinuedHeader = () => groupCount > 1 && pos > 0 && pos < items.length
+    && (items[pos].kind === 'wagon' || items[pos].kind === 'subtotal');
+  const remainingUnits = () => items.slice(pos).reduce((s, i) => s + units(i), 0) + (needsContinuedHeader() ? 1 : 0);
+  const takeChunk = (cap: number) => {
+    const chunk: TableItem[] = [];
+    let used = 0;
+    if (needsContinuedHeader()) {
+      const next = items[pos] as Extract<TableItem, { group: YukXatiWagonGroup }>;
+      chunk.push({ kind: 'group', group: next.group, continued: true });
+      used = 1;
+    }
+    while (pos < items.length && used + units(items[pos]) <= cap) {
+      used += units(items[pos]);
+      chunk.push(items[pos++]);
+    }
+    // Guruh sarlavhasi sahifa oxirida yolg‘iz qolmasin
+    const last = chunk[chunk.length - 1];
+    if (pos < items.length && chunk.length > 1 && last?.kind === 'group' && !last.continued) {
+      chunk.pop();
+      pos--;
+    }
+    // Guruh/umumiy jami keyingi sahifaga yolg‘iz o‘tmasin — oxirgi vagon u bilan birga ko‘chadi
+    if (pos < items.length && (items[pos].kind === 'subtotal' || items[pos].kind === 'grand')) {
+      let lastWagon = -1;
+      chunk.forEach((it, idx) => { if (it.kind === 'wagon') lastWagon = idx; });
+      if (lastWagon > 1 && chunk[lastWagon - 1].kind === 'wagon') {
+        pos -= chunk.length - lastWagon;
+        chunk.splice(lastWagon);
+      }
+    }
+    return chunk;
+  };
 
-  if (remainingRows.length === 0) {
-    return { firstPageRows, continuationPages: [] as Array<typeof wagons>, signaturesOnFirstPage: true };
+  if (remainingUnits() <= FIRST_PAGE_UNITS) {
+    return { firstPageItems: items, continuationPages: [] as TableItem[][], signaturesOnFirstPage: true };
   }
 
-  const continuationPages: Array<typeof wagons> = [];
-  let index = 0;
-  while (index < remainingRows.length) {
-    const left = remainingRows.length - index;
-    const isLastChunk = left <= CONTINUATION_WAGON_LIMIT;
-    const chunkSize = isLastChunk
-      ? Math.min(left, CONTINUATION_WAGON_LIMIT_WITH_SIGNATURES)
-      : CONTINUATION_WAGON_LIMIT;
-    continuationPages.push(remainingRows.slice(index, index + chunkSize));
-    index += chunkSize;
+  const firstPageItems = takeChunk(FIRST_PAGE_UNITS);
+  const continuationPages: TableItem[][] = [];
+  while (pos < items.length) {
+    const isLastChunk = remainingUnits() <= CONTINUATION_UNITS_WITH_SIGNATURES;
+    continuationPages.push(takeChunk(isLastChunk ? CONTINUATION_UNITS_WITH_SIGNATURES : CONTINUATION_UNITS));
   }
-
-  const lastPage = continuationPages[continuationPages.length - 1] ?? [];
-  if (lastPage.length > CONTINUATION_WAGON_LIMIT_WITH_SIGNATURES) {
+  const lastPage = continuationPages[continuationPages.length - 1];
+  if (!lastPage || lastPage.reduce((s, i) => s + units(i), 0) > CONTINUATION_UNITS_WITH_SIGNATURES) {
     continuationPages.push([]);
   }
 
-  return { firstPageRows, continuationPages, signaturesOnFirstPage: false };
+  return { firstPageItems, continuationPages, signaturesOnFirstPage: false };
 }
 
 function SignaturesBlock({
@@ -262,7 +341,9 @@ export function YukXatiView({ model }: YukXatiViewProps) {
       at: model.securityAt,
     },
   ];
-  const { firstPageRows, continuationPages, signaturesOnFirstPage } = paginateYukXatiWagons(model.wagons);
+  const { items, shipped, multiGroup, groupCount } = buildTableItems(model);
+  const { firstPageItems, continuationPages, signaturesOnFirstPage } = paginateYukXatiItems(items, groupCount);
+  const partQrPending = Boolean(model.part) && !model.qrValue && !model.qrCodeBase64;
   const totalPages = signaturesOnFirstPage ? 1 : 1 + continuationPages.length;
 
   return (
@@ -281,25 +362,39 @@ export function YukXatiView({ model }: YukXatiViewProps) {
               <br />
               REESTRI № {model.registryNumber}
             </h2>
+            {model.part ? (
+              <div className="yxn-part-badge">
+                {model.part.parentRegistryNumber} asosiy yuk xatidan ajratma · {model.part.partNo} / {model.part.partCount}
+              </div>
+            ) : null}
           </div>
         </header>
 
         <div className="yxn-head">
           <div className="yxn-head__side yxn-head__side--left">
-            <div className="yxn-head-qr">
-              <ApprovalQrCode
-                value={model.qrVerificationUrl || model.qrValue}
-                qrCodeBase64={model.qrCodeBase64}
-                globalId={model.qrGlobalId}
-                size={HEADER_QR_SIZE}
-                level="L"
-                link
-              />
+            <div className={`yxn-head-qr${partQrPending ? ' yxn-head-qr--pending' : ''}`}>
+              {partQrPending ? (
+                <span title="Ajratma QR kodi QR Link'da ro‘yxatdan o‘tgach chiqadi">QR</span>
+              ) : (
+                <ApprovalQrCode
+                  value={model.qrVerificationUrl || model.qrValue}
+                  qrCodeBase64={model.qrCodeBase64}
+                  globalId={model.qrGlobalId}
+                  size={HEADER_QR_SIZE}
+                  level="L"
+                  link
+                />
+              )}
             </div>
             <div className="yxn-head__text yxn-head__text--meta">
               <div><b>Hujjat holati:</b> {documentStatus}</div>
               <div><b>Yuk xati №:</b> {valueOrDash(model.registryNumber)}</div>
               <div><b>Yukni chiqarish sanasi:</b> {exitDisplay}</div>
+              {model.part ? (
+                <div><b>Asosiy yuk xati:</b> {model.part.parentRegistryNumber}</div>
+              ) : multiGroup && model.partsNumbered !== false ? (
+                <div><b>Ajratmalar:</b> {shipped.length} ta ({shipped[0].number} … {shipped[shipped.length - 1].number})</div>
+              ) : null}
             </div>
           </div>
 
@@ -370,14 +465,14 @@ export function YukXatiView({ model }: YukXatiViewProps) {
           </tbody>
         </table>
 
-        <WagonRegistryTable model={model} rows={firstPageRows} />
+        <WagonRegistryTable model={model} items={firstPageItems} />
         {signaturesOnFirstPage ? (
           <SignaturesBlock model={model} signers={signers} />
         ) : null}
         <DocumentFooter page={1} total={totalPages} />
       </section>
 
-      {continuationPages.map((rows, pageIndex) => {
+      {continuationPages.map((pageItems, pageIndex) => {
         const pageNumber = pageIndex + 2;
         const isLastPage = pageIndex === continuationPages.length - 1;
         const showSignatures = isLastPage && !signaturesOnFirstPage;
@@ -388,7 +483,7 @@ export function YukXatiView({ model }: YukXatiViewProps) {
               <span>025-Ф5</span>
             </div>
 
-            {rows.length ? <WagonRegistryTable model={model} rows={rows} continued /> : null}
+            {pageItems.length ? <WagonRegistryTable model={model} items={pageItems} continued /> : null}
 
             {showSignatures ? (
               <SignaturesBlock model={model} signers={signers} continued />

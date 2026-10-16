@@ -1707,6 +1707,7 @@ public static class DbSeeder
     {
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "QrFinalFileHash" text NOT NULL DEFAULT '';
+            ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "WaybillPartsJson" text NOT NULL DEFAULT '[]';
             ALTER TABLE "EmptyWagonArrivals" ADD COLUMN IF NOT EXISTS "EntryPermitQrFinalFileHash" text NOT NULL DEFAULT '';
             ALTER TABLE "EmptyWagonUnits" ADD COLUMN IF NOT EXISTS "DefectActQrFinalFileHash" text NOT NULL DEFAULT '';
             ALTER TABLE "LoadingRegistries" ADD COLUMN IF NOT EXISTS "QrGlobalId" text NOT NULL DEFAULT '';

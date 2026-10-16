@@ -2,6 +2,7 @@ using System.Text.Json;
 using ETransport.Core.DTOs;
 using ETransport.Core.Entities;
 using ETransport.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 namespace ETransport.Infrastructure.Pdf;
 public static class FinalDocumentModels
 {
@@ -11,11 +12,32 @@ public static class FinalDocumentModels
         if (string.IsNullOrWhiteSpace(json)) return [];
         return JsonSerializer.Deserialize<List<LoadingRegistryWagonRouteDto>>(json) ?? [];
     }
-    public static YukXatiPdfModel BuildYukXatiPdfModel(LoadingRegistry reg)
+    /// <summary>Yuk xatiga boshqa kelish partiyalaridan qo‘shilgan vagonlar (route.SourceArrivalId) — PDF'da ular ham chiqishi uchun.</summary>
+    public static async Task<List<EmptyWagonUnit>> LoadRouteUnitsAsync(AppDbContext db, LoadingRegistry reg, CancellationToken ct = default)
+    {
+        var sourceIds = ParseWagonRoutes(reg.WagonRoutesJson)
+            .Where(r => r.SourceArrivalId is Guid id && id != reg.EmptyWagonArrivalId)
+            .Select(r => r.SourceArrivalId!.Value).Distinct().ToList();
+        if (sourceIds.Count == 0) return [];
+        return await db.EmptyWagonUnits.AsNoTracking().Where(u => sourceIds.Contains(u.EmptyWagonArrivalId)).ToListAsync(ct);
+    }
+
+    public static YukXatiPdfModel BuildYukXatiPdfModel(LoadingRegistry reg, IReadOnlyCollection<EmptyWagonUnit>? routeUnits = null)
     {
         var arrival = reg.EmptyWagonArrival;
         var units = (arrival?.Units ?? new List<EmptyWagonUnit>()).OrderBy(u => u.WagonNumber).ToList();
         var unitsByNumber = units.ToDictionary(u => u.WagonNumber, StringComparer.OrdinalIgnoreCase);
+        var extraUnits = routeUnits ?? [];
+        EmptyWagonUnit? FindUnit(LoadingRegistryWagonRouteDto route)
+        {
+            bool Same(EmptyWagonUnit u) => string.Equals(u.WagonNumber, route.WagonNumber, StringComparison.OrdinalIgnoreCase);
+            if (route.SourceArrivalId is Guid sid && sid != reg.EmptyWagonArrivalId)
+            {
+                var fromSource = extraUnits.FirstOrDefault(u => u.EmptyWagonArrivalId == sid && Same(u));
+                if (fromSource is not null) return fromSource;
+            }
+            return unitsByNumber.TryGetValue(route.WagonNumber, out var own) ? own : extraUnits.FirstOrDefault(Same);
+        }
 
         var routeSnapshots = ParseWagonRoutes(reg.WagonRoutesJson);
 
@@ -26,7 +48,8 @@ public static class FinalDocumentModels
         {
             foreach (var route in routeSnapshots)
             {
-                if (!unitsByNumber.TryGetValue(route.WagonNumber, out var unit)) continue;
+                var unit = FindUnit(route);
+                if (unit is null) continue;
                 EmptyWagonUnitSync.TryParseWeight(unit.TareWeight, out var tare);
                 EmptyWagonUnitSync.TryParseWeight(unit.GrossWeight, out var brutto);
                 EmptyWagonUnitSync.TryParseWeight(EmptyWagonUnitSync.FormatNetto(unit.TareWeight, unit.GrossWeight), out var netto);

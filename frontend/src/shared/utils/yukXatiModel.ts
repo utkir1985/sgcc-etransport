@@ -1,4 +1,4 @@
-import type { DailyPlan, EmptyWagonArrival, EmptyWagonUnit, LoadingRegistry, MonthlyOrder } from '../types';
+import type { DailyPlan, EmptyWagonArrival, EmptyWagonUnit, LoadingRegistry, MonthlyOrder, WaybillPartQr } from '../types';
 import { wagonOwnershipLabel } from '../constants/wagonOwnership';
 import { isWagonKind, WAGON_KIND_LABEL, type WagonKind } from './wagonKinds';
 import { numberToUzWords } from './uzNumberWords';
@@ -106,6 +106,116 @@ export interface YukXatiModel {
   permitName: string;
   wagons: YukXatiWagonRow[];
   processSteps: YukXatiProcessStep[];
+  /** Qo‘riqlash tasdiqlagan (ajratmalar faqat shundan keyin beriladi) */
+  securityApproved?: boolean;
+  /** Guruhlar WB-…-N bilan raqamlanadimi (01.10.2026 dan oldin qo‘riqlangan hujjatlarda ajratma yo‘q) */
+  partsNumbered?: boolean;
+  /** Ajratmalarning QR Link nusxalari (backend saqlagan) */
+  waybillParts?: WaybillPartQr[];
+  /** Ajratma ko‘rinishi: asosiy yuk xati raqami va tartibi (3 / 4) */
+  part?: { parentRegistryNumber: string; partNo: number; partCount: number };
+}
+
+/** Yuk xati ichidagi qabul qiluvchi guruhi (shartnoma + qabul qiluvchi tashkilot va stansiya). */
+export interface YukXatiWagonGroup {
+  number: string;
+  partNo: number;
+  contractNumber: string;
+  receiver: string;
+  rows: YukXatiWagonRow[];
+  isDefectiveSection: boolean;
+  tareKg: number;
+  bruttoKg: number;
+  nettoKg: number;
+}
+
+function groupContractFallback(contract?: string | null) {
+  const value = (contract ?? '').trim();
+  return !value || /bir nechta/i.test(value) ? '—' : value;
+}
+
+/**
+ * Vagonlarni "shartnoma + qabul qiluvchi" bo‘yicha guruhlaydi (backenddagi YukXatiGrouping bilan bir xil qoida).
+ * Bir nechta guruh bo‘lsa WB-1026-030-1, -2, ... (jadvaldagi birinchi vagon tartibida); bitta bo‘lsa — asosiy raqam.
+ * Nomuvofiq vagonlar alohida bo‘limga tushadi va ajratma bo‘lmaydi.
+ */
+/** Ajratmalar shu sanadan keyin qo‘riqlashdan o‘tgan yuk xatlariga beriladi (backend: YukXatiGrouping.PartsFromUtc). */
+const PARTS_FROM = Date.parse('2026-09-30T19:00:00Z');
+
+export function yukXatiIssuesParts(registry: LoadingRegistry): boolean {
+  if (!registry.isApprovedBySecurity) return true;
+  const at = Date.parse(registry.securityApprovedAt || registry.preparedAt || '');
+  return !Number.isFinite(at) || at >= PARTS_FROM;
+}
+
+export function groupYukXatiWagons(model: YukXatiModel): YukXatiWagonGroup[] {
+  const fallbackReceiver = model.finalConsignee || model.consigneeName || '—';
+  const buckets = new Map<string, { contract: string; receiver: string; rows: YukXatiWagonRow[] }>();
+  const defective: YukXatiWagonRow[] = [];
+  for (const row of model.wagons) {
+    if (!row.wagonNumber || !String(row.wagonNumber).trim()) continue;
+    if (row.isDefective) { defective.push(row); continue; }
+    const contract = safeTrim(row.contractNumber) || groupContractFallback(model.consigneeContract);
+    const receiver = safeTrim(row.receiverAndStation) || fallbackReceiver;
+    const key = `${contract}|${receiver}`.toLowerCase();
+    const bucket = buckets.get(key) ?? { contract, receiver, rows: [] };
+    bucket.rows.push(row);
+    buckets.set(key, bucket);
+  }
+  const kg = (rows: YukXatiWagonRow[], pick: (r: YukXatiWagonRow) => string) =>
+    rows.reduce((s, r) => s + (Number(pick(r)) || 0), 0);
+  const split = model.partsNumbered !== false && buckets.size > 1;
+  const groups: YukXatiWagonGroup[] = [...buckets.values()].map((b, i) => ({
+    number: split ? `${model.registryNumber}-${i + 1}` : model.registryNumber,
+    partNo: split ? i + 1 : 0,
+    contractNumber: b.contract,
+    receiver: b.receiver,
+    rows: b.rows,
+    isDefectiveSection: false,
+    tareKg: kg(b.rows, r => r.tareKg),
+    bruttoKg: kg(b.rows, r => r.bruttoKg),
+    nettoKg: kg(b.rows, r => r.nettoKg),
+  }));
+  if (defective.length > 0) {
+    groups.push({
+      number: '', partNo: 0, contractNumber: '—',
+      receiver: 'Nomuvofiqlik aniqlangan vagonlar (yuk xatiga kirmaydi)',
+      rows: defective, isDefectiveSection: true, tareKg: 0, bruttoKg: 0, nettoKg: 0,
+    });
+  }
+  return groups;
+}
+
+/** Bir nechta qabul qiluvchi bo‘lsa — ajratmalar; aks holda bo‘sh. */
+export function yukXatiParts(model: YukXatiModel): YukXatiWagonGroup[] {
+  if (model.partsNumbered === false) return [];
+  const groups = groupYukXatiWagons(model).filter(g => !g.isDefectiveSection);
+  return groups.length > 1 ? groups : [];
+}
+
+/** Ajratma modeli: faqat shu guruh vagonlari, o‘z jamilari, raqami va QR'i bilan. */
+export function buildYukXatiPartModel(master: YukXatiModel, part: YukXatiWagonGroup, partCount: number): YukXatiModel {
+  const qr = (master.waybillParts ?? []).find(p => p.number === part.number);
+  const products = [...new Set(part.rows.map(r => r.productName).filter(Boolean))];
+  const qrLink = qr?.qrVerificationUrl || '';
+  return {
+    ...master,
+    registryNumber: part.number,
+    consigneeContract: part.contractNumber,
+    finalConsignee: part.receiver,
+    cargoName: products.length === 1 ? (products[0] as string) : master.cargoName,
+    wagons: part.rows,
+    wagonCount: part.rows.length,
+    totalTareKg: Math.round(part.tareKg),
+    totalBruttoKg: Math.round(part.bruttoKg),
+    totalNettoKg: Math.round(part.nettoKg),
+    qrValue: qrLink,
+    qrLink,
+    qrGlobalId: qr?.qrGlobalId,
+    qrVerificationUrl: qr?.qrVerificationUrl,
+    qrCodeBase64: qr?.qrCodeBase64,
+    part: { parentRegistryNumber: master.registryNumber, partNo: part.partNo, partCount },
+  };
 }
 
 export function isYukXatiPrintReady(model: YukXatiModel): boolean {
@@ -116,6 +226,8 @@ export function isYukXatiPrintReady(model: YukXatiModel): boolean {
     && model.economistAt
     && model.permitAt
     && model.securityAt
+    // Ajratma o‘z QR'i QR Link'da ro‘yxatdan o‘tgach chop etiladi
+    && !(model.part && !model.qrValue && !model.qrCodeBase64)
   );
 }
 
@@ -528,6 +640,9 @@ export function buildYukXatiModel(
     permitName: registry.isApprovedByPermit ? (registry.permitApprovedByName || '—') : '',
     wagons: rows,
     processSteps,
+    securityApproved: Boolean(registry.isApprovedBySecurity),
+    partsNumbered: yukXatiIssuesParts(registry),
+    waybillParts: registry.waybillParts ?? [],
   };
 }
 

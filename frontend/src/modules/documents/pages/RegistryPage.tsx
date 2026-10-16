@@ -38,7 +38,7 @@ import { toLatinProductName } from '../../../shared/utils/cyrillicToLatin';
 import { PartyProductsSummary, PartyWagonKindsSummary } from '../../../shared/components/PartyTableSummaries';
 import { isWagonKind, type WagonKind } from '../../../shared/utils/wagonKinds';
 import { notifyOrdersChanged, startAutoRefresh, subscribeOrdersChanged } from '../../../shared/utils/realtimeSync';
-import { buildYukXatiModel, isYukXatiPrintReady, type YukXatiModel } from '../../../shared/utils/yukXatiModel';
+import { buildYukXatiModel, buildYukXatiPartModel, isYukXatiPrintReady, yukXatiParts, type YukXatiModel } from '../../../shared/utils/yukXatiModel';
 import { printYukXati } from '../../../shared/utils/yukXatiPrint';
 import { DocumentPrintButton } from '../../../shared/components/DocumentPrintButton';
 import {
@@ -606,6 +606,8 @@ export default function RegistryPage() {
   const userClosedDraft = useRef(false);
 
   const [previewModel, setPreviewModel] = useState<YukXatiModel | null>(null);
+  /** 0 — asosiy yuk xati; 1..N — qo‘riqlashdan keyingi ajratma (WB-…-N) */
+  const [previewPartNo, setPreviewPartNo] = useState(0);
   const [previewRegistry, setPreviewRegistry] = useState<LoadingRegistry | null>(null);
   const [, setPreviewLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -2151,6 +2153,7 @@ export default function RegistryPage() {
       setPreviewRegistry(registry);
       const model = await buildDetailedYukXatiModel(registry, arrival, extraUnits);
       setPreviewModel(model);
+      setPreviewPartNo(0);
       setEditRegistryNumber(registry.registryNumber);
       setRevisionComment('');
       setEditMode(startEdit);
@@ -2162,6 +2165,7 @@ export default function RegistryPage() {
       })));
       setPreviewRegistry(registry);
       setPreviewModel(buildYukXatiModel(registry, null, null, null, extraUnits));
+      setPreviewPartNo(0);
       setEditRegistryNumber(registry.registryNumber);
       setRevisionComment('');
       setEditMode(startEdit);
@@ -2172,6 +2176,7 @@ export default function RegistryPage() {
 
   const closeYukXatiPreview = () => {
     setPreviewModel(null);
+    setPreviewPartNo(0);
     setPreviewRegistry(null);
     setEditMode(false);
     setEditRegistryNumber('');
@@ -5612,16 +5617,47 @@ export default function RegistryPage() {
         </div>
       ) : null}
 
-      {previewModel ? (
+      {previewModel ? (() => {
+        // Ajratmalar faqat qo‘riqlash tasdiqlagandan keyin beriladi
+        const previewParts = previewModel.securityApproved ? yukXatiParts(previewModel) : [];
+        const activePart = previewParts.find(p => p.partNo === previewPartNo);
+        const shownModel = activePart ? buildYukXatiPartModel(previewModel, activePart, previewParts.length) : previewModel;
+        return (
         <div className="yx-preview-root" role="dialog" aria-modal="true" aria-label="Yuk xati">
           <div className="yx-preview-bar">
             <div>
-              <div className="yx-preview-bar__title">Yuk xati — {previewModel.registryNumber}</div>
+              <div className="yx-preview-bar__title">Yuk xati — {shownModel.registryNumber}</div>
               <div className="text-xs text-slate-400 mt-0.5">
                 {previewModel.etId}
                 {previewModel.cargoName ? ` · ${previewModel.cargoName}` : ''}
-                {previewModel.wagonCount ? ` · ${previewModel.wagonCount} vagon` : ''}
+                {shownModel.wagonCount ? ` · ${shownModel.wagonCount} vagon` : ''}
               </div>
+              {previewParts.length > 0 && !editMode ? (
+                <div className="yx-preview-parts" role="tablist" aria-label="Yuk xati ajratmalari">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!activePart}
+                    className={`yx-preview-parts__tab${!activePart ? ' is-active' : ''}`}
+                    onClick={() => setPreviewPartNo(0)}
+                  >
+                    Asosiy
+                  </button>
+                  {previewParts.map(part => (
+                    <button
+                      key={part.number}
+                      type="button"
+                      role="tab"
+                      aria-selected={activePart?.partNo === part.partNo}
+                      className={`yx-preview-parts__tab${activePart?.partNo === part.partNo ? ' is-active' : ''}`}
+                      title={`${part.receiver} · ${part.rows.length} vagon`}
+                      onClick={() => setPreviewPartNo(part.partNo)}
+                    >
+                      {part.number}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               {previewRegistry && isRegistryReturned(previewRegistry) ? (
                 <div className="yx-preview-returned">
                   {registryRejectionSummary(previewRegistry).map((line, idx) => (
@@ -5648,8 +5684,8 @@ export default function RegistryPage() {
               ) : null}
               {!editMode ? (
                 <DocumentPrintButton
-                  ready={isYukXatiPrintReady(previewModel)}
-                  onPrint={() => printYukXati(previewModel.registryId)}
+                  ready={isYukXatiPrintReady(shownModel)}
+                  onPrint={() => printYukXati(shownModel.registryId)}
                 />
               ) : null}
               <button
@@ -5717,11 +5753,12 @@ export default function RegistryPage() {
                 </div>
               </form>
             ) : (
-              <YukXatiView model={previewModel} />
+              <YukXatiView model={shownModel} />
             )}
           </div>
         </div>
-      ) : null}
+        );
+      })() : null}
 
 
 

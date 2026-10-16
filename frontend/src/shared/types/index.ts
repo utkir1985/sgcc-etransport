@@ -643,6 +643,19 @@ export interface LoadingRegistry {
   qrVerificationUrl?: string;
   qrCodeBase64?: string;
   qrRegisteredAt?: string | null;
+  /** Qo‘riqlashdan keyin qabul qiluvchilar bo‘yicha ajratmalar (WB-…-1, -2) va ularning QR'i */
+  waybillParts?: WaybillPartQr[] | null;
+}
+
+export interface WaybillPartQr {
+  partNo: number;
+  number: string;
+  contractNumber: string;
+  receiver: string;
+  qrGlobalId: string;
+  qrVerificationUrl: string;
+  qrCodeBase64: string;
+  qrRegisteredAt?: string | null;
 }
 
 export const ROLE_LABELS: Record<string, string> = {

@@ -2052,8 +2052,16 @@ public class DocumentsController(
             r.QrVerificationUrl ?? string.Empty,
             r.QrCodeBase64 ?? string.Empty,
             r.QrRegisteredAt,
-            r.ExitedToKengsoyByName ?? string.Empty
+            r.ExitedToKengsoyByName ?? string.Empty,
+            ParseWaybillParts(r.WaybillPartsJson)
         );
+    }
+
+    private static List<WaybillPartQrDto> ParseWaybillParts(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return JsonSerializer.Deserialize<List<WaybillPartQrDto>>(json) ?? []; }
+        catch { return []; }
     }
 
     private static List<LoadingRegistryWagonRouteDto> ParseWagonRoutes(string? json)
@@ -2102,10 +2110,32 @@ public class DocumentsController(
             .FirstOrDefaultAsync(r => r.Id == id);
         if (reg is null) return NotFound("Yuk xati topilmadi");
 
-        var pdfModel = BuildYukXatiPdfModel(reg);
-        var pdfBytes = pdfGenerator.GenerateYukXatiPdf(pdfModel);
+        var pdfModel = FinalDocumentModels.BuildYukXatiPdfModel(reg, await FinalDocumentModels.LoadRouteUnitsAsync(db, reg));
+        var pdfBytes = pdfGenerator.GenerateYukXatiPdf(pdfModel, null, YukXatiGrouping.IssuesParts(reg));
 
         return File(pdfBytes, "application/pdf", $"YukXati_{reg.RegistryNumber}.pdf");
+    }
+
+    /// <summary>Ajratma PDF: WB-…-N — faqat shu qabul qiluvchi vagonlari va o‘z QR'i bilan.</summary>
+    [HttpGet("loading-registry/{id:guid}/parts/{partNo:int}/pdf")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetLoadingRegistryPartPdf(Guid id, int partNo)
+    {
+        var reg = await db.LoadingRegistries
+            .Include(r => r.EmptyWagonArrival)!.ThenInclude(a => a.Units)
+            .Include(r => r.EmptyWagonArrival)!.ThenInclude(a => a.CreatedBy)
+            .FirstOrDefaultAsync(r => r.Id == id);
+        if (reg is null) return NotFound("Yuk xati topilmadi");
+
+        var master = FinalDocumentModels.BuildYukXatiPdfModel(reg, await FinalDocumentModels.LoadRouteUnitsAsync(db, reg));
+        var parts = YukXatiGrouping.IssuesParts(reg) ? YukXatiGrouping.Parts(master) : [];
+        var part = parts.FirstOrDefault(p => p.PartNo == partNo);
+        if (part is null) return NotFound("Ajratma topilmadi");
+
+        var qr = ParseWaybillParts(reg.WaybillPartsJson).FirstOrDefault(p => p.Number == part.Number);
+        var model = YukXatiGrouping.PartModel(master, part, qr?.QrVerificationUrl, qr?.QrGlobalId);
+        var pdfBytes = pdfGenerator.GenerateYukXatiPdf(model, new YukXatiPartInfo(reg.RegistryNumber, part.PartNo, parts.Count));
+        return File(pdfBytes, "application/pdf", $"YukXati_{part.Number}.pdf");
     }
 
     private static MonthlyOrderPdfModel BuildMonthlyOrderPdfModel(MonthlyOrder order)
@@ -2160,7 +2190,6 @@ public class DocumentsController(
     private static string LineContractNumber(MonthlyOrder order, MonthlyOrderLine line) =>
         !string.IsNullOrWhiteSpace(line.ContractNumber) ? line.ContractNumber.Trim() : (order.ContractNumber ?? "").Trim();
 
-    private static YukXatiPdfModel BuildYukXatiPdfModel(LoadingRegistry reg) => FinalDocumentModels.BuildYukXatiPdfModel(reg);
 
     [HttpGet("defect-act/{unitId:guid}/pdf")]
     [AllowAnonymous]

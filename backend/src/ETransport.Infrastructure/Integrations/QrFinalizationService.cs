@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using ETransport.Core.DTOs;
 using ETransport.Core.Entities;
 using ETransport.Infrastructure.Data;
 using ETransport.Infrastructure.Pdf;
@@ -19,6 +20,17 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static string Hash(object model) => Convert.ToHexString(SHA256.HashData(
         Encoding.UTF8.GetBytes((model is YukXatiPdfModel ? "final-pdf-v7:" : "final-pdf-v1:") + JsonSerializer.Serialize(model))));
+    private static bool UsesGroupedLayout(LoadingRegistry r) => YukXatiGrouping.IssuesParts(r);
+    // Eski yuk xatlari "v7" izida qoladi (qayta yuklanmaydi); yangilari guruhlangan "v10" PDF bilan bir marta qayta yuklanadi.
+    private static string MasterHash(YukXatiPdfModel model, bool grouped) => grouped ? Hash(new { layout = "grouped-v10", model }) : Hash(model);
+    private static string PartHash(YukXatiPdfModel master, YukXatiWagonGroup part) =>
+        Hash(new { layout = "part-v2", model = YukXatiGrouping.PartModel(master with { QrGlobalId = null, QrVerificationUrl = null }, part, null, null) });
+    private static List<WaybillPartQrDto> ParseParts(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return JsonSerializer.Deserialize<List<WaybillPartQrDto>>(json) ?? []; }
+        catch { return []; }
+    }
     private static string Name(params string?[] names) => names.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)) ?? "Mas'ul xodim";
 
     public async Task<QrSyncResult> SyncAsync(CancellationToken ct = default)
@@ -61,8 +73,13 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                 var r = await db.LoadingRegistries.Include(r => r.EmptyWagonArrival)!.ThenInclude(a => a.Units)
                     .Include(r => r.EmptyWagonArrival)!.ThenInclude(a => a.CreatedBy).SingleAsync(r => r.Id == id, ct);
                 if (!r.IsApprovedByPermit || !r.IsApprovedBySecurity) return false;
-                var model = FinalDocumentModels.BuildYukXatiPdfModel(r);
-                if (r.QrFinalFileHash == Hash(model)) return false;
+                var model = FinalDocumentModels.BuildYukXatiPdfModel(r, await FinalDocumentModels.LoadRouteUnitsAsync(db, r, ct));
+                var grouped = UsesGroupedLayout(r);
+                var parts = grouped ? YukXatiGrouping.Parts(model) : [];
+                var storedParts = ParseParts(r.WaybillPartsJson);
+                var pendingParts = parts.Where(p => storedParts.FirstOrDefault(s => s.Number == p.Number)?.FileHash
+                    != PartHash(model, p)).ToList();
+                if (r.QrFinalFileHash == MasterHash(model, grouped) && pendingParts.Count == 0) return false;
                 // Imzolovchilardan biri (masalan, 1C tarozichi yoki TM va XA) hali qayd etilmagan bo'lsa —
                 // bu xato emas: QR kutib turadi, ma'lumot kelgach keyingi aylanishda chiqadi.
                 if (model.Signers == null || model.Signers.Count < 5 || model.Signers.Any(s =>
@@ -81,27 +98,65 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                     permit = r.PermitApprovedByName,
                     security = r.SecurityApprovedByName
                 });
-                var metadataJson = JsonSerializer.Serialize(new {
-                    documentDate = r.PreparedAt.ToString("O"),
-                    registryNumber = r.RegistryNumber,
-                    productType = model.ProductType,
-                    wagonCount = model.Wagons.Count,
-                    shiftSupervisor = r.ShiftSupervisorApprovedByName,
-                    shiftSupervisorAt = r.ShiftSupervisorApprovedAt?.ToString("O"),
-                    economist = r.PreparedByName,
-                    permit = r.PermitApprovedByName,
-                    security = r.SecurityApprovedByName
-                });
 
-                var request = new QrLinkRegisterRequest(r.RegistryNumber, "Yuk xati", $"Yuk xati № {r.RegistryNumber}",
-                    Status: "Approved", OwnerName: ownerName, MetadataJson: metadataJson, WorkflowJson: workflowJson);
-                var identity = await ReserveAsync(request, ct);
-                model = model with { QrGlobalId = identity.GlobalId, QrVerificationUrl = identity.VerificationUrl };
-                var result = await UploadAsync(request, identity, pdf.GenerateYukXatiPdf(model), $"YukXati_{r.RegistryNumber}.pdf", ct);
-                r.QrGlobalId = result.GlobalId; r.QrVerificationUrl = result.VerificationUrl;
-                r.QrCodeBase64 = result.QrCodeBase64; r.QrRegisteredAt = result.RegisteredAt;
-                r.QrFinalFileHash = Hash(model);
-                await db.SaveChangesAsync(ct);
+                if (r.QrFinalFileHash != MasterHash(model, grouped))
+                {
+                    var metadataJson = JsonSerializer.Serialize(new {
+                        documentDate = r.PreparedAt.ToString("O"),
+                        registryNumber = r.RegistryNumber,
+                        productType = model.ProductType,
+                        wagonCount = model.Wagons.Count,
+                        partNumbers = parts.Select(p => p.Number).ToList(),
+                        shiftSupervisor = r.ShiftSupervisorApprovedByName,
+                        shiftSupervisorAt = r.ShiftSupervisorApprovedAt?.ToString("O"),
+                        economist = r.PreparedByName,
+                        permit = r.PermitApprovedByName,
+                        security = r.SecurityApprovedByName
+                    });
+
+                    var request = new QrLinkRegisterRequest(r.RegistryNumber, "Yuk xati", $"Yuk xati № {r.RegistryNumber}",
+                        Status: "Approved", OwnerName: ownerName, MetadataJson: metadataJson, WorkflowJson: workflowJson);
+                    var identity = await ReserveAsync(request, ct);
+                    model = model with { QrGlobalId = identity.GlobalId, QrVerificationUrl = identity.VerificationUrl };
+                    var result = await UploadAsync(request, identity, pdf.GenerateYukXatiPdf(model, null, grouped), $"YukXati_{r.RegistryNumber}.pdf", ct);
+                    r.QrGlobalId = result.GlobalId; r.QrVerificationUrl = result.VerificationUrl;
+                    r.QrCodeBase64 = result.QrCodeBase64; r.QrRegisteredAt = result.RegisteredAt;
+                    r.QrFinalFileHash = MasterHash(model, grouped);
+                    await db.SaveChangesAsync(ct);
+                }
+
+                // Ajratmalar (WB-…-N): har biri QR Link'da alohida hujjat; bittasi muvaffaqiyatsiz bo'lsa keyingi aylanishda qayta urinadi.
+                foreach (var part in pendingParts)
+                {
+                    var partNumber = part.Number;
+                    var metadataJson = JsonSerializer.Serialize(new {
+                        documentDate = r.PreparedAt.ToString("O"),
+                        registryNumber = partNumber,
+                        parentRegistryNumber = r.RegistryNumber,
+                        contractNumber = part.ContractNumber,
+                        receiver = part.Receiver,
+                        wagonCount = part.WagonCount,
+                        nettoKg = part.NettoKg,
+                        shiftSupervisor = r.ShiftSupervisorApprovedByName,
+                        economist = r.PreparedByName,
+                        permit = r.PermitApprovedByName,
+                        security = r.SecurityApprovedByName
+                    });
+                    var request = new QrLinkRegisterRequest(partNumber, "Yuk xati", $"Yuk xati № {partNumber} ({r.RegistryNumber} ajratmasi)",
+                        Status: "Approved", OwnerName: ownerName, MetadataJson: metadataJson, WorkflowJson: workflowJson);
+                    var identity = await ReserveAsync(request, ct);
+                    var partModel = YukXatiGrouping.PartModel(model, part, identity.VerificationUrl, identity.GlobalId);
+                    var bytes = pdf.GenerateYukXatiPdf(partModel, new YukXatiPartInfo(r.RegistryNumber, part.PartNo, parts.Count));
+                    var result = await UploadAsync(request, identity, bytes, $"YukXati_{partNumber}.pdf", ct);
+
+                    storedParts.RemoveAll(s => s.Number == partNumber);
+                    storedParts.Add(new WaybillPartQrDto(part.PartNo, partNumber, part.ContractNumber, part.Receiver,
+                        result.GlobalId, result.VerificationUrl, result.QrCodeBase64 ?? "", result.RegisteredAt, PartHash(model, part)));
+                    // Tarkib o'zgarib, yo'qolgan ajratmalar ro'yxatda qolmasin
+                    var current = parts.Select(p => p.Number).ToHashSet();
+                    r.WaybillPartsJson = JsonSerializer.Serialize(storedParts.Where(s => current.Contains(s.Number)).OrderBy(s => s.PartNo).ToList());
+                    await db.SaveChangesAsync(ct);
+                }
                 return true;
             });
             db.ChangeTracker.Clear();

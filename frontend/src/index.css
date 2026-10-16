@@ -8677,6 +8677,61 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
 .yxn-wagons th:nth-child(9) { width: 9%; }  /* Shartnoma № */
 .yxn-wagons th:nth-child(10) { width: 27%; }
 .yxn-total td { background: #e8f1fb; font-weight: 800; }
+
+/* Yuk xati: qabul qiluvchi guruhlari (WB-…-N), guruh va umumiy jamilar */
+.yxn-wagons--grouped th:nth-child(1) { width: 4%; }
+.yxn-wagons--grouped th:nth-child(2) { width: 11%; }
+.yxn-wagons--grouped th:nth-child(3) { width: 10%; }
+.yxn-wagons--grouped th:nth-child(4) { width: 10%; }
+.yxn-wagons--grouped th:nth-child(5) { width: 10%; }
+.yxn-wagons--grouped th:nth-child(6) { width: 22%; }
+.yxn-wagons--grouped th:nth-child(7) { width: 15%; }
+.yxn-wagons--grouped th:nth-child(8) { width: 18%; }
+.yxn-wagons--grouped tr.yxn-group td,
+.yxn-wagons--grouped tr.yxn-subtotal td,
+.yxn-wagons--grouped tr.yxn-grand td {
+  height: auto;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.yxn-wagons--grouped tr.yxn-group td {
+  background: #e6ebf2;
+  text-align: left;
+  padding-left: 8px;
+}
+.yxn-wagons--grouped tr.yxn-group--defect td { background: #fdecec; }
+.yxn-wagons--grouped .yxn-group__no {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  background: #1e3a5f;
+  color: #fff;
+  font-size: 12px !important;
+  font-weight: 700;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.yxn-wagons--grouped .yxn-group__receiver { font-weight: 700; }
+.yxn-wagons--grouped tr.yxn-group--defect .yxn-group__receiver { color: #9f1239; }
+.yxn-wagons--grouped .yxn-group__contract {
+  font-style: italic;
+  font-size: 13px !important;
+  color: #4b5563;
+}
+.yxn-wagons--grouped tr.yxn-subtotal td { background: #f1f3f5; font-weight: 700; }
+.yxn-wagons--grouped tr.yxn-grand td { background: #d7dee8; font-weight: 700; border-top: 2px solid #111827; }
+.yxn-wagons--grouped .yxn-sum__label { text-align: right; padding-right: 8px; }
+.yxn-part-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border: 1px solid #1e3a5f;
+  color: #1e3a5f;
+  font-size: 12px;
+}
+.yxn-head-qr--pending { border-style: dashed; }
 .yxn-mono { font-family: "Times New Roman", Times, serif; font-weight: 700; }
 
 .yxn-defect {
@@ -15652,6 +15707,18 @@ html.dark .party-select__trigger[aria-expanded="true"],
 }
 .yx-preview-bar__title { font-size: 14px; font-weight: 600; }
 .yx-preview-bar__actions { display: flex; align-items: center; gap: 8px; }
+.yx-preview-parts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.yx-preview-parts__tab {
+  padding: 2px 8px;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.yx-preview-parts__tab:hover { border-color: #94a3b8; color: #fff; }
+.yx-preview-parts__tab.is-active { background: #2563eb; border-color: #2563eb; color: #fff; }
 .yx-preview-scroll { flex: 1; overflow: auto; padding: 16px 12px 24px; }
 
 .yx-preview-returned {

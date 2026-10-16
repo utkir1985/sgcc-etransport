@@ -176,7 +176,21 @@ public record LoadingRegistryDto(
     string QrVerificationUrl = "",
     string QrCodeBase64 = "",
     DateTime? QrRegisteredAt = null,
-    string ExitedToKengsoyByName = ""
+    string ExitedToKengsoyByName = "",
+    List<WaybillPartQrDto>? WaybillParts = null
+);
+
+/// <summary>Yuk xati ajratmasining (WB-…-N) QR Link'dagi ro‘yxatdan o‘tgan nusxasi.</summary>
+public record WaybillPartQrDto(
+    int PartNo,
+    string Number,
+    string ContractNumber,
+    string Receiver,
+    string QrGlobalId,
+    string QrVerificationUrl,
+    string QrCodeBase64,
+    DateTime? QrRegisteredAt,
+    string FileHash
 );
 
 public record LoadingRegistryWagonRouteDto(

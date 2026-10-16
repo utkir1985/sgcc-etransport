@@ -153,7 +153,7 @@ public record MonthlyOrderPdfModel(
 public interface IDocumentPdfGenerator
 {
     byte[] GenerateDefectActPdf(DefectActPdfModel model);
-    byte[] GenerateYukXatiPdf(YukXatiPdfModel model);
+    byte[] GenerateYukXatiPdf(YukXatiPdfModel model, YukXatiPartInfo? part = null, bool numberedParts = true);
     byte[] GenerateEntryPermitPdf(EntryPermitPdfModel model);
     byte[] GenerateMonthlyOrderPdf(MonthlyOrderPdfModel model);
 }

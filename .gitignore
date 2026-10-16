@@ -44,3 +44,7 @@ backups/
 .gemini/
 __pycache__/
 *.pyc
+
+.claude/
+*.bak*
+*.xlsx
