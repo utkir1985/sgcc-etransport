@@ -61,7 +61,8 @@ public static class FinalDocumentModels
                     Status: unit.Status,
                     ReceiverAndStation: receiverStation,
                     IsDefective: isDefective,
-                    DefectActFileName: unit.DefectActFileName ?? unit.DefectActNumber
+                    DefectActFileName: unit.DefectActFileName ?? unit.DefectActNumber,
+                    ContractNumber: isDefective || string.IsNullOrWhiteSpace(route.ContractNumber) ? null : route.ContractNumber
                 ));
             }
         }
@@ -157,7 +158,7 @@ public static class FinalDocumentModels
             Wagons: wagonRows,
             LoadingTaskNo: arrival?.ArrivalNumber,
             ExitDate: reg.ExitedToKengsoyAt,
-            ContractNo: reg.ContractNumber ?? "01-36/22-44",
+            ContractNo: reg.ContractNumber,
             PermitOk: reg.IsApprovedByPermit && reg.IsApprovedBySecurity,
             ShiftLeaderName: reg.ShiftSupervisorApprovedByName,
             ShiftLeaderAt: reg.ShiftSupervisorApprovedAt,

@@ -1342,6 +1342,26 @@ public static class DbSeeder
             WHERE r."ExitedToKengsoyByName" = '' AND r."ExitedToKengsoyAt" IS NOT NULL
               AND sub."EntityId" = r."Id"::text;
 
+            -- Yuk xati vagonlari: har bir vagon yo'nalishiga buyurtma qatorining shartnoma raqami
+            -- (qatorda bo'lmasa — buyurtma shartnomasi). Faqat hali kaliti yo'q yozuvlar to'ldiriladi.
+            UPDATE "LoadingRegistries" r
+            SET "WagonRoutesJson" = sub.routes
+            FROM (
+              SELECT r2."Id",
+                jsonb_agg(
+                  CASE WHEN (t.e -> 'ContractNumber') IS NOT NULL THEN t.e
+                       ELSE t.e || jsonb_build_object('ContractNumber',
+                         COALESCE(NULLIF(btrim(l."ContractNumber"), ''), btrim(o."ContractNumber"), ''))
+                  END ORDER BY t.ord)::text AS routes
+              FROM "LoadingRegistries" r2
+              CROSS JOIN LATERAL jsonb_array_elements(COALESCE(NULLIF(r2."WagonRoutesJson", ''), '[]')::jsonb) WITH ORDINALITY AS t(e, ord)
+              LEFT JOIN "MonthlyOrderLines" l ON l."Id"::text = t.e ->> 'MonthlyOrderLineId'
+              LEFT JOIN "MonthlyOrders" o ON o."Id" = l."MonthlyOrderId"
+              WHERE r2."WagonRoutesJson" NOT LIKE '%"ContractNumber"%'
+              GROUP BY r2."Id"
+            ) sub
+            WHERE r."Id" = sub."Id";
+
             -- Yangi ikki bosqichli chiqish modeliga o'tish:
             -- eski 1C demo reyestrlari avvaldan yakunlangan, joriy EWA reyestri esa
             -- iqtisodchidan Temir yo'lga topshirilgan navbat sifatida qayta ochiladi.

@@ -94,6 +94,12 @@ function SignerBlock({ model, signer }: { model: YukXatiModel; signer: Signer })
   );
 }
 
+/** Vagonda shartnoma bo‘lmasa — yuk xatining yagona shartnomasi ("Bir nechta shartnoma" bo‘lsa — chiziqcha). */
+function rowContractFallback(contract?: string | null) {
+  const value = (contract ?? '').trim();
+  return !value || /bir nechta/i.test(value) ? '—' : value;
+}
+
 function WagonRegistryTable({ model, rows, continued = false }: {
   model: YukXatiModel;
   rows: YukXatiModel['wagons'];
@@ -111,6 +117,7 @@ function WagonRegistryTable({ model, rows, continued = false }: {
           <th>Plomba raqami</th>
           <th>Vagon turi</th>
           <th>Mahsulot turi</th>
+          <th>Shartnoma №</th>
           <th>Qabul qiluvchi tashkilot va stansiya</th>
         </tr>
       </thead>
@@ -125,6 +132,7 @@ function WagonRegistryTable({ model, rows, continued = false }: {
             <td className="yxn-mono">{valueOrDash(row.sealNumber)}</td>
             <td>{row.wagonType}</td>
             <td>{row.productName || model.cargoName || '—'}</td>
+            <td className="yxn-mono">{row.isDefective ? '—' : (row.contractNumber || rowContractFallback(model.consigneeContract))}</td>
             <td className={row.isDefective ? 'yxn-defect' : undefined}>
               {row.isDefective
                 ? (

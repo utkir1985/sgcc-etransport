@@ -8328,8 +8328,8 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
   margin-top: 6px;
 }
 
-.yuk-xati--landscape .yxn-wagons th:nth-child(9) {
-  width: 34%;
+.yuk-xati--landscape .yxn-wagons th:nth-child(10) {
+  width: 30%;
 }
 
 .yuk-xati--landscape .yxn-signatures {
@@ -8667,14 +8667,15 @@ html.dark .hub-tab__metric--rose:hover .dash-wagon-count,
   text-align: center;
 }
 .yxn-wagons th:nth-child(1) { width: 3.5%; }
-.yxn-wagons th:nth-child(2) { width: 10%; }
-.yxn-wagons th:nth-child(3) { width: 8%; }
-.yxn-wagons th:nth-child(4) { width: 8%; }
-.yxn-wagons th:nth-child(5) { width: 11%; }
-.yxn-wagons th:nth-child(6) { width: 10%; }
-.yxn-wagons th:nth-child(7) { width: 8%; }
-.yxn-wagons th:nth-child(8) { width: 12%; }
-.yxn-wagons th:nth-child(9) { width: 29.5%; }
+.yxn-wagons th:nth-child(2) { width: 9%; }
+.yxn-wagons th:nth-child(3) { width: 7.5%; }
+.yxn-wagons th:nth-child(4) { width: 7.5%; }
+.yxn-wagons th:nth-child(5) { width: 9%; }
+.yxn-wagons th:nth-child(6) { width: 9.5%; }
+.yxn-wagons th:nth-child(7) { width: 7.5%; }
+.yxn-wagons th:nth-child(8) { width: 10.5%; }
+.yxn-wagons th:nth-child(9) { width: 9%; }  /* Shartnoma № */
+.yxn-wagons th:nth-child(10) { width: 27%; }
 .yxn-total td { background: #e8f1fb; font-weight: 800; }
 .yxn-mono { font-family: "Times New Roman", Times, serif; font-weight: 700; }
 

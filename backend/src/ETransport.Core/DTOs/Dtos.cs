@@ -193,7 +193,9 @@ public record LoadingRegistryWagonRouteDto(
     Guid? SourceArrivalId = null,
     string SourceArrivalNumber = "",
     /// <summary>Hujjat tuzilgan paytdagi netto nusxasi — buyurtma hisobini qaytarishda shu qiymat ishlatiladi.</summary>
-    decimal NetWeight = 0);
+    decimal NetWeight = 0,
+    /// <summary>Vagon bog‘langan buyurtma qatorining shartnoma raqami (yuk xati jadvali uchun).</summary>
+    string ContractNumber = "");
 public record CreateLoadingRegistryWagonRouteRequest(
     string WagonNumber,
     Guid? MonthlyOrderLineId = null,

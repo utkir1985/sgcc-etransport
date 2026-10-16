@@ -160,6 +160,9 @@ function persistLocal(state: RbacState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+/** Ochiq oyna huquqlarni shu oraliqda qayta o'qiydi. */
+const RBAC_REFRESH_MS = 60_000;
+
 const TONES: RbacTone[] = ['blue', 'emerald', 'violet', 'amber', 'cyan', 'rose', 'indigo', 'sky'];
 
 type RbacStoreValue = ReturnType<typeof useRbacStoreState>;
@@ -208,6 +211,27 @@ function useRbacStoreState() {
       setState(local);
     });
   }, [reloadFromServer, user?.username, user?.role]);
+
+  // Admin tahrir qilayotganda fon yangilanishi uning o'zgarishini bosib ketmasin.
+  const busyRef = useRef(false);
+  busyRef.current = dirty || syncing;
+
+  // Huquq olib qo'yilganda ochiq turgan oyna uni darhol sezishi kerak: aks holda
+  // menyu bandi foydalanuvchi sahifani yangilamaguncha ko'rinib turadi.
+  // (Sahifaning o'ziga kirish shlyuz orqali baribir darhol yopiladi.)
+  useEffect(() => {
+    if (!user) return undefined;
+    const refresh = () => {
+      if (busyRef.current) return;
+      reloadFromServer();
+    };
+    const timer = window.setInterval(refresh, RBAC_REFRESH_MS);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [reloadFromServer, user]);
 
   useEffect(() => {
     if (skipNextPersist.current) {

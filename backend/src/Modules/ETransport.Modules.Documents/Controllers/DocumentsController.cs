@@ -636,7 +636,8 @@ public class DocumentsController(
                             defectiveAssignment.Order.ProductType,
                             unit.EmptyWagonArrivalId,
                             unit.Arrival?.ArrivalNumber ?? "",
-                            0);
+                            0,
+                            LineContractNumber(defectiveAssignment.Order, defectiveAssignment.Line));
                     }
                     return new LoadingRegistryWagonRouteDto(
                         x.WagonNumber,
@@ -668,7 +669,8 @@ public class DocumentsController(
                     assignment.Order.ProductType,
                     unit.EmptyWagonArrivalId,
                     unit.Arrival?.ArrivalNumber ?? "",
-                    UnitNetWeight(unit));
+                    UnitNetWeight(unit),
+                    LineContractNumber(assignment.Order, routeLine));
             }).ToList();
             var primaryRoute = routeSnapshots.FirstOrDefault(x => !x.IsDefective);
             var primaryOrder = primaryRoute?.MonthlyOrderId is Guid primaryOrderId && ordersById.TryGetValue(primaryOrderId, out var pOrd)
@@ -844,7 +846,8 @@ public class DocumentsController(
                     Status: unit.Status,
                     ReceiverAndStation: receiverStation,
                     IsDefective: isDefective,
-                    DefectActFileName: unit.DefectActFileName ?? unit.DefectActNumber
+                    DefectActFileName: unit.DefectActFileName ?? unit.DefectActNumber,
+                    ContractNumber: isDefective || string.IsNullOrWhiteSpace(route.ContractNumber) ? null : route.ContractNumber
                 ));
             }
 
@@ -1410,7 +1413,8 @@ public class DocumentsController(
                             defectiveAssignment.Order.ProductType,
                             unit.EmptyWagonArrivalId,
                             unit.Arrival?.ArrivalNumber ?? "",
-                            0);
+                            0,
+                            LineContractNumber(defectiveAssignment.Order, defectiveAssignment.Line));
                     }
                     return new LoadingRegistryWagonRouteDto(
                         x.WagonNumber,
@@ -1442,7 +1446,8 @@ public class DocumentsController(
                     assignment.Order.ProductType,
                     unit.EmptyWagonArrivalId,
                     unit.Arrival?.ArrivalNumber ?? "",
-                    UnitNetWeight(unit));
+                    UnitNetWeight(unit),
+                    LineContractNumber(assignment.Order, routeLine));
             }).ToList();
 
             var primaryRoute = routeSnapshots.FirstOrDefault(x => !x.IsDefective);
@@ -1557,7 +1562,8 @@ public class DocumentsController(
                         Status: unit.Status,
                         ReceiverAndStation: receiverStation,
                         IsDefective: isDefective,
-                        DefectActFileName: unit.DefectActFileName ?? unit.DefectActNumber
+                        DefectActFileName: unit.DefectActFileName ?? unit.DefectActNumber,
+                        ContractNumber: isDefective || string.IsNullOrWhiteSpace(route.ContractNumber) ? null : route.ContractNumber
                     ));
                 }
 
@@ -2149,6 +2155,10 @@ public class DocumentsController(
             TotalTons: totalTons
         );
     }
+
+    /// <summary>Qator shartnomasi; eski (qatorsiz) buyurtmalarda — buyurtma shartnomasi.</summary>
+    private static string LineContractNumber(MonthlyOrder order, MonthlyOrderLine line) =>
+        !string.IsNullOrWhiteSpace(line.ContractNumber) ? line.ContractNumber.Trim() : (order.ContractNumber ?? "").Trim();
 
     private static YukXatiPdfModel BuildYukXatiPdfModel(LoadingRegistry reg) => FinalDocumentModels.BuildYukXatiPdfModel(reg);
 

@@ -20,6 +20,8 @@ export interface YukXatiWagonRow {
   securityCheck: string;
   noteOwner: string;
   receiverAndStation: string;
+  /** Vagon bog‘langan buyurtma qatorining shartnoma raqami */
+  contractNumber?: string;
   isDefective?: boolean;
   defectActFileName?: string;
   unitId?: string;
@@ -289,6 +291,7 @@ export function buildYukXatiModel(
           receiverAndStation: defective
             ? 'Nomuvofiqlik aniqlangan'
             : [route.contractorName, route.destinationStation].filter(Boolean).join(' — '),
+          contractNumber: defective ? '' : safeTrim(route.contractNumber),
           isDefective: defective,
           defectActFileName: route.defectActFileName || u.defectActFileName || u.defectActNumber || '',
           unitId: u.id,
@@ -334,6 +337,7 @@ export function buildYukXatiModel(
           receiverAndStation: defective
             ? 'Nomuvofiqlik aniqlangan'
             : [route?.contractorName, route?.destinationStation].filter(Boolean).join(' — '),
+          contractNumber: defective ? '' : safeTrim(route?.contractNumber),
           isDefective: defective,
           defectActFileName: route?.defectActFileName || u.defectActFileName || u.defectActNumber || '',
           unitId: u.id,

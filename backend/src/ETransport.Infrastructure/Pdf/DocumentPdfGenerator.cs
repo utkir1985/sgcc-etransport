@@ -7,6 +7,12 @@ namespace ETransport.Infrastructure.Pdf;
 
 public class DocumentPdfGenerator : IDocumentPdfGenerator
 {
+    /// <summary>Vagon qatorida shartnoma bo‘lmasa — yuk xatining yagona shartnomasi ("Bir nechta shartnoma" bo‘lsa — chiziqcha).</summary>
+    private static string RowContractFallback(string? registryContract) =>
+        string.IsNullOrWhiteSpace(registryContract) || registryContract.Contains("Bir nechta", StringComparison.OrdinalIgnoreCase)
+            ? "—"
+            : registryContract.Trim();
+
     private static string FirstNonEmpty(params string?[] names) =>
         names.FirstOrDefault(n => !string.IsNullOrWhiteSpace(n) && n.Trim() != "—")?.Trim() ?? "—";
 
@@ -277,6 +283,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                     c.ConstantColumn(72);  // Plomba raqami
                     c.ConstantColumn(68);  // Vagon turi
                     c.ConstantColumn(85);  // Mahsulot turi
+                    c.ConstantColumn(72);  // Shartnoma №
                     c.RelativeColumn();    // Qabul qiluvchi va stansiya
                 });
 
@@ -291,6 +298,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                     TH("Plomba raqami");
                     TH("Vagon turi");
                     TH("Mahsulot turi");
+                    TH("Shartnoma №");
                     TH("Qabul qiluvchi tashkilot va stansiya");
                 });
 
@@ -318,6 +326,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                     TD(!isDefective && !string.IsNullOrWhiteSpace(w.SealNumbers) ? w.SealNumbers : "—");
                     TD(wType);
                     TD(w.ProductType ?? model.ProductType ?? "Suyultirilgan gaz");
+                    TD(isDefective ? "—" : (w.ContractNumber ?? RowContractFallback(model.ContractNo)));
                     TD(w.ReceiverAndStation ?? model.CustomerName ?? model.DestinationStation ?? "—", isRed: isDefective);
                 }
             });
@@ -460,7 +469,7 @@ public class DocumentPdfGenerator : IDocumentPdfGenerator
                                     c.Item().Text(t => { t.Span("Hujjat holati: ").Bold().FontSize(9.5f); t.Span(model.PermitOk ? "Tasdiqlangan" : "Jarayonda").FontSize(9.5f); });
                                     c.Item().Text(t => { t.Span("Yuklash topshirig‘i №: ").Bold().FontSize(9.5f); t.Span(model.LoadingTaskNo ?? "—").FontSize(9.5f); });
                                     c.Item().Text(t => { t.Span("Yukni chiqarish sanasi: ").Bold().FontSize(9.5f); t.Span(exitDisplay).FontSize(9.5f); });
-                                    c.Item().Text(t => { t.Span("Shartnoma №: ").Bold().FontSize(9.5f); t.Span(model.ContractNo ?? "01-36/22-44").FontSize(9.5f); });
+                                    c.Item().Text(t => { t.Span("Shartnoma №: ").Bold().FontSize(9.5f); t.Span(string.IsNullOrWhiteSpace(model.ContractNo) ? "—" : model.ContractNo).FontSize(9.5f); });
                                 });
                             });
 

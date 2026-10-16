@@ -634,6 +634,8 @@ export interface LoadingRegistry {
     netWeight?: number | string;
     NetWeight?: number | string;
     sealNumber?: string;
+    /** Vagon bog‘langan buyurtma qatorining shartnoma raqami */
+    contractNumber?: string;
   }>;
   orderDeductedWagons?: number;
   orderDeductedNetWeight?: number;

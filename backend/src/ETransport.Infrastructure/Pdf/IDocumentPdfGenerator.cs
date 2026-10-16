@@ -35,7 +35,8 @@ public record YukXatiPdfWagonRow(
     string? Status,
     string? ReceiverAndStation = null,
     bool IsDefective = false,
-    string? DefectActFileName = null
+    string? DefectActFileName = null,
+    string? ContractNumber = null
 );
 
 public record YukXatiPdfSigner(
