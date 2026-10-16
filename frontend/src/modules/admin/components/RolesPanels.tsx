@@ -989,7 +989,7 @@ const isCustomAction = (key: string) => key.startsWith('custom.');
 
 function ApiNote({ description }: { description: string }) {
   const { method, path, note } = parseApi(description);
-  if (!method) return <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{description}</span>;
+  if (!method) return <span className="block text-xs text-slate-500 dark:text-slate-400 truncate" title={description}>{description}</span>;
   return (
     <span className="flex items-center gap-1.5 min-w-0 mt-0.5">
       <span className={`rbac-method !text-[11px] !font-bold !px-2 !py-0.5 ${METHOD_TONE[method] ?? 'bg-slate-100 text-slate-600'}`}>{method}</span>
@@ -1375,7 +1375,8 @@ export function RolesCrudPanel() {
                         {idx + 1}
                       </td>
                       <td className="py-2 px-3 border-r border-slate-300 dark:border-slate-700">
-                        <div className="flex items-center gap-2.5">
+                        {/* Uzun izoh ustunni kengaytirib, jadvalni yon tomonga surmasin */}
+                        <div className="flex items-center gap-2.5 max-w-[420px]">
                           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border shadow-2xs ${iconStyle}`}>
                             <Icon className="w-4 h-4" strokeWidth={2} />
                           </span>
