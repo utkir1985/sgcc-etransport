@@ -156,7 +156,7 @@ public static class FinalDocumentModels
             QrVerificationUrl: reg.QrVerificationUrl,
             QrGlobalId: reg.QrGlobalId,
             Wagons: wagonRows,
-            LoadingTaskNo: arrival?.ArrivalNumber,
+            LoadingTaskNo: !string.IsNullOrWhiteSpace(arrival?.EntryPermitNumber) ? arrival.EntryPermitNumber : arrival?.ArrivalNumber,
             ExitDate: reg.ExitedToKengsoyAt,
             ContractNo: reg.ContractNumber,
             PermitOk: reg.IsApprovedByPermit && reg.IsApprovedBySecurity,

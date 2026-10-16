@@ -199,10 +199,8 @@ function fmtTime(iso?: string | null): string {
 
 function normalizeRegistryNumber(raw: string): string {
   const t = safeTrim(raw);
-  if (!t) return 'ET-';
-  if (/^ET-/i.test(t)) return t;
-  if (/^YX-/i.test(t)) return t.replace(/^YX-/i, 'ET-');
-  return `ET-${t}`;
+  // Yuk xati raqami tizimdagi kabi (WB-1026-031) — PDF, ro'yxat va QR bilan bir xil
+  return t.replace(/^ET-/i, '');
 }
 
 /** Partiya + reyestrdan yangi E-Transport yuk xati modelini yig‘adi. */
@@ -459,7 +457,8 @@ export function buildYukXatiModel(
     formedAt: registry.preparedAt,
     marketingOrderNo: registry.orderNumber || order?.orderNumber || plan?.orderNumber || '',
     dailyPlanNo: plan?.planNumber || arrival?.planNumber || '',
-    loadingTaskNo: arrival?.arrivalNumber || '',
+    // Vagonlar kiritilgan kiritish xizmat xati (ENP-…); eski yozuvlarda — partiya raqami
+    loadingTaskNo: arrival?.entryPermitNumber || arrival?.arrivalNumber || '',
     exitToKengsoyDate: fmtDate(registry.exitedToKengsoyAt),
     exitToKengsoyTime: fmtTime(registry.exitedToKengsoyAt),
     originLabel: SHGKM,

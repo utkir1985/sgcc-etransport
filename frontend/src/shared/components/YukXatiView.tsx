@@ -298,7 +298,7 @@ export function YukXatiView({ model }: YukXatiViewProps) {
             </div>
             <div className="yxn-head__text yxn-head__text--meta">
               <div><b>Hujjat holati:</b> {documentStatus}</div>
-              <div><b>Yuklash topshirig‘i №:</b> {valueOrDash(model.loadingTaskNo)}</div>
+              <div><b>Kiritish xizmat xati №:</b> {valueOrDash(model.loadingTaskNo)}</div>
               <div><b>Yukni chiqarish sanasi:</b> {exitDisplay}</div>
               <div><b>Shartnoma №:</b> {valueOrDash(model.consigneeContract || model.consignorContract)}</div>
             </div>

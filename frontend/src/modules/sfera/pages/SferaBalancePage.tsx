@@ -43,6 +43,7 @@ const PAGES: Record<string, { group: string; title: string; route: string; admin
   'cond-flow': { group: COND, title: 'Kiruvchi gaz kondensati', route: '/condensate/flow-history', admin: true },
   'cond-telemetry': { group: COND, title: 'Silindr telemetriyasi', route: '/condensate/cylinder-telemetry', admin: true },
   'cond-settings': { group: COND, title: 'Sozlamalar', route: '/settings?product=condensate', update: true },
+  shipments: { group: 'Umumiy', title: 'Yuklangan mahsulotlar', route: '/shipments', admin: true },
 };
 
 type Status = 'checking' | 'online' | 'offline';

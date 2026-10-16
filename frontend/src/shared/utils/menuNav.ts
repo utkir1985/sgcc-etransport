@@ -187,6 +187,8 @@ export function buildSferaItems(full = false, canUpdate = false): MenuItem[] {
       children: [
         { ...item('sfera-lpg-group', 'Suyultirilgan gaz', '/sfera?p=lpg', 'Flame'), children: lpg },
         { ...item('sfera-cond-group', 'Gaz kondensati', '/sfera?p=cond', 'Droplets'), children: cond },
+        // Ikkala mahsulot bitta sahifada, tablar bilan — shuning uchun guruhlardan tashqarida.
+        ...(full ? [item('sfera-shipments', 'Yuklangan mahsulotlar', '/sfera?p=shipments', 'TrainFront')] : []),
       ],
     },
   ];
