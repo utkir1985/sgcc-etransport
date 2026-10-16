@@ -20589,3 +20589,6 @@ html.dark .order-progress-track,
 }
 /* Sfera sahifasi sarlavhadan to'g'ridan-to'g'ri boshlanadi */
 .sfera-page { height: calc(100dvh - 104px); }
+/* Sfera oynasi ramkasiz — kartochkalar to'g'ridan-to'g'ri sahifa fonida (ikki qavat ramka yo'q) */
+.sfera-page__frame { border: 0 !important; border-radius: 0 !important; background: transparent !important; }
+.dark .sfera-page__frame { background: transparent !important; }
