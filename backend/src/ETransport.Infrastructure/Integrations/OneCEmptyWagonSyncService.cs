@@ -262,6 +262,16 @@ public partial class OneCEmptyWagonSyncService(
                 }
             }
 
+            // Tarozi imzosi: 1C'dagi tortgan tarozichi (weigherName). Faqat ism yoziladi —
+            // tarozi tasdig'i vaqti (SealConfirmedByScaleAt) jarayon bosqichi bo'lgani uchun tegilmaydi.
+            var weigher = (item.WeigherName ?? "").Trim();
+            if (!string.IsNullOrWhiteSpace(weigher)
+                && (string.IsNullOrWhiteSpace(unit.SealConfirmedByScaleName) || unit.SealConfirmedByScaleName == "1C"))
+            {
+                unit.SealConfirmedByScaleName = weigher;
+                changed = true;
+            }
+
             // Product
             if (!string.IsNullOrWhiteSpace(item.ProductName))
             {
@@ -504,7 +514,7 @@ public partial class OneCEmptyWagonSyncService(
                     ScaleExitedAt = outUtc,
                     SealNumber = item.StampNumber.Trim(),
                     SealConfirmedByScaleAt = null,
-                    SealConfirmedByScaleName = string.Empty,
+                    SealConfirmedByScaleName = (item.WeigherName ?? "").Trim(),
                     SealEnteredToUngAt = outUtc ?? DateTime.UtcNow,
                     SealConfirmedBySecurityAt = null,
                     SealConfirmedBySecurityName = string.Empty,
