@@ -63,9 +63,11 @@ public sealed class QrFinalizationService(AppDbContext db, IQrLinkService qr,
                 if (!r.IsApprovedByPermit || !r.IsApprovedBySecurity) return false;
                 var model = FinalDocumentModels.BuildYukXatiPdfModel(r);
                 if (r.QrFinalFileHash == Hash(model)) return false;
+                // Imzolovchilardan biri (masalan, 1C tarozichi yoki TM va XA) hali qayd etilmagan bo'lsa —
+                // bu xato emas: QR kutib turadi, ma'lumot kelgach keyingi aylanishda chiqadi.
                 if (model.Signers == null || model.Signers.Count < 5 || model.Signers.Any(s =>
                     !s.At.HasValue || string.IsNullOrWhiteSpace(s.Name) || s.Name == "—" || s.Status == "Kutilmoqda"))
-                    throw new InvalidOperationException("Yakuniy yuk xatida tasdiqlovchi F.I.Sh. yoki sana mavjud emas.");
+                    return false;
                 
                 var registryDate = r.SecurityApprovedAt ?? r.PreparedAt;
                 var ownerName = Name(r.ShiftSupervisorApprovedByName, r.PreparedByName, r.SecurityApprovedByName);
